@@ -1075,6 +1075,535 @@ async def get_supported_formats():
         )
 
 
+# PDF Merge
+@router.post("/merge", response_model=PDFConversionResponse)
+async def merge_pdfs(files: List[UploadFile] = File(...)):
+    """Merge multiple PDF files into one."""
+    input_paths = []
+    output_path = None
+    
+    try:
+        # Save uploaded files
+        for file in files:
+            FileService.validate_file(file)
+            input_path = FileService.save_uploaded_file(file)
+            input_paths.append(input_path)
+        
+        # Create output path
+        output_path = FileService.get_output_path(input_paths[0], "_merged.pdf")
+        
+        # Merge PDFs
+        result_path = PDFConversionService.merge_pdfs(input_paths, output_path)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDFs merged successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFMergeError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        # Cleanup input files
+        for path in input_paths:
+            if path:
+                PDFConversionService.cleanup_temp_files(path)
+
+
+# PDF Split
+@router.post("/split", response_model=PDFConversionResponse)
+async def split_pdf(
+    file: UploadFile = File(...),
+    split_type: str = Form("every_page"),
+    page_ranges: Optional[str] = Form(None)
+):
+    """Split PDF into multiple files."""
+    input_path = None
+    output_files = []
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Parse page ranges if provided
+        ranges = None
+        if page_ranges:
+            ranges = [r.strip() for r in page_ranges.split(',')]
+        
+        # Split PDF
+        output_dir = os.path.dirname(FileService.get_output_path(input_path, "_split"))
+        result_files = PDFConversionService.split_pdf(input_path, output_dir, split_type, ranges)
+        output_files = result_files
+        
+        return PDFConversionResponse(
+            success=True,
+            message=f"PDF split into {len(result_files)} files",
+            output_filename=f"{len(result_files)}_files.zip",
+            download_url=f"/download/split_results"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFSplitError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# PDF Compress
+@router.post("/compress", response_model=PDFConversionResponse)
+async def compress_pdf(
+    file: UploadFile = File(...),
+    compression_level: str = Form("medium")
+):
+    """Compress PDF file."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Get original file size
+        original_size = os.path.getsize(input_path)
+        
+        # Compress PDF
+        output_path = FileService.get_output_path(input_path, "_compressed.pdf")
+        result_path = PDFConversionService.compress_pdf(input_path, output_path, compression_level)
+        
+        # Get compressed file size
+        compressed_size = os.path.getsize(result_path)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF compressed successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}",
+            file_size_before=original_size,
+            file_size_after=compressed_size
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFCompressError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Remove Pages
+@router.post("/remove-pages", response_model=PDFConversionResponse)
+async def remove_pages(
+    file: UploadFile = File(...),
+    pages_to_remove: str = Form(...)
+):
+    """Remove specific pages from PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Parse pages to remove
+        pages = [int(p.strip()) for p in pages_to_remove.split(',')]
+        
+        # Remove pages
+        output_path = FileService.get_output_path(input_path, "_pages_removed.pdf")
+        result_path = PDFConversionService.remove_pages(input_path, output_path, pages)
+        
+        return PDFConversionResponse(
+            success=True,
+            message=f"Pages {pages} removed successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFRemovePagesError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Extract Pages
+@router.post("/extract-pages", response_model=PDFConversionResponse)
+async def extract_pages(
+    file: UploadFile = File(...),
+    pages_to_extract: str = Form(...)
+):
+    """Extract specific pages from PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Parse pages to extract
+        pages = [int(p.strip()) for p in pages_to_extract.split(',')]
+        
+        # Extract pages
+        output_path = FileService.get_output_path(input_path, "_extracted.pdf")
+        result_path = PDFConversionService.extract_pages(input_path, output_path, pages)
+        
+        return PDFConversionResponse(
+            success=True,
+            message=f"Pages {pages} extracted successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFExtractPagesError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Rotate PDF
+@router.post("/rotate", response_model=PDFConversionResponse)
+async def rotate_pdf(
+    file: UploadFile = File(...),
+    rotation: int = Form(90)
+):
+    """Rotate PDF pages."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Rotate PDF
+        output_path = FileService.get_output_path(input_path, f"_rotated_{rotation}.pdf")
+        result_path = PDFConversionService.rotate_pdf(input_path, output_path, rotation)
+        
+        return PDFConversionResponse(
+            success=True,
+            message=f"PDF rotated {rotation} degrees successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFRotateError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Add Watermark
+@router.post("/add-watermark", response_model=PDFConversionResponse)
+async def add_watermark(
+    file: UploadFile = File(...),
+    watermark_text: str = Form(...),
+    position: str = Form("center")
+):
+    """Add watermark to PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Add watermark
+        output_path = FileService.get_output_path(input_path, "_watermarked.pdf")
+        result_path = PDFConversionService.add_watermark(input_path, output_path, watermark_text, position)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="Watermark added successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFWatermarkError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Add Page Numbers
+@router.post("/add-page-numbers", response_model=PDFConversionResponse)
+async def add_page_numbers(file: UploadFile = File(...)):
+    """Add page numbers to PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Add page numbers
+        output_path = FileService.get_output_path(input_path, "_numbered.pdf")
+        result_path = PDFConversionService.add_page_numbers(input_path, output_path)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="Page numbers added successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFPageNumbersError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Crop PDF
+@router.post("/crop", response_model=PDFConversionResponse)
+async def crop_pdf(
+    file: UploadFile = File(...),
+    x: int = Form(0),
+    y: int = Form(0),
+    width: int = Form(100),
+    height: int = Form(100)
+):
+    """Crop PDF pages."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Crop PDF
+        crop_box = {"x": x, "y": y, "width": width, "height": height}
+        output_path = FileService.get_output_path(input_path, "_cropped.pdf")
+        result_path = PDFConversionService.crop_pdf(input_path, output_path, crop_box)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF cropped successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFCropError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Protect PDF
+@router.post("/protect", response_model=PDFConversionResponse)
+async def protect_pdf(
+    file: UploadFile = File(...),
+    password: str = Form(...)
+):
+    """Protect PDF with password."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Protect PDF
+        output_path = FileService.get_output_path(input_path, "_protected.pdf")
+        result_path = PDFConversionService.protect_pdf(input_path, output_path, password)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF protected successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFProtectError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Unlock PDF
+@router.post("/unlock", response_model=PDFConversionResponse)
+async def unlock_pdf(
+    file: UploadFile = File(...),
+    password: str = Form(...)
+):
+    """Remove password protection from PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Unlock PDF
+        output_path = FileService.get_output_path(input_path, "_unlocked.pdf")
+        result_path = PDFConversionService.unlock_pdf(input_path, output_path, password)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF unlocked successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFUnlockError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Repair PDF
+@router.post("/repair", response_model=PDFConversionResponse)
+async def repair_pdf(file: UploadFile = File(...)):
+    """Repair corrupted PDF."""
+    input_path = None
+    output_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Repair PDF
+        output_path = FileService.get_output_path(input_path, "_repaired.pdf")
+        result_path = PDFConversionService.repair_pdf(input_path, output_path)
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF repaired successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=f"/download/{os.path.basename(result_path)}"
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFRepairError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
+# Compare PDFs
+@router.post("/compare", response_model=PDFConversionResponse)
+async def compare_pdfs(
+    file1: UploadFile = File(...),
+    file2: UploadFile = File(...)
+):
+    """Compare two PDFs."""
+    input_path1 = None
+    input_path2 = None
+    output_path = None
+    
+    try:
+        # Save uploaded files
+        FileService.validate_file(file1)
+        FileService.validate_file(file2)
+        input_path1 = FileService.save_uploaded_file(file1)
+        input_path2 = FileService.save_uploaded_file(file2)
+        
+        # Compare PDFs
+        output_path = FileService.get_output_path(input_path1, "_comparison.txt")
+        comparison_result = PDFConversionService.compare_pdfs(input_path1, input_path2, output_path)
+        
+        return PDFConversionResponse(
+            success=True,
+            message=f"PDFs compared successfully. Found {comparison_result['differences_count']} differences",
+            output_filename=os.path.basename(output_path),
+            download_url=f"/download/{os.path.basename(output_path)}",
+            extracted_data=comparison_result
+        )
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFCompareError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path1:
+            PDFConversionService.cleanup_temp_files(input_path1)
+        if input_path2:
+            PDFConversionService.cleanup_temp_files(input_path2)
+
+
+# Get PDF Metadata
+@router.post("/metadata")
+async def get_pdf_metadata(file: UploadFile = File(...)):
+    """Get PDF metadata."""
+    input_path = None
+    
+    try:
+        FileService.validate_file(file)
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Get metadata
+        metadata = PDFConversionService.get_pdf_metadata(input_path)
+        
+        return {
+            "success": True,
+            "message": "PDF metadata extracted successfully",
+            "metadata": metadata
+        }
+        
+    except Exception as e:
+        raise create_error_response(
+            error_type="PDFMetadataError",
+            message=str(e),
+            status_code=400
+        )
+    finally:
+        if input_path:
+            PDFConversionService.cleanup_temp_files(input_path)
+
+
 # Download converted file
 @router.get("/download/{filename}")
 async def download_file(filename: str):

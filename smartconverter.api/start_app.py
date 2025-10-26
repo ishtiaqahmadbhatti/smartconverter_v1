@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Startup script for TechMindsForge FastAPI
+Startup script for Smart Converter FastAPI
 """
 
 import sys
@@ -15,7 +15,7 @@ def start_app():
         from app.main import app
         import uvicorn
         
-        print("Starting TechMindsForge FastAPI...")
+        print("Starting Smart Converter FastAPI...")
         print("=" * 50)
         import sys as _sys
         print(f"Python executable: {_sys.executable}")
@@ -28,8 +28,8 @@ def start_app():
         print("- Mobile API: http://10.52.185.35:8002/")
         print("- Mobile Docs: http://10.52.185.35:8002/docs")
         print("=" * 50)
-        print("\nPDF Tools available at: /api/v1/pdf/")
-        print("Conversion Tools available at: /api/v1/convert/")
+        print("\nPDF Conversion Tools available at: /api/v1/pdfconversiontools/")
+        print("General Conversion Tools available at: /api/v1/convert/")
         print("\nPress Ctrl+C to stop the server")
         print("=" * 50)
         

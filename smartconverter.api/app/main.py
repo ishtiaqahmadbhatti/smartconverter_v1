@@ -28,7 +28,97 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="Smart Converter FastAPI - A professional file conversion API with PDF-to-Word and OCR capabilities",
+    description="""
+# SmartConverter FastAPI - Enterprise File Conversion & Processing Platform
+
+A comprehensive, enterprise-grade file conversion and manipulation platform supporting **20+ conversion types** and **50+ file formats** with advanced processing capabilities.
+
+<details>
+<summary><b>🔄 Core Conversion Features</b></summary>
+
+### **PDF Processing & Tools**
+- **PDF Conversions**: PDF ↔ Word, Excel, PowerPoint, Images (JPG/PNG), HTML, TXT
+- **PDF Manipulation**: Merge, Split, Compress, Rotate, Crop, Watermark, Page Numbers
+- **PDF Security**: Password Protection, Unlock, Digital Signing, Redaction
+- **PDF Analysis**: OCR Text Extraction, Metadata Extraction, Repair, Compare
+- **Advanced PDF**: PDF/A Conversion, Page Extraction, Batch Processing
+
+### **Document Processing**
+- **Office Documents**: Word ↔ PDF, Excel ↔ PDF, PowerPoint ↔ PDF
+- **Text Formats**: TXT, RTF, Markdown conversions
+- **E-book Formats**: EPUB, MOBI, AZW conversions
+- **Web Formats**: HTML ↔ PDF, Website Screenshots
+
+### **Media Conversion**
+- **Image Processing**: JPG, PNG, GIF, BMP, TIFF, WebP conversions
+- **Image Enhancement**: Resize, Compress, Format Conversion, Quality Optimization
+- **Video Processing**: MP4, AVI, MOV, MKV format conversions
+- **Audio Processing**: MP3, WAV, FLAC, AAC, OGG format conversions
+
+### **Data & Format Conversion**
+- **JSON Tools**: JSON ↔ XML, JSON ↔ CSV, JSON Validation, Formatting
+- **XML Processing**: XML ↔ JSON, XML ↔ CSV, XML Validation, Transformation
+- **CSV Tools**: CSV ↔ Excel, CSV ↔ JSON, CSV Validation, Data Cleaning
+- **Subtitle Formats**: SRT, VTT, ASS, SSA subtitle conversions
+
+### **Advanced Processing**
+- **OCR Technology**: Text extraction from images and scanned documents
+- **File Formatting**: Code formatting, Data validation, Structure optimization
+- **Batch Processing**: Multiple file processing, Bulk conversions
+- **Website Conversion**: HTML to PDF, Website screenshots, URL processing
+
+</details>
+
+<details>
+<summary><b>🛡️ Enterprise Features</b></summary>
+
+### **Security & Authentication**
+- **JWT Authentication**: Secure token-based authentication
+- **OAuth Integration**: Google, GitHub, Microsoft OAuth support
+- **User Management**: Registration, Login, Profile management
+- **API Security**: Rate limiting, Request validation, Secure headers
+
+### **Performance & Scalability**
+- **High Performance**: Async processing, Optimized algorithms
+- **Database Integration**: PostgreSQL with connection pooling
+- **File Management**: Secure upload/download, Temporary file cleanup
+- **Error Handling**: Comprehensive error management, Detailed logging
+
+### **API & Integration**
+- **RESTful API**: Complete REST API with OpenAPI documentation
+- **Mobile Support**: Optimized for mobile applications
+- **Web Integration**: Angular web application support
+- **Developer Tools**: Interactive API docs, ReDoc documentation
+
+</details>
+
+<details>
+<summary><b>📊 Technical Specifications</b></summary>
+
+- **Supported Formats**: 50+ file formats across all categories
+- **Processing Speed**: Optimized for enterprise workloads
+- **File Size Limits**: Configurable size limits for different operations
+- **Concurrent Processing**: Multi-threaded file processing
+- **Cross-Platform**: Windows, Linux, macOS support
+
+</details>
+
+<details>
+<summary><b>🚀 Use Cases</b></summary>
+
+- **Business Document Processing**: Contract conversion, Report generation
+- **Media Production**: Video/audio format optimization
+- **Data Migration**: Format conversion for system integration
+- **Content Management**: Website content processing
+- **Educational**: E-book format conversions
+- **Development**: Code formatting, Data validation
+
+</details>
+
+---
+
+Built with **FastAPI**, **Python 3.9+**, and modern web technologies for maximum performance and reliability.
+""",
     docs_url="/docs",
     redoc_url="/redoc"
 )

@@ -154,69 +154,6 @@ class PDFOperationRequest(BaseModel):
     permissions: Optional[List[str]] = None  # ["print", "copy", "modify", "annotate"]
 
 
-class PDFMergeRequest(BaseModel):
-    """Schema for PDF merge operation."""
-    files: List[str]  # List of file paths or IDs
-    output_filename: Optional[str] = None
-
-
-class PDFSplitRequest(BaseModel):
-    """Schema for PDF split operation."""
-    split_type: str = "every_page"  # every_page, page_range, custom
-    page_ranges: Optional[List[str]] = None  # ["1-5", "6-10"]
-
-
-class PDFCompressRequest(BaseModel):
-    """Schema for PDF compression."""
-    compression_level: str = "medium"  # low, medium, high, maximum
-    remove_duplicate_images: bool = True
-    remove_duplicate_fonts: bool = True
-
-
-class PDFProtectRequest(BaseModel):
-    """Schema for PDF protection."""
-    user_password: Optional[str] = None
-    owner_password: Optional[str] = None
-    permissions: List[str] = ["print", "copy"]  # Allowed permissions
-    encryption_level: str = "128"  # 40, 128, 256
-
-
-class PDFSignRequest(BaseModel):
-    """Schema for PDF signing."""
-    signature_image: Optional[str] = None  # Base64 encoded image
-    signature_text: Optional[str] = None
-    position: dict = {"x": 100, "y": 100, "width": 200, "height": 100}
-    page_number: int = 1
-
-
-class PDFRedactRequest(BaseModel):
-    """Schema for PDF redaction."""
-    redaction_areas: List[dict]  # [{"page": 1, "x": 100, "y": 100, "width": 200, "height": 50}]
-    replacement_text: Optional[str] = "[REDACTED]"
-
-
-class PDFCompareRequest(BaseModel):
-    """Schema for PDF comparison."""
-    file1: str
-    file2: str
-    compare_type: str = "visual"  # visual, text, metadata
-
-
-class PDFOperationResponse(BaseModel):
-    """Enhanced response model for PDF operations."""
-    success: bool
-    message: str
-    output_filename: Optional[str] = None
-    download_url: Optional[str] = None
-    extracted_text: Optional[str] = None
-    page_count: Optional[int] = None
-    file_size_before: Optional[int] = None
-    file_size_after: Optional[int] = None
-    compression_ratio: Optional[float] = None
-    differences: Optional[List[dict]] = None
-    metadata: Optional[dict] = None
-
-
 # Person API Schemas
 class PersonBase(BaseModel):
     """Base person schema with common fields."""
