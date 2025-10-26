@@ -1,0 +1,350 @@
+<div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text animate-fade-in-up">
+          <h1 class="hero-title">
+            Transform Your Files with
+            <span class="gradient-text">SmartConvert</span>
+          </h1>
+          <p class="hero-subtitle">
+            The ultimate AI-powered conversion platform for all your document, image, and media needs.
+            Fast, secure, and incredibly easy to use.
+          </p>
+          <div class="hero-actions">
+            <a href="#tools" class="btn btn-primary">
+              <span class="btn-icon">🚀</span>
+              Start Converting
+            </a>
+            <a href="#learn-more" class="btn btn-outline">
+              <span class="btn-icon">📚</span>
+              Learn More
+            </a>
+          </div>
+        </div>
+        <div class="hero-visual animate-slide-in-right">
+          <div class="floating-cards">
+            <div class="floating-card card-1 animate-float">
+              <div class="card-icon">📄</div>
+              <div class="card-label">PDF</div>
+            </div>
+            <div class="floating-card card-2 animate-float" style="animation-delay: 0.5s;">
+              <div class="card-icon">📝</div>
+              <div class="card-label">Word</div>
+            </div>
+            <div class="floating-card card-3 animate-float" style="animation-delay: 1s;">
+              <div class="card-icon">🖼️</div>
+              <div class="card-label">Image</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tools Section -->
+  <section id="tools" class="tools-section">
+    <div class="container">
+      <div class="section-header animate-fade-in-up">
+        <h2>Powerful Conversion Tools</h2>
+        <p>Choose from our comprehensive suite of conversion tools designed for professionals and beginners alike.</p>
+      </div>
+      
+      <div class="tools-grid">
+        <!-- PDF Tools Row -->
+        <div class="tools-row">
+          <div class="tool-card animate-fade-in-up" (click)="convertPDFToWord()">
+            <div class="tool-icon">
+              <img src="../../../../assets/pdftoword.png" alt="PDF to Word">
+            </div>
+            <div class="tool-content">
+              <h3>PDF to Word</h3>
+              <p>Convert PDF files to editable Word documents with perfect formatting preservation.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Fast</span>
+                <span class="feature-tag">Accurate</span>
+                <span class="feature-tag">Secure</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up" (click)="convertWordToPDF()">
+            <div class="tool-icon">
+              <img src="../../../../assets/wordtopdf.png" alt="Word to PDF">
+            </div>
+            <div class="tool-content">
+              <h3>Word to PDF</h3>
+              <p>Transform Word documents into professional PDFs with consistent formatting.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Professional</span>
+                <span class="feature-tag">Reliable</span>
+                <span class="feature-tag">Quick</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up" (click)="convertPDFToImage()">
+            <div class="tool-icon">
+              <img src="../../../../assets/pdftoimage.png" alt="PDF to Image">
+            </div>
+            <div class="tool-content">
+              <h3>PDF to Image</h3>
+              <p>Extract high-quality images from PDF files with customizable resolution settings.</p>
+              <div class="tool-features">
+                <span class="feature-tag">High Quality</span>
+                <span class="feature-tag">Customizable</span>
+                <span class="feature-tag">Batch</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+        </div>
+
+        <!-- Image & Media Tools Row -->
+        <div class="tools-row">
+          <div class="tool-card animate-fade-in-up" (click)="convertImageToPDF()">
+            <div class="tool-icon">
+              <img src="../../../../assets/imagetopdf.png" alt="Image to PDF">
+            </div>
+            <div class="tool-content">
+              <h3>Image to PDF</h3>
+              <p>Convert multiple images into a single PDF document with customizable layouts.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Multiple Formats</span>
+                <span class="feature-tag">Layout Options</span>
+                <span class="feature-tag">Compression</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up" (click)="convertVideoToAudio()">
+            <div class="tool-icon">
+              <img src="../../../../assets/videotoaudio.png" alt="Video to Audio">
+            </div>
+            <div class="tool-content">
+              <h3>Video to Audio</h3>
+              <p>Extract crystal-clear audio from video files with multiple format support.</p>
+              <div class="tool-features">
+                <span class="feature-tag">High Quality</span>
+                <span class="feature-tag">Multiple Formats</span>
+                <span class="feature-tag">Fast</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <img src="../../../../assets/ppttopdf.png" alt="PowerPoint to PDF">
+            </div>
+            <div class="tool-content">
+              <h3>PowerPoint to PDF</h3>
+              <p>Convert presentations to PDF while maintaining all animations and formatting.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Animations</span>
+                <span class="feature-tag">Formatting</span>
+                <span class="feature-tag">Professional</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+        </div>
+
+        <!-- Advanced PDF Tools Row -->
+        <div class="tools-row">
+          <div class="tool-card animate-fade-in-up" (click)="mergePDFs()">
+            <div class="tool-icon">
+              <img src="../../../../assets/mergepdfs.png" alt="Merge PDFs">
+            </div>
+            <div class="tool-content">
+              <h3>Merge PDFs</h3>
+              <p>Combine multiple PDF files into one document with drag-and-drop simplicity.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Drag & Drop</span>
+                <span class="feature-tag">Reorder</span>
+                <span class="feature-tag">Batch</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <img src="../../../../assets/splitpdf.png" alt="Split PDF">
+            </div>
+            <div class="tool-content">
+              <h3>Split PDF</h3>
+              <p>Separate PDF pages or extract specific sections into individual files.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Page Range</span>
+                <span class="feature-tag">Extract</span>
+                <span class="feature-tag">Organize</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <img src="../../../../assets/Compresspdf.png" alt="Compress PDF">
+            </div>
+            <div class="tool-content">
+              <h3>Compress PDF</h3>
+              <p>Reduce file size while maintaining quality for easy sharing and storage.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Size Reduction</span>
+                <span class="feature-tag">Quality Preserved</span>
+                <span class="feature-tag">Fast</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+        </div>
+
+        <!-- Additional Tools Row -->
+        <div class="tools-row">
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <img src="../../../../assets/pdftotext.png" alt="PDF to Text">
+            </div>
+            <div class="tool-content">
+              <h3>PDF to Text</h3>
+              <p>Extract text content from PDF files with high accuracy and formatting options.</p>
+              <div class="tool-features">
+                <span class="feature-tag">OCR Support</span>
+                <span class="feature-tag">Formatting</span>
+                <span class="feature-tag">Accurate</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <img src="../../../../assets/texttopdf.png" alt="Text to PDF">
+            </div>
+            <div class="tool-content">
+              <h3>Text to PDF</h3>
+              <p>Convert plain text into beautifully formatted PDF documents instantly.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Instant</span>
+                <span class="feature-tag">Formatted</span>
+                <span class="feature-tag">Customizable</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <div class="custom-icon">🌐</div>
+            </div>
+            <div class="tool-content">
+              <h3>HTML to PDF</h3>
+              <p>Convert web pages and HTML content to PDF with full styling preservation.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Web Ready</span>
+                <span class="feature-tag">Styling</span>
+                <span class="feature-tag">Responsive</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+        </div>
+
+        <!-- Excel Tools Row -->
+        <div class="tools-row">
+          <div class="tool-card animate-fade-in-up">
+            <div class="tool-icon">
+              <div class="custom-icon">📊</div>
+            </div>
+            <div class="tool-content">
+              <h3>Excel to PDF</h3>
+              <p>Convert spreadsheets to PDF while maintaining all data and formatting integrity.</p>
+              <div class="tool-features">
+                <span class="feature-tag">Data Integrity</span>
+                <span class="feature-tag">Formatting</span>
+                <span class="feature-tag">Charts</span>
+              </div>
+            </div>
+            <div class="tool-arrow">→</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="learn-more" class="features-section">
+    <div class="container">
+      <div class="section-header animate-fade-in-up">
+        <h2>Why Choose SmartConvert?</h2>
+        <p>Experience the future of file conversion with our cutting-edge technology and user-centric design.</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">⚡</div>
+          <h3>Lightning Fast</h3>
+          <p>Advanced algorithms ensure your conversions complete in seconds, not minutes.</p>
+        </div>
+        
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">🔒</div>
+          <h3>Enterprise Security</h3>
+          <p>Bank-level encryption and automatic file deletion keep your data completely secure.</p>
+        </div>
+        
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">🎯</div>
+          <h3>Perfect Quality</h3>
+          <p>AI-powered conversion ensures your files maintain their original quality and formatting.</p>
+        </div>
+        
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">🌍</div>
+          <h3>Global Access</h3>
+          <p>Access your conversion tools from anywhere in the world, 24/7.</p>
+        </div>
+        
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">📱</div>
+          <h3>Mobile Optimized</h3>
+          <p>Convert files on any device with our responsive, mobile-first design.</p>
+        </div>
+        
+        <div class="feature-card animate-fade-in-up">
+          <div class="feature-icon">🚀</div>
+          <h3>Always Updated</h3>
+          <p>Regular updates ensure you always have access to the latest conversion technologies.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-content animate-fade-in-up">
+        <h2>Ready to Transform Your Files?</h2>
+        <p>Join millions of users who trust SmartConvert for their daily conversion needs.</p>
+        <div class="cta-actions">
+          <a href="#tools" class="btn btn-primary btn-large">
+            <span class="btn-icon">🚀</span>
+            Start Converting Now
+          </a>
+          <a routerLink="/authentication/signup" class="btn btn-outline btn-large">
+            <span class="btn-icon">✨</span>
+            Create Free Account
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<app-footer></app-footer>

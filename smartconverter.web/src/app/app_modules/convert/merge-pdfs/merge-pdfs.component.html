@@ -1,0 +1,82 @@
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-8 col-xl-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white text-center">
+          <h3><i class="fas fa-file-pdf me-2"></i>Merge PDFs</h3>
+          <p class="mb-0">Combine multiple PDF files into one document</p>
+        </div>
+        <div class="card-body">
+          <!-- File Upload Section -->
+          <div class="mb-4">
+            <label for="pdfFiles" class="form-label fw-bold">Select PDF Files (at least 2 files required)</label>
+            <input 
+              type="file" 
+              id="pdfFiles"
+              (change)="onFilesSelected($event)" 
+              accept="application/pdf" 
+              class="form-control" 
+              multiple 
+            />
+            <div class="form-text">Choose multiple PDF files to merge. Files will be merged in the order they appear in the list below.</div>
+          </div>
+
+          <!-- Selected Files List -->
+          <div class="mb-4" *ngIf="selectedFiles.length > 0">
+            <h6 class="fw-bold">Selected Files ({{ selectedFiles.length }}):</h6>
+            <div class="list-group">
+              <div class="list-group-item d-flex justify-content-between align-items-center" 
+                   *ngFor="let file of selectedFiles; let i = index">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-file-pdf text-danger me-2"></i>
+                  <span>{{ file.name }}</span>
+                  <small class="text-muted ms-2">({{ (file.size / 1024 / 1024).toFixed(2) }} MB)</small>
+                </div>
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-danger" 
+                  (click)="removeFile(i)"
+                  title="Remove file">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="text-center mb-3">
+            <button 
+              class="btn btn-danger btn-lg" 
+              (click)="mergePdfs()" 
+              [disabled]="selectedFiles.length < 2 || isProcessing">
+              <span *ngIf="!isProcessing">
+                <i class="fas fa-compress-alt me-2"></i>Merge and Download
+              </span>
+              <span *ngIf="isProcessing">
+                <i class="fas fa-spinner fa-spin me-2"></i>Processing...
+              </span>
+            </button>
+          </div>
+
+          <!-- Success Message -->
+          <div class="alert alert-success" *ngIf="successMessage" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
+          </div>
+
+          <!-- Error Message -->
+          <div class="alert alert-danger" *ngIf="errorMessage" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ errorMessage }}
+          </div>
+
+          <!-- Processing Indicator -->
+          <div class="text-center" *ngIf="isProcessing">
+            <div class="spinner-border text-danger" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Merging your PDF files, please wait...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

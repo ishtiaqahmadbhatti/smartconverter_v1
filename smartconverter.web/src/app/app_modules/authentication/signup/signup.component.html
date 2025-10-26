@@ -1,0 +1,198 @@
+<div class="signup-container">
+  <div class="signup-background">
+    <div class="background-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div class="signup-content">
+      <div class="signup-card glass">
+        <div class="signup-header">
+          <div class="logo-section">
+            <div class="logo-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                  <linearGradient id="gradient" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#6366f1"/>
+                    <stop offset="1" stop-color="#06b6d4"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <h1>Join SmartConvert</h1>
+            <p>Create your account and start converting files instantly</p>
+          </div>
+        </div>
+        
+        <div class="signup-form">
+          <form #formData="ngForm" (ngSubmit)="Signup(formData)" novalidate (keydown.enter)="$event.preventDefault()">
+            <div class="form-group">
+              <label for="fullname" class="form-label">
+                <span class="label-icon">👤</span>
+                Full Name
+                <span class="required" *ngIf="userModel.FullName.length<3 ||userModel.FullName==null || userModel.FullName==undefined">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="text" 
+                  id="fullname"
+                  required 
+                  minlength="3" 
+                  maxlength="30"
+                  #fullname="ngModel"
+                  [class.is-valid]="fullname.touched && fullname.valid"
+                  [class.is-invalid]="fullname.touched && fullname.invalid" 
+                  name="fullname" 
+                  class="form-control"
+                  [(ngModel)]="userModel.FullName"
+                  placeholder="Enter your full name">
+                <div class="input-focus-border"></div>
+              </div>
+              
+              <!-- Fullname Validation Messages -->
+              <div class="validation-messages" *ngIf="fullname.touched && fullname.invalid">
+                <div class="validation-error" *ngIf="fullname.errors && fullname.errors['required']">
+                  <span class="error-icon">⚠️</span>
+                  Full name is required
+                </div>
+                <div class="validation-error" *ngIf="fullname.errors && fullname.errors['minlength']">
+                  <span class="error-icon">⚠️</span>
+                  Full name must be at least 3 characters
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email" class="form-label">
+                <span class="label-icon">📧</span>
+                Email Address
+                <span class="required" *ngIf="userModel.Email=='' ||userModel.Email==null || userModel.Email==undefined">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="email" 
+                  id="email"
+                  required 
+                  pattern="^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"
+                  #email="ngModel" 
+                  [class.is-valid]="email.touched && email.valid"
+                  [class.is-invalid]="email.touched && email.invalid" 
+                  name="email" 
+                  class="form-control"
+                  [(ngModel)]="userModel.Email"
+                  placeholder="Enter your email address">
+                <div class="input-focus-border"></div>
+              </div>
+              
+              <!-- Email Validation Messages -->
+              <div class="validation-messages" *ngIf="email.touched && email.invalid">
+                <div class="validation-error" *ngIf="email.errors && email.errors['required']">
+                  <span class="error-icon">⚠️</span>
+                  Email is required
+                </div>
+                <div class="validation-error" *ngIf="email.errors && email.errors['pattern']">
+                  <span class="error-icon">⚠️</span>
+                  Please enter a valid email address
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="password" class="form-label">
+                <span class="label-icon">🔒</span>
+                Password
+                <span class="required" *ngIf="userModel.Password=='' ||userModel.Password==null || userModel.Password==undefined">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="password" 
+                  id="password"
+                  required
+                  pattern="(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$"
+                  [class.is-valid]="password.touched && password.valid"
+                  [class.is-invalid]="password.touched && password.invalid" 
+                  #password="ngModel"
+                  name="password" 
+                  class="form-control" 
+                  [(ngModel)]="userModel.Password"
+                  placeholder="Create a strong password">
+                <div class="input-focus-border"></div>
+              </div>
+              
+              <!-- Password Validation Messages -->
+              <div class="validation-messages" *ngIf="password.touched && password.invalid">
+                <div class="validation-error" *ngIf="password.errors && password.errors['required']">
+                  <span class="error-icon">⚠️</span>
+                  Password is required
+                </div>
+                <div class="validation-error" *ngIf="password.errors && password.errors['pattern']">
+                  <span class="error-icon">⚠️</span>
+                  Password must contain:
+                  <ul class="password-requirements">
+                    <li>At least 8 characters</li>
+                    <li>Uppercase and lowercase letters</li>
+                    <li>Numbers</li>
+                    <li>Special characters</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-submit">
+              <button 
+                type="submit" 
+                [class.disabled]="formData.form.invalid" 
+                class="btn btn-primary btn-full"
+                [disabled]="formData.form.invalid">
+                <span class="btn-icon">✨</span>
+                <span class="btn-text">Create Account</span>
+                <div class="btn-loading" *ngIf="formData.form.invalid">
+                  <div class="loading-spinner"></div>
+                </div>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="signup-footer">
+          <div class="divider">
+            <span>or</span>
+          </div>
+          
+          <div class="social-signup">
+            <button class="btn btn-social btn-google">
+              <img src="/assets/google-logo.png" alt="Google" class="social-logo">
+              <span class="social-text">Continue with Google</span>
+            </button>
+            <button class="btn btn-social btn-facebook">
+              <img src="/assets/facebook-logo.png" alt="Facebook" class="social-logo">
+              <span class="social-text">Continue with Facebook</span>
+            </button>
+          </div>
+          
+          <div class="signin-prompt">
+            <p>Already have an account?</p>
+            <a routerLink="/authentication/signin" class="signin-link">
+              <span class="link-icon">🔐</span>
+              Sign in
+            </a>
+          </div>
+          
+          <div class="terms-notice">
+            <p>By creating an account, you agree to SmartConvert's 
+              <a href="#" class="terms-link">Terms of Service</a> and 
+              <a href="#" class="terms-link">Privacy Policy</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

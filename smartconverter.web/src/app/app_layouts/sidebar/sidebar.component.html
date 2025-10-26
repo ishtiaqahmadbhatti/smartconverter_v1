@@ -1,0 +1,73 @@
+<aside class="sidebar glass" [class.collapsed]="isCollapsed">
+  <div class="sidebar-header">
+    <div class="sidebar-toggle" (click)="toggleSidebar()">
+      <span class="toggle-icon" [class.rotated]="!isCollapsed">◀</span>
+    </div>
+    <h3 class="sidebar-title" *ngIf="!isCollapsed">Quick Tools</h3>
+  </div>
+  
+  <nav class="sidebar-nav">
+    <div class="nav-section" *ngIf="!isCollapsed">
+      <h4 class="section-title">PDF Tools</h4>
+      <ul class="nav-list">
+        <li><a routerLink="/convert/pdf-to-word" class="nav-link">
+          <span class="nav-icon">📄→📝</span>
+          <span class="nav-text">PDF to Word</span>
+        </a></li>
+        <li><a routerLink="/convert/word-to-pdf" class="nav-link">
+          <span class="nav-icon">📝→📄</span>
+          <span class="nav-text">Word to PDF</span>
+        </a></li>
+        <li><a routerLink="/convert/merge-pdfs" class="nav-link">
+          <span class="nav-icon">🔗</span>
+          <span class="nav-text">Merge PDFs</span>
+        </a></li>
+        <li><a routerLink="/convert/split-pdf" class="nav-link">
+          <span class="nav-icon">✂️</span>
+          <span class="nav-text">Split PDF</span>
+        </a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section" *ngIf="!isCollapsed">
+      <h4 class="section-title">Media Tools</h4>
+      <ul class="nav-list">
+        <li><a routerLink="/convert/image-to-pdf" class="nav-link">
+          <span class="nav-icon">🖼️→📄</span>
+          <span class="nav-text">Image to PDF</span>
+        </a></li>
+        <li><a routerLink="/convert/video-to-audio" class="nav-link">
+          <span class="nav-icon">🎥→🎵</span>
+          <span class="nav-text">Video to Audio</span>
+        </a></li>
+      </ul>
+    </div>
+    
+    <div class="nav-section" *ngIf="!isCollapsed">
+      <h4 class="section-title">Document Tools</h4>
+      <ul class="nav-list">
+        <li><a routerLink="/convert/ppttopdf" class="nav-link">
+          <span class="nav-icon">📊→📄</span>
+          <span class="nav-text">PPT to PDF</span>
+        </a></li>
+        <li><a routerLink="/convert/excel-to-pdf" class="nav-link">
+          <span class="nav-icon">📈→📄</span>
+          <span class="nav-text">Excel to PDF</span>
+        </a></li>
+      </ul>
+    </div>
+  </nav>
+  
+  <div class="sidebar-footer" *ngIf="!isCollapsed">
+    <div class="quick-stats">
+      <div class="stat-item">
+        <span class="stat-number">1M+</span>
+        <span class="stat-label">Files Converted</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">99.9%</span>
+        <span class="stat-label">Success Rate</span>
+      </div>
+    </div>
+  </div>
+</aside>

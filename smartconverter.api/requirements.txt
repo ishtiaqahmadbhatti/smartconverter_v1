@@ -1,0 +1,124 @@
+# FastAPI and server
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# File processing
+pdf2docx==0.5.6
+pytesseract==0.3.10
+Pillow>=10.0.0
+python-docx>=1.2.0
+reportlab>=4.0.0
+
+# PDF manipulation
+PyPDF2>=3.0.0
+pypdf>=3.0.0
+pdfplumber>=0.9.0
+pdfminer.six>=20221105
+pymupdf>=1.23.0
+
+# Office document processing
+python-pptx>=0.6.21
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+
+# HTML and web processing
+html2text>=2020.1.16
+beautifulsoup4>=4.12.0
+markdown>=3.5.0
+requests>=2.31.0
+
+# Image processing
+pdf2image>=1.16.3
+img2pdf>=0.5.1
+imageio>=2.31.0
+opencv-python>=4.8.0
+pillow-heif>=0.13.0
+cairosvg>=2.7.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# OCR processing
+pytesseract>=0.3.10
+easyocr>=1.7.0
+paddleocr>=2.7.0
+pymupdf>=1.23.0
+
+# Subtitle processing
+pysrt>=1.1.2
+webvtt-py>=0.4.6
+googletrans>=4.0.0rc1
+deep-translator>=1.11.4
+
+# Text processing
+python-docx>=1.2.0
+python-pptx>=0.6.21
+pymupdf>=1.23.0
+
+# File formatting
+jsonschema>=4.19.0
+xmlschema>=2.5.0
+lxml>=4.9.0
+
+# eBook processing
+ebooklib>=0.18
+markdown>=3.5.0
+
+# Video processing
+moviepy>=1.0.3
+ffmpeg-python>=0.2.0
+opencv-python>=4.8.0
+
+# Audio processing
+pydub>=0.25.1
+librosa>=0.10.0
+soundfile>=0.12.1
+
+# PDF conversion processing
+weasyprint>=60.0
+cairosvg>=2.7.0
+odfpy>=1.4.1
+
+# Additional utilities
+cryptography>=41.0.0
+qrcode>=7.4.2
+
+# JSON and data processing
+PyYAML>=6.0.1
+pandas>=2.0.0
+
+# CSV and BSON processing
+bson>=0.5.10
+
+# XML processing
+lxml>=4.9.0
+
+# Configuration and validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx>=0.27.2
+
+# Code quality
+black==23.11.0
+flake8==6.1.0
+isort==5.12.0
+
+# Documentation
+python-jose[cryptography]==3.3.0
+python-dotenv==1.0.0
+
+# Database and Authentication
+sqlalchemy>=2.0.23
+alembic>=1.13.1
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+email-validator>=2.1.0
+psycopg2-binary>=2.9.9
+user-agents==2.2.0
+authlib==1.3.1
+itsdangerous>=2.1.2
+redis>=4.0.0
