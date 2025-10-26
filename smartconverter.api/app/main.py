@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="TechMindsForge FastAPI - A professional file conversion API with PDF-to-Word and OCR capabilities",
+    description="Smart Converter FastAPI - A professional file conversion API with PDF-to-Word and OCR capabilities",
     docs_url="/docs",
     redoc_url="/redoc"
 )

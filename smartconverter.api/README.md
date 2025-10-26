@@ -1,4 +1,4 @@
-# TechMindsForge FastAPI 🚀
+# SmartConverter FastAPI 🚀
 
 A professional, industry-level FastAPI application for file conversion with PDF-to-Word and OCR capabilities.
 

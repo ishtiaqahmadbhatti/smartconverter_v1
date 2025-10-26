@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings and configuration."""
     
     # Application
-    app_name: str = "TechMindsForge FastAPI"
+    app_name: str = "SmartConverter FastAPI"
     app_version: str = "1.0.0"
     debug: bool = False
     
