@@ -20,13 +20,14 @@ def start_app():
         import sys as _sys
         print(f"Python executable: {_sys.executable}")
         print("Available endpoints:")
-        print("- Main API: http://10.52.185.35:8002/")
-        print("- API Documentation: http://10.52.185.35:8002/docs")
-        print("- ReDoc Documentation: http://10.52.185.35:8002/redoc")
-        print("- Health Check: http://10.52.185.35:8002/api/v1/health/")
+        print("- Main API: http://192.168.8.100:8000/")
+        print("- API Documentation: http://192.168.8.100:8000/docs")
+        print("- ReDoc Documentation: http://192.168.8.100:8000/redoc")
+        print("- Health Check: http://192.168.8.100:8000/api/v1/health/")
         print("\nFor mobile device access:")
-        print("- Mobile API: http://10.52.185.35:8002/")
-        print("- Mobile Docs: http://10.52.185.35:8002/docs")
+        print("- Physical Device: http://192.168.8.100:8000/")
+        print("- Android Emulator: http://10.0.2.2:8000/ (from app)")
+        print("- Mobile Docs: http://192.168.8.100:8000/docs")
         print("=" * 50)
         print("\nPDF Conversion Tools available at: /api/v1/pdfconversiontools/")
         print("General Conversion Tools available at: /api/v1/convert/")
@@ -34,7 +35,7 @@ def start_app():
         print("=" * 50)
         
         # Start the server
-        uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
         
     except Exception as e:
         print(f"Error starting application: {e}")

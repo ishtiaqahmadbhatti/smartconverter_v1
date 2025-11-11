@@ -66,6 +66,9 @@ class VideoConversionService:
     def mkv_to_mp4(input_path: str, quality: str = "medium") -> str:
         """Convert MKV file to MP4 format."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input MKV file not found: {input_path}")
             
@@ -100,6 +103,9 @@ class VideoConversionService:
     def avi_to_mp4(input_path: str, quality: str = "medium") -> str:
         """Convert AVI file to MP4 format."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input AVI file not found: {input_path}")
             
@@ -134,6 +140,9 @@ class VideoConversionService:
     def mp4_to_mp3(input_path: str, bitrate: str = "192k") -> str:
         """Convert MP4 file to MP3 audio format."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input MP4 file not found: {input_path}")
             
@@ -170,6 +179,9 @@ class VideoConversionService:
     def convert_video_format(input_path: str, output_format: str, quality: str = "medium") -> str:
         """Convert video to any supported format."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input video file not found: {input_path}")
             
@@ -207,22 +219,25 @@ class VideoConversionService:
     def extract_audio(input_path: str, output_format: str = "mp3", bitrate: str = "192k") -> str:
         """Extract audio from video file."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input video file not found: {input_path}")
             
             # Generate output path
             output_path = FileService.get_output_path(input_path, f".{output_format.lower()}")
             
-            # Load video
+            # Load video using moviepy.editor (matches user's code pattern)
             video = mp.VideoFileClip(input_path)
             
-            # Extract audio
+            # Extract audio (matches user's code: audio = video.audio)
             audio = video.audio
             
             if audio is None:
                 raise FileProcessingError("No audio track found in the video file")
             
-            # Write audio file
+            # Write audio file (matches user's code: audio.write_audiofile())
             audio.write_audiofile(
                 output_path,
                 bitrate=bitrate,
@@ -240,9 +255,49 @@ class VideoConversionService:
             raise FileProcessingError(f"Audio extraction failed: {str(e)}")
     
     @staticmethod
+    def video_to_audio(input_path: str, output_format: str = "mp3") -> str:
+        """
+        Convert video to audio using moviepy (simple approach matching user's code).
+        This is a simplified wrapper around extract_audio that uses default settings.
+        """
+        try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
+            if not os.path.exists(input_path):
+                raise FileProcessingError(f"Input video file not found: {input_path}")
+            
+            # Generate output path
+            output_path = FileService.get_output_path(input_path, f".{output_format.lower()}")
+            
+            # Load video (matching user's code: video = moviepy.editor.VideoFileClip(vid))
+            video = mp.VideoFileClip(input_path)
+            
+            # Extract audio (matching user's code: audio = video.audio)
+            audio = video.audio
+            
+            if audio is None:
+                raise FileProcessingError("No audio track found in the video file")
+            
+            # Write audio file (matching user's code: audio.write_audiofile("audio.mp3"))
+            audio.write_audiofile(output_path)
+            
+            # Close video and audio to free memory
+            audio.close()
+            video.close()
+            
+            return output_path
+            
+        except Exception as e:
+            raise FileProcessingError(f"Video to audio conversion failed: {str(e)}")
+    
+    @staticmethod
     def get_video_info(input_path: str) -> Dict[str, Any]:
         """Get video file information."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input video file not found: {input_path}")
             
@@ -273,6 +328,9 @@ class VideoConversionService:
     def resize_video(input_path: str, width: int, height: int, quality: str = "medium") -> str:
         """Resize video to specified dimensions."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input video file not found: {input_path}")
             
@@ -311,6 +369,9 @@ class VideoConversionService:
     def compress_video(input_path: str, compression_level: str = "medium") -> str:
         """Compress video file to reduce size."""
         try:
+            if not MOVIEPY_AVAILABLE:
+                raise FileProcessingError("MoviePy is not available. Please install moviepy package.")
+            
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input video file not found: {input_path}")
             

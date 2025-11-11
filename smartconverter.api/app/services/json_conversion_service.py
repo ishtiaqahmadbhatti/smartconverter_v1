@@ -1,10 +1,12 @@
 import json
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import XMLParser
 import csv
 import yaml
 import pandas as pd
 import io
 import os
+import re
 from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
 from app.core.exceptions import FileProcessingError
@@ -19,28 +21,110 @@ class JSONConversionService:
     def xml_to_json(xml_content: str) -> Dict[str, Any]:
         """Convert XML string to JSON."""
         try:
-            # Parse XML
-            root = ET.fromstring(xml_content)
+            # Clean and prepare XML content
+            xml_data = xml_content.strip()
             
-            # Convert to dictionary
-            def xml_to_dict(element):
+            # Remove BOM if present
+            if xml_data.startswith('\ufeff'):
+                xml_data = xml_data[1:]
+            
+            # Ensure XML is not empty
+            if not xml_data:
+                raise FileProcessingError("XML content is empty")
+            
+            # Try to fix common XML issues
+            # Remove null bytes
+            xml_data = xml_data.replace('\x00', '')
+            
+            # Validate XML structure
+            if not xml_data.strip().startswith('<'):
+                raise FileProcessingError(
+                    "Invalid XML: XML must start with '<' or '<?xml' declaration. "
+                    "Please check your XML format."
+                )
+            
+            # Extract comments before parsing (ElementTree doesn't preserve them by default)
+            # Store comments with their positions for better reconstruction
+            comments = []
+            comment_pattern = r'<!--(.*?)-->'
+            comment_matches = list(re.finditer(comment_pattern, xml_data, re.DOTALL))
+            for match in comment_matches:
+                comment_text = match.group(1)  # Don't strip - preserve original
+                if comment_text:
+                    comments.append({
+                        'position': match.start(),
+                        'text': comment_text,
+                        'original': match.group(0)  # Preserve original comment format
+                    })
+            
+            # Store comments in a structured way for JSON output
+            comments_dict = {}
+            if comments:
+                comments_dict['_comments'] = [c['text'] for c in comments]
+            
+            # Preserve CDATA sections
+            cdata_pattern = r'<!\[CDATA\[(.*?)\]\]>'
+            cdata_matches = list(re.finditer(cdata_pattern, xml_data, re.DOTALL))
+            cdata_map = {}
+            for idx, match in enumerate(cdata_matches):
+                cdata_content = match.group(1)
+                placeholder = f'__CDATA_PLACEHOLDER_{idx}__'
+                cdata_map[placeholder] = cdata_content
+                xml_data = xml_data.replace(match.group(0), placeholder)
+            
+            # Parse XML with error recovery
+            try:
+                root = ET.fromstring(xml_data)
+            except ET.ParseError as parse_err:
+                # Provide more helpful error message
+                error_msg = str(parse_err)
+                if "not well-formed" in error_msg.lower():
+                    raise FileProcessingError(
+                        f"XML is not well-formed: {error_msg}. "
+                        "Please check: 1) All tags are properly closed, 2) No invalid characters, "
+                        "3) Proper XML structure (e.g., <tag>content</tag>)"
+                    )
+                elif "unexpected token" in error_msg.lower() or "unclosed" in error_msg.lower():
+                    raise FileProcessingError(
+                        f"XML parsing error: {error_msg}. "
+                        "Check for unclosed tags, missing closing brackets, or invalid characters."
+                    )
+                else:
+                    raise FileProcessingError(f"XML parsing failed: {error_msg}. Please validate your XML format.")
+            
+            # Convert to dictionary with full data preservation
+            def xml_to_dict(element, parent_tag=None):
                 result = {}
                 
-                # Add attributes
+                # Add attributes - preserve namespace prefixes
                 if element.attrib:
-                    result['@attributes'] = element.attrib
+                    result['@attributes'] = {}
+                    for key, value in element.attrib.items():
+                        # Preserve namespace prefixes in attribute names
+                        result['@attributes'][key] = value
                 
-                # Add text content if present
-                if element.text and element.text.strip():
-                    if len(element) == 0:  # Leaf node
-                        return element.text.strip()
+                # Preserve ALL text content - NEVER STRIP to preserve every word and character
+                text_content = element.text
+                if text_content is not None:
+                    # CRITICAL: Don't strip - preserve original text exactly as is
+                    # Check if it's a CDATA placeholder and restore
+                    text_to_store = text_content  # Preserve original, don't strip
+                    for placeholder, cdata_content in cdata_map.items():
+                        if placeholder in text_to_store:
+                            text_to_store = text_to_store.replace(placeholder, f"<![CDATA[{cdata_content}]]>")
+                    
+                    # If leaf node (no children), return text directly
+                    if len(element) == 0:
+                        return text_to_store
                     else:
-                        result['#text'] = element.text.strip()
+                        # Has children - store text in #text field
+                        # Store even if empty string - preserve structure
+                        result['#text'] = text_to_store
                 
                 # Process children
                 children = {}
                 for child in element:
-                    child_data = xml_to_dict(child)
+                    child_data = xml_to_dict(child, child.tag)
                     if child.tag in children:
                         if not isinstance(children[child.tag], list):
                             children[child.tag] = [children[child.tag]]
@@ -48,13 +132,31 @@ class JSONConversionService:
                     else:
                         children[child.tag] = child_data
                 
+                # Add tail text (text after closing tag) - preserve all tail text
+                if element.tail:
+                    # Preserve tail text even if it's just whitespace
+                    if '#tail' not in result:
+                        result['#tail'] = element.tail
+                    else:
+                        result['#tail'] += element.tail
+                
                 result.update(children)
+                
                 return result
             
-            return xml_to_dict(root)
+            json_dict = xml_to_dict(root)
             
+            # Add comments to root if available
+            if comments_dict and isinstance(json_dict, dict):
+                json_dict['_comments'] = comments_dict['_comments']
+            
+            return json_dict
+            
+        except FileProcessingError:
+            # Re-raise FileProcessingError as-is
+            raise
         except ET.ParseError as e:
-            raise FileProcessingError(f"Invalid XML format: {str(e)}")
+            raise FileProcessingError(f"Invalid XML format: {str(e)}. Please check your XML syntax.")
         except Exception as e:
             raise FileProcessingError(f"XML to JSON conversion failed: {str(e)}")
     

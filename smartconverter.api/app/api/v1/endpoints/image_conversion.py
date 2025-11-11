@@ -27,7 +27,7 @@ async def convert_image_format(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -74,7 +74,7 @@ async def convert_image_to_json(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -119,7 +119,7 @@ async def convert_image_to_pdf(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -242,7 +242,7 @@ async def convert_pdf_to_image(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -309,7 +309,7 @@ async def convert_pdf_to_tiff(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -355,7 +355,7 @@ async def convert_pdf_to_svg(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -397,7 +397,7 @@ async def convert_ai_to_svg(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -439,7 +439,7 @@ async def remove_exif_data(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "image")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)

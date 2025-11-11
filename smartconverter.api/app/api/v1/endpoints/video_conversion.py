@@ -29,7 +29,7 @@ async def convert_mov_to_mp4(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -74,7 +74,7 @@ async def convert_mkv_to_mp4(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -119,7 +119,7 @@ async def convert_avi_to_mp4(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -164,7 +164,7 @@ async def convert_mp4_to_mp3(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -210,7 +210,7 @@ async def convert_video_format(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -244,19 +244,64 @@ async def convert_video_format(
             VideoConversionService.cleanup_temp_files(input_path)
 
 
+@router.post("/video-to-audio", response_model=ConversionResponse)
+async def video_to_audio(
+    file: UploadFile = File(...),
+    output_format: str = Form("mp3")
+):
+    """Convert video to audio using moviepy (simple approach)."""
+    input_path = None
+    output_path = None
+    
+    try:
+        # Validate file
+        FileService.validate_file(file, "video")
+        
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Convert video to audio
+        output_path = VideoConversionService.video_to_audio(input_path, output_format)
+        
+        return ConversionResponse(
+            success=True,
+            message=f"Video converted to {output_format.upper()} audio successfully",
+            output_filename=os.path.basename(output_path),
+            download_url=f"/download/{os.path.basename(output_path)}"
+        )
+        
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400
+        )
+    except Exception as e:
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500
+        )
+    finally:
+        # Cleanup temporary files
+        if input_path:
+            VideoConversionService.cleanup_temp_files(input_path)
+
+
 @router.post("/extract-audio", response_model=ConversionResponse)
 async def extract_audio(
     file: UploadFile = File(...),
     output_format: str = Form("mp3"),
     bitrate: str = Form("192k")
 ):
-    """Extract audio from video file."""
+    """Extract audio from video file with customizable bitrate."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -303,7 +348,7 @@ async def resize_video(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -348,7 +393,7 @@ async def compress_video(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -389,7 +434,7 @@ async def get_video_info(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)

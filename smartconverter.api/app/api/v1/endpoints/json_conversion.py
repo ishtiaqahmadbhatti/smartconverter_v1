@@ -1,8 +1,8 @@
 import json
 import os
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel
 from app.models.schemas import ConversionResponse
 from app.services.json_conversion_service import JSONConversionService
@@ -50,20 +50,81 @@ class JSONObjectsToExcelRequest(BaseModel):
     json_objects: List[Dict[str, Any]]
 
 
-# XML to JSON
+# XML to JSON - Accepts both multipart/form-data and JSON body
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
-    request: XMLToJSONRequest
+    request: Request,
+    xml_content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None)
 ):
-    """Convert XML to JSON format."""
+    """
+    Convert XML to JSON format.
+    
+    Accepts XML input via:
+    1. multipart/form-data: xml_content=<xml_string> OR file=<xml_file> (RECOMMENDED)
+    2. application/json: {"xml_content": "<xml_string>"} (fallback, may fail with special chars)
+    
+    Note: Use multipart/form-data for XML with special characters to avoid JSON parsing errors.
+    """
+    import uuid
+    from app.core.config import settings
+    
+    xml_data = None
+    input_path = None
+    
     try:
-        result = JSONConversionService.xml_to_json(request.xml_content)
+        # Priority: file > form data > JSON body
+        if file and file.filename:
+            # Read XML from uploaded file
+            input_path = FileService.save_uploaded_file(file)
+            with open(input_path, 'r', encoding='utf-8') as f:
+                xml_data = f.read()
+        elif xml_content:
+            # Use XML content from Form data (handles special characters better)
+            # Clean XML content - remove leading/trailing whitespace
+            xml_data = xml_content.strip()
+            
+            # Validate XML is not empty
+            if not xml_data:
+                raise ValueError("XML content cannot be empty")
+        else:
+            # Try to parse JSON body as fallback
+            content_type = request.headers.get("content-type", "")
+            if "application/json" in content_type:
+                try:
+                    body = await request.json()
+                    if isinstance(body, dict) and "xml_content" in body:
+                        xml_data = body["xml_content"]
+                    else:
+                        raise ValueError("JSON body must contain 'xml_content' field")
+                except Exception as json_error:
+                    raise ValueError(
+                        f"Failed to parse JSON body (XML with special characters may cause this). "
+                        f"Use multipart/form-data instead. Error: {str(json_error)}"
+                    )
+            else:
+                raise ValueError(
+                    "Either xml_content (multipart/form-data) or file must be provided. "
+                    "For JSON body, ensure Content-Type is application/json."
+                )
+        
+        # Convert XML to JSON
+        json_result = JSONConversionService.xml_to_json(xml_data)
+        
+        # Convert result to formatted JSON string
+        json_string = json.dumps(json_result, indent=2)
+        
+        # Save JSON to file for download
+        output_filename = f"xml_to_json_{uuid.uuid4().hex[:8]}.json"
+        output_path = os.path.join(settings.output_dir, output_filename)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(json_string)
         
         # Log conversion
         JSONConversionService.log_conversion(
             "xml-to-json",
-            request.xml_content,
-            json.dumps(result),
+            xml_data[:500] if len(xml_data) > 500 else xml_data,
+            json_string[:500] if len(json_string) > 500 else json_string,
             True,
             user_id=None
         )
@@ -71,18 +132,26 @@ async def convert_xml_to_json(
         return ConversionResponse(
             success=True,
             message="XML converted to JSON successfully",
-            converted_data=result
+            converted_data=json_string,  # JSON content as string (for preview)
+            output_filename=output_filename,  # JSON file name (for download)
+            download_url=f"/api/v1/jsonconversiontools/download/{output_filename}"  # Full download URL
         )
         
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "xml-to-json",
-            request.xml_content,
+            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
             "",
             False,
             str(e),
             None
         )
+        # Cleanup uploaded file if exists
+        if input_path:
+            try:
+                FileService.cleanup_file(input_path)
+            except:
+                pass
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
@@ -91,12 +160,18 @@ async def convert_xml_to_json(
     except Exception as e:
         JSONConversionService.log_conversion(
             "xml-to-json",
-            request.xml_content,
+            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
             "",
             False,
             str(e),
             None
         )
+        # Cleanup uploaded file if exists
+        if input_path:
+            try:
+                FileService.cleanup_file(input_path)
+            except:
+                pass
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

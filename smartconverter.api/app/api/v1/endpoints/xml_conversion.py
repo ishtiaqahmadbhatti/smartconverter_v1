@@ -111,17 +111,48 @@ async def convert_excel_to_xml(
 # XML to JSON
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
-    xml_content: str = Form(...)
+    xml_content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None)
 ):
-    """Convert XML to JSON."""
+    """
+    Convert XML to JSON.
+    Accepts either XML content (as string) or XML file upload.
+    """
+    import os
+    from app.services.file_service import FileService
+    from app.core.config import settings
+    
+    xml_data = None
+    input_path = None
+    
     try:
-        result = XMLConversionService.xml_to_json(xml_content)
+        # Get XML data from either content or file
+        if file and file.filename:
+            # Read XML from uploaded file
+            input_path = FileService.save_uploaded_file(file)
+            with open(input_path, 'r', encoding='utf-8') as f:
+                xml_data = f.read()
+        elif xml_content:
+            # Use XML content directly
+            xml_data = xml_content
+        else:
+            raise ValueError("Either xml_content or file must be provided")
+        
+        # Convert XML to JSON
+        json_result = XMLConversionService.xml_to_json(xml_data)
+        
+        # Save JSON to file for download
+        import uuid
+        output_filename = f"xml_to_json_{uuid.uuid4().hex[:8]}.json"
+        output_path = os.path.join(settings.output_dir, output_filename)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(json_result)
         
         # Log conversion
         XMLConversionService.log_conversion(
             "xml-to-json",
-            xml_content,
-            result,
+            xml_data[:500] if len(xml_data) > 500 else xml_data,  # Log first 500 chars
+            json_result[:500] if len(json_result) > 500 else json_result,
             True,
             user_id=None
         )
@@ -129,18 +160,26 @@ async def convert_xml_to_json(
         return ConversionResponse(
             success=True,
             message="XML converted to JSON successfully",
-            converted_data=result
+            converted_data=json_result,  # JSON content as string (for preview)
+            output_filename=output_filename,  # JSON file name (for download)
+            download_url=f"/api/v1/xmlconversiontools/download/{output_filename}"  # Full download URL
         )
         
     except Exception as e:
         XMLConversionService.log_conversion(
             "xml-to-json",
-            xml_content,
+            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
             "",
             False,
             str(e),
             None
         )
+        # Cleanup uploaded file if exists
+        if input_path:
+            try:
+                FileService.cleanup_file(input_path)
+            except:
+                pass
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

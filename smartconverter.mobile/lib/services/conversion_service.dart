@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import '../models/conversion_tool.dart';
 import '../constants/api_config.dart';
 import '../utils/file_manager.dart';
@@ -11,13 +12,15 @@ class ConversionService {
   ConversionService._internal();
 
   final Dio _dio = Dio();
+  String? _baseUrl;
 
-  // FastAPI backend URL
-  static const String baseUrl = ApiConfig.baseUrl;
+  // FastAPI backend URL (cached after initialization)
+  String? get baseUrl => _baseUrl;
 
   // Initialize the service
   Future<void> initialize() async {
-    _dio.options.baseUrl = baseUrl;
+    _baseUrl = await ApiConfig.baseUrl;
+    _dio.options.baseUrl = _baseUrl!;
     _dio.options.connectTimeout = ApiConfig.connectTimeout;
     _dio.options.receiveTimeout = ApiConfig.receiveTimeout;
 
@@ -625,22 +628,84 @@ class ConversionService {
     String? type,
   }) async {
     try {
+      // Determine file type based on category or explicit type
+      FileType fileType = FileType.any;
+
+      // Check if video extensions are requested
+      final videoExtensions = [
+        'mp4',
+        'mov',
+        'mkv',
+        'avi',
+        'wmv',
+        'flv',
+        'webm',
+        'm4v',
+        '3gp',
+        'ogv',
+      ];
+      final isVideo =
+          allowedExtensions != null &&
+          allowedExtensions.any(
+            (ext) => videoExtensions.contains(ext.toLowerCase()),
+          );
+
+      if (type == 'image') {
+        fileType = FileType.image;
+      } else if (type == 'video' || isVideo) {
+        // Use video type for better Android/iOS file picker support
+        fileType = FileType.video;
+      } else if (type == 'audio') {
+        fileType = FileType.media; // Media includes both audio and video
+      } else if (type == 'pdf' || allowedExtensions?.contains('pdf') == true) {
+        fileType = FileType.custom;
+      } else if (allowedExtensions != null && allowedExtensions.isNotEmpty) {
+        fileType = FileType.custom;
+      }
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: type == 'image'
-            ? FileType.image
-            : type == 'pdf'
-            ? FileType.custom
-            : FileType.any,
-        allowedExtensions: allowedExtensions,
+        type: fileType,
+        // Only set allowedExtensions for custom type, video/audio types handle their own filtering
+        allowedExtensions:
+            (fileType == FileType.custom || fileType == FileType.any)
+            ? allowedExtensions
+            : null,
         allowMultiple: false,
+        withData: false, // Don't load file data into memory
+        withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
-        return File(result.files.first.path!);
+        final pickedFile = result.files.first;
+
+        // Check if path is available (Android/iOS)
+        if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
+          final file = File(pickedFile.path!);
+          // Verify file exists
+          if (await file.exists()) {
+            return file;
+          } else {
+            throw Exception('Selected file does not exist: ${pickedFile.path}');
+          }
+        }
+        // For web platform, bytes might be available
+        else if (pickedFile.bytes != null) {
+          // Save bytes to temporary file
+          final tempDir = await Directory.systemTemp.createTemp();
+          final file = File('${tempDir.path}/${pickedFile.name}');
+          await file.writeAsBytes(pickedFile.bytes!);
+          return file;
+        } else {
+          throw Exception(
+            'File path is null. Platform may not support file picking.',
+          );
+        }
       }
       return null;
+    } on PlatformException catch (e) {
+      throw Exception('File picking failed: ${e.message ?? e.toString()}');
     } catch (e) {
-      throw Exception('File picking failed: $e');
+      throw Exception('File picking failed: ${e.toString()}');
     }
   }
 
@@ -650,25 +715,48 @@ class ConversionService {
     String? type,
   }) async {
     try {
+      FileType fileType = FileType.any;
+      if (type == 'image') {
+        fileType = FileType.image;
+      } else if (type == 'pdf' || allowedExtensions?.contains('pdf') == true) {
+        fileType = FileType.custom;
+      } else if (allowedExtensions != null && allowedExtensions.isNotEmpty) {
+        fileType = FileType.custom;
+      }
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: type == 'image'
-            ? FileType.image
-            : type == 'pdf'
-            ? FileType.custom
-            : FileType.any,
+        type: fileType,
         allowedExtensions: allowedExtensions,
         allowMultiple: true,
+        withData: false,
+        withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
-        return result.files
-            .where((file) => file.path != null)
-            .map((file) => File(file.path!))
-            .toList();
+        List<File> files = [];
+        for (var pickedFile in result.files) {
+          if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
+            final file = File(pickedFile.path!);
+            if (await file.exists()) {
+              files.add(file);
+            }
+          } else if (pickedFile.bytes != null) {
+            // Handle web platform bytes
+            final tempDir = await Directory.systemTemp.createTemp();
+            final file = File('${tempDir.path}/${pickedFile.name}');
+            await file.writeAsBytes(pickedFile.bytes!);
+            files.add(file);
+          }
+        }
+        return files;
       }
       return [];
+    } on PlatformException catch (e) {
+      throw Exception(
+        'Multiple file picking failed: ${e.message ?? e.toString()}',
+      );
     } catch (e) {
-      throw Exception('Multiple file picking failed: $e');
+      throw Exception('Multiple file picking failed: ${e.toString()}');
     }
   }
 
@@ -695,15 +783,16 @@ class ConversionService {
 
   // Helper method to try multiple download endpoints
   Future<File?> _tryDownloadFile(String fileName, String originalUrl) async {
+    final apiBaseUrl = _baseUrl ?? await ApiConfig.baseUrl;
     List<String> possibleUrls = [
-      '${ApiConfig.baseUrl}${ApiConfig.downloadEndpoint}/$fileName', // Your actual endpoint!
-      '${ApiConfig.baseUrl}/download/$fileName', // Try static files mount
-      '${ApiConfig.baseUrl}/api/v1/files/$fileName',
-      '${ApiConfig.baseUrl}/files/$fileName',
-      '${ApiConfig.baseUrl}/api/v1/download/$fileName',
-      '${ApiConfig.baseUrl}/static/$fileName',
-      '${ApiConfig.baseUrl}/outputs/$fileName',
-      '${ApiConfig.baseUrl}/processed/$fileName',
+      '$apiBaseUrl${ApiConfig.downloadEndpoint}/$fileName', // Your actual endpoint!
+      '$apiBaseUrl/download/$fileName', // Try static files mount
+      '$apiBaseUrl/api/v1/files/$fileName',
+      '$apiBaseUrl/files/$fileName',
+      '$apiBaseUrl/api/v1/download/$fileName',
+      '$apiBaseUrl/static/$fileName',
+      '$apiBaseUrl/outputs/$fileName',
+      '$apiBaseUrl/processed/$fileName',
       originalUrl, // Try the original URL as last resort
     ];
 
@@ -748,7 +837,7 @@ Your FastAPI server needs to add a download endpoint like:
 - /api/v1/files/$fileName
 - /files/$fileName
 
-Server: ${ApiConfig.baseUrl}
+Server: ${_baseUrl ?? 'Not initialized'}
 Processed file: $fileName
 
 To fix this, add this to your FastAPI server:
@@ -788,6 +877,164 @@ async def download_file(filename: str):
     } catch (e) {
       print('❌ Download error: $e');
       throw Exception('Download failed: $e');
+    }
+  }
+
+  // Convert video to audio (MP4 to MP3) - Unified method for both Audio and Video categories
+  // This method can be called from both audio and video conversion pages (DRY principle)
+  Future<File?> convertVideoToAudio(
+    File videoFile, {
+    String bitrate = '192k',
+    String quality = 'medium',
+    String outputFormat = 'mp3',
+    String?
+    preferredEndpoint, // Optional: 'video' or 'audio' to specify endpoint
+    String? category, // Optional: 'audio' or 'video' to determine save location
+  }) async {
+    try {
+      print('🎬 Starting video to audio conversion...');
+      print('📁 Input file: ${videoFile.path}');
+
+      // Determine which endpoint to use
+      // Both endpoints use the same implementation on backend (DRY principle)
+      // Prefer video endpoint by default, but allow override
+      String endpoint = preferredEndpoint == 'audio'
+          ? ApiConfig.mp4ToMp3AudioEndpoint
+          : ApiConfig.videoToAudioEndpoint;
+
+      // Prepare form data
+      // Video endpoint: file and bitrate only
+      // Audio endpoint: file, bitrate, and quality (quality is ignored on backend)
+      FormData formData = preferredEndpoint == 'audio'
+          ? FormData.fromMap({
+              'file': await MultipartFile.fromFile(
+                videoFile.path,
+                filename: videoFile.path.split('/').last,
+              ),
+              'bitrate': bitrate,
+              'quality': quality,
+            })
+          : FormData.fromMap({
+              'file': await MultipartFile.fromFile(
+                videoFile.path,
+                filename: videoFile.path.split('/').last,
+              ),
+              'bitrate': bitrate,
+            });
+
+      print('📡 Calling endpoint: $endpoint');
+
+      // Call API endpoint (both use same backend implementation)
+      Response response = await _dio.post(
+        endpoint,
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(
+            minutes: 10,
+          ), // Longer timeout for video processing
+        ),
+      );
+
+      print('📡 API Response: ${response.statusCode}');
+      print('📄 Response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String outputFilename =
+            response.data['output_filename'] ?? 'converted_audio.mp3';
+        String downloadUrl = response.data['download_url'] ?? '';
+
+        print('✅ Conversion successful!');
+        print('📦 Output filename: $outputFilename');
+        print('🔗 Download URL: $downloadUrl');
+
+        // Download the converted audio file
+        File? downloadedFile = await _downloadAudioFile(
+          outputFilename,
+          downloadUrl,
+        );
+
+        if (downloadedFile != null) {
+          // Save to appropriate directory based on category
+          // Audio category -> AudioConversions/video-to-audio
+          // Video category -> VideoConversions/video-to-audio
+          Directory saveDirectory;
+          if (category == 'audio' || preferredEndpoint == 'audio') {
+            saveDirectory = await FileManager.getAudioVideoToAudioDirectory();
+            print(
+              '💾 Saving to AudioConversions/video-to-audio (Audio category)',
+            );
+          } else {
+            saveDirectory = await FileManager.getVideoToAudioDirectory();
+            print(
+              '💾 Saving to VideoConversions/video-to-audio (Video category)',
+            );
+          }
+
+          final savedFilePath = '${saveDirectory.path}/$outputFilename';
+          final savedFile = await downloadedFile.copy(savedFilePath);
+
+          print('💾 File saved to: ${savedFile.path}');
+          return savedFile;
+        }
+
+        return downloadedFile;
+      }
+
+      throw Exception(
+        'Conversion failed: ${response.data['message'] ?? 'Unknown error'}',
+      );
+    } catch (e) {
+      print('❌ Video to audio conversion failed: $e');
+      throw Exception('Video to audio conversion failed: $e');
+    }
+  }
+
+  // Download audio file from server
+  Future<File?> _downloadAudioFile(String filename, String downloadUrl) async {
+    try {
+      final apiBaseUrl = _baseUrl ?? await ApiConfig.baseUrl;
+
+      // Try multiple possible download URLs
+      List<String> possibleUrls = [
+        '$apiBaseUrl$downloadUrl',
+        '$apiBaseUrl/api/v1/videoconversiontools/download/$filename',
+        '$apiBaseUrl/api/v1/audioconversiontools/download/$filename',
+        '$apiBaseUrl/api/v1/video/download/$filename',
+        '$apiBaseUrl/download/$filename',
+        '$apiBaseUrl/api/v1/convert/download/$filename',
+      ];
+
+      for (String url in possibleUrls) {
+        try {
+          print('🔍 Trying download URL: $url');
+
+          final response = await _dio.get(
+            url,
+            options: Options(
+              responseType: ResponseType.bytes,
+              followRedirects: true,
+            ),
+          );
+
+          if (response.statusCode == 200 && response.data != null) {
+            // Create temporary file
+            final tempDir = await Directory.systemTemp.createTemp();
+            final tempFile = File('${tempDir.path}/$filename');
+            await tempFile.writeAsBytes(response.data as List<int>);
+
+            print('✅ Successfully downloaded from: $url');
+            return tempFile;
+          }
+        } catch (e) {
+          print('⚠️ Failed to download from $url: $e');
+          continue;
+        }
+      }
+
+      throw Exception('Could not download converted file from any endpoint');
+    } catch (e) {
+      print('❌ Download failed: $e');
+      throw Exception('File download failed: $e');
     }
   }
 

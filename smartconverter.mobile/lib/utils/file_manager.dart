@@ -20,6 +20,9 @@ class FileManager {
   static const String _watermarkPdfFolder = 'WatermarkPDF';
   static const String _removePagesFolder = 'RemovePages';
   static const String _extractPagesFolder = 'ExtractPages';
+  static const String _videoConversionsFolder = 'VideoConversions';
+  static const String _audioConversionsFolder = 'AudioConversions';
+  static const String _videoToAudioFolder = 'video-to-audio';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -129,6 +132,62 @@ class FileManager {
   /// Get directory for Extract Pages tool
   static Future<Directory> getExtractPagesDirectory() async {
     return await getToolDirectory(_extractPagesFolder);
+  }
+
+  /// Get directory for Video Conversions folder
+  static Future<Directory> getVideoConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final videoConversionsDir = Directory(
+      '${smartConverterDir.path}/$_videoConversionsFolder',
+    );
+
+    if (!await videoConversionsDir.exists()) {
+      await videoConversionsDir.create(recursive: true);
+    }
+
+    return videoConversionsDir;
+  }
+
+  /// Get directory for Audio Conversions folder
+  static Future<Directory> getAudioConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final audioConversionsDir = Directory(
+      '${smartConverterDir.path}/$_audioConversionsFolder',
+    );
+
+    if (!await audioConversionsDir.exists()) {
+      await audioConversionsDir.create(recursive: true);
+    }
+
+    return audioConversionsDir;
+  }
+
+  /// Get directory for Video to Audio conversion (from Video category)
+  static Future<Directory> getVideoToAudioDirectory() async {
+    final videoConversionsDir = await getVideoConversionsDirectory();
+    final videoToAudioDir = Directory(
+      '${videoConversionsDir.path}/$_videoToAudioFolder',
+    );
+
+    if (!await videoToAudioDir.exists()) {
+      await videoToAudioDir.create(recursive: true);
+    }
+
+    return videoToAudioDir;
+  }
+
+  /// Get directory for Video to Audio conversion (from Audio category)
+  static Future<Directory> getAudioVideoToAudioDirectory() async {
+    final audioConversionsDir = await getAudioConversionsDirectory();
+    final videoToAudioDir = Directory(
+      '${audioConversionsDir.path}/$_videoToAudioFolder',
+    );
+
+    if (!await videoToAudioDir.exists()) {
+      await videoToAudioDir.create(recursive: true);
+    }
+
+    return videoToAudioDir;
   }
 
   /// Generate a timestamp-based filename

@@ -24,7 +24,9 @@ android {
         applicationId = "com.example.smartconverter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // minSdk read from gradle.properties (flutter.minSdkVersion), minimum 23 for google_mobile_ads 6.0.0
+        val minSdkFromProps = project.findProperty("flutter.minSdkVersion") as String?
+        minSdk = minSdkFromProps?.toInt() ?: 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

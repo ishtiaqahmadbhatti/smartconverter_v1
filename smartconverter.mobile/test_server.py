@@ -8,7 +8,7 @@ import json
 import sys
 
 def test_server():
-    base_url = "http://192.168.8.100:8003"
+    base_url = "http://192.168.8.102:8003"
     
     print("=== FastAPI Server Debug Test ===")
     print(f"Testing server at: {base_url}")

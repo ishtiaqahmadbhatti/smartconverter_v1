@@ -26,8 +26,8 @@ async def convert_mp4_to_mp3(
     output_path = None
     
     try:
-        # Validate file
-        FileService.validate_file(file)
+        # Validate file - MP4 is a video file, so use "video" validation
+        FileService.validate_file(file, "video")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -73,7 +73,7 @@ async def convert_wav_to_mp3(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -119,7 +119,7 @@ async def convert_flac_to_mp3(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -165,7 +165,7 @@ async def convert_mp3_to_wav(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -211,7 +211,7 @@ async def convert_flac_to_wav(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -256,7 +256,7 @@ async def convert_wav_to_flac(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -303,7 +303,7 @@ async def convert_audio_format(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -348,7 +348,7 @@ async def normalize_audio(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -394,7 +394,7 @@ async def trim_audio(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -435,7 +435,7 @@ async def get_audio_info(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "audio")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)

@@ -24,29 +24,20 @@ class AudioConversionService:
     
     @staticmethod
     def mp4_to_mp3(input_path: str, bitrate: str = "192k", quality: str = "medium") -> str:
-        """Convert MP4 file to MP3 format."""
+        """
+        Convert MP4 file to MP3 format.
+        
+        Note: This method delegates to VideoConversionService.mp4_to_mp3() to avoid
+        code duplication (DRY principle), as extracting audio from video files is
+        better handled by MoviePy library.
+        """
         try:
-            if not os.path.exists(input_path):
-                raise FileProcessingError(f"Input MP4 file not found: {input_path}")
+            # Import here to avoid circular dependency
+            from app.services.video_conversion_service import VideoConversionService
             
-            # Generate output path
-            output_path = FileService.get_output_path(input_path, ".mp3")
-            
-            # Load audio from MP4
-            audio = AudioSegment.from_file(input_path)
-            
-            # Set quality parameters
-            quality_settings = AudioConversionService._get_quality_settings(quality)
-            
-            # Export to MP3
-            audio.export(
-                output_path,
-                format="mp3",
-                bitrate=bitrate,
-                parameters=quality_settings['parameters']
-            )
-            
-            return output_path
+            # Delegate to VideoConversionService which uses MoviePy (better for video files)
+            # quality parameter is ignored here as VideoConversionService doesn't use it
+            return VideoConversionService.mp4_to_mp3(input_path, bitrate)
             
         except Exception as e:
             raise FileProcessingError(f"MP4 to MP3 conversion failed: {str(e)}")

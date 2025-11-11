@@ -10,8 +10,8 @@ class FileService:
     """Service for handling file operations."""
     
     @staticmethod
-    def validate_file(file: UploadFile) -> None:
-        """Validate uploaded file."""
+    def validate_file(file: UploadFile, file_type: str = "general") -> None:
+        """Validate uploaded file based on file type."""
         # Check file size
         file.file.seek(0, 2)  # Seek to end
         file_size = file.file.tell()
@@ -22,22 +22,44 @@ class FileService:
                 f"File size {file_size} exceeds maximum allowed size {settings.max_file_size}"
             )
         
-        # Check file extension (video formats removed per request)
-        allowed_types = [
-            ".pdf",
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".gif",
-            ".bmp",
-            ".tiff",
-            ".docx"
-        ]
+        # Define allowed types based on file_type parameter
+        if file_type == "video":
+            allowed_types = [
+                ".mp4", ".mov", ".mkv", ".avi", ".wmv", ".flv", 
+                ".webm", ".m4v", ".3gp", ".ogv"
+            ]
+        elif file_type == "audio":
+            allowed_types = [
+                ".mp3", ".wav", ".aac", ".flac", ".ogg", ".wma", 
+                ".m4a", ".aiff", ".au"
+            ]
+        elif file_type == "image":
+            allowed_types = [
+                ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", 
+                ".webp", ".svg", ".ico"
+            ]
+        elif file_type == "document":
+            allowed_types = [
+                ".pdf", ".docx", ".doc", ".txt", ".rtf", ".odt"
+            ]
+        elif file_type == "office":
+            allowed_types = [
+                ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", 
+                ".odt", ".ods", ".odp"
+            ]
+        else:  # general/default
+            allowed_types = [
+                ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", 
+                ".tiff", ".docx", ".mp4", ".mov", ".mkv", ".avi", 
+                ".mp3", ".wav", ".aac", ".txt", ".json", ".xml", 
+                ".csv", ".xlsx", ".xls", ".pptx", ".ppt"
+            ]
+        
         if file.filename:
             file_ext = os.path.splitext(file.filename)[1].lower()
             if file_ext not in allowed_types:
                 raise UnsupportedFileTypeError(
-                    f"File type {file_ext} is not supported. Allowed types: {allowed_types}"
+                    f"File type {file_ext} is not supported for {file_type} conversion. Allowed types: {allowed_types}"
                 )
     
     @staticmethod

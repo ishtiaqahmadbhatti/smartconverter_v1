@@ -1,23 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_strings.dart';
-import '../models/conversion_tool.dart';
-import '../services/conversion_service.dart';
-import '../utils/api_test_helper.dart';
-import '../widgets/futuristic_card.dart';
-import '../widgets/tool_card.dart';
 import '../widgets/custom_drawer.dart';
-import 'tool_detail_page.dart';
-import 'add_page_numbers_page.dart';
-import 'merge_pdf_page.dart';
-import 'protect_pdf_page.dart';
-import 'unlock_pdf_page.dart';
-import 'watermark_pdf_page.dart';
-import 'remove_pages_page.dart';
-import 'extract_pages_page.dart';
-import 'split_pdf_page.dart';
-import 'rotate_pdf_page.dart';
+import 'main_navigation.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,14 +16,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  int _selectedIndex = 0;
-  final List<ConversionTool> _conversionTools = [];
-
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadConversionTools();
     _startAnimations();
   }
 
@@ -64,18 +45,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         );
   }
 
-  void _loadConversionTools() async {
-    // Display API configuration
-    ApiTestHelper.displayApiConfig();
-
-    // Test API connection
-    await ApiTestHelper.testApiConnection();
-
-    // Load conversion tools
-    final conversionService = ConversionService();
-    _conversionTools.addAll(conversionService.getAvailableTools());
-  }
-
   void _startAnimations() {
     _animationController.forward();
   }
@@ -84,53 +53,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  void _onToolSelected(ConversionTool tool) {
-    // Route to specific tool pages
-    Widget destinationPage;
-
-    if (tool.id == 'add_page_numbers') {
-      destinationPage = const AddPageNumbersPage();
-    } else if (tool.id == 'merge_pdf') {
-      destinationPage = const MergePdfPage();
-    } else if (tool.id == 'protect_pdf') {
-      destinationPage = const ProtectPdfPage();
-    } else if (tool.id == 'unlock_pdf') {
-      destinationPage = const UnlockPdfPage();
-    } else if (tool.id == 'add_watermark') {
-      destinationPage = const WatermarkPdfPage();
-    } else if (tool.id == 'remove_pages') {
-      destinationPage = const RemovePagesPage();
-    } else if (tool.id == 'extract_pages') {
-      destinationPage = const ExtractPagesPage();
-    } else if (tool.id == 'split_pdf') {
-      destinationPage = const SplitPdfPage();
-    } else if (tool.id == 'rotate_pdf') {
-      destinationPage = const RotatePdfPage();
-    } else {
-      destinationPage = ToolDetailPage(tool: tool);
-    }
-
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            destinationPage,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
   }
 
   @override
@@ -156,7 +78,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -164,34 +85,59 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      iconTheme: const IconThemeData(color: AppColors.textPrimary),
-      title: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: AppColors.textPrimary,
-              size: 24,
-            ),
+      leading: Builder(
+        builder: (context) => Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryBlue.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          const Text(
-            AppStrings.appName,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-        ],
+        ),
       ),
-      actions: const [],
+      title: const Text(
+        'Smart Converter',
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: AppColors.secondaryGradient,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.secondaryGreen.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.textPrimary,
+            ),
+            onPressed: () {
+              // Handle notifications
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -203,205 +149,397 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         children: [
           _buildWelcomeSection(),
           const SizedBox(height: 24),
-          _buildQuickStatsSection(),
+          _buildQuickStats(),
           const SizedBox(height: 24),
-          _buildToolsSection(),
+          _buildFeaturedTools(),
           const SizedBox(height: 24),
-          _buildRecentActivitySection(),
+          _buildRecentActivity(),
+          const SizedBox(height: 24),
+          _buildAllToolsSection(),
         ],
       ),
     );
   }
 
   Widget _buildWelcomeSection() {
-    return FuturisticCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppStrings.welcomeMessage,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            AppStrings.selectToolMessage,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              '🚀 Ready to Convert',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.1),
+            AppColors.secondaryGreen.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 2,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildQuickStatsSection() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Conversions Today',
-            '12',
-            Icons.trending_up,
-            AppColors.success,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'Files Processed',
-            '156',
-            Icons.folder_open,
-            AppColors.info,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                child: const Icon(
+                  Icons.waving_hand,
                   color: AppColors.textPrimary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Welcome Back!',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Ready to convert your files?',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Transform your documents, images, and media files with our powerful conversion tools. Choose from 14+ categories and 90+ tools!',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.3, duration: 800.ms);
+  }
+
+  Widget _buildQuickStats() {
+    return Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                '14',
+                'Categories',
+                Icons.category_outlined,
+                AppColors.primaryBlue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                '90+',
+                'Tools',
+                Icons.build_outlined,
+                AppColors.secondaryGreen,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                '50+',
+                'Formats',
+                Icons.file_copy_outlined,
+                AppColors.primaryPurple,
+              ),
+            ),
+          ],
+        )
+        .animate()
+        .fadeIn(duration: 800.ms, delay: 200.ms)
+        .slideY(begin: 0.3, duration: 800.ms, delay: 200.ms);
+  }
+
+  Widget _buildStatCard(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 8),
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
+            value,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          Text(
+            label,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildToolsSection() {
+  Widget _buildFeaturedTools() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          AppStrings.quickActions,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.star_outline,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Featured Tools',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFeaturedToolCard(
+                    'PDF Conversion',
+                    Icons.picture_as_pdf_outlined,
+                    'Convert PDF to various formats',
+                    AppColors.primaryBlue,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildFeaturedToolCard(
+                    'Image Tools',
+                    Icons.image_outlined,
+                    'Process and convert images',
+                    AppColors.secondaryGreen,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildFeaturedToolCard(
+                    'Office Docs',
+                    Icons.description_outlined,
+                    'Word, Excel, PowerPoint',
+                    AppColors.primaryPurple,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildFeaturedToolCard(
+                    'Media Files',
+                    Icons.movie_creation_outlined,
+                    'Video & Audio conversion',
+                    AppColors.accentOrange,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        )
+        .animate()
+        .fadeIn(duration: 800.ms, delay: 400.ms)
+        .slideY(begin: 0.3, duration: 800.ms, delay: 400.ms);
+  }
+
+  Widget _buildFeaturedToolCard(
+    String title,
+    IconData icon,
+    String description,
+    Color color,
+  ) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.backgroundCard, AppColors.backgroundSurface],
         ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.1,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 15,
+            spreadRadius: 2,
           ),
-          itemCount: _conversionTools.length,
-          itemBuilder: (context, index) {
-            final tool = _conversionTools[index];
-            return ToolCard(tool: tool, onTap: () => _onToolSelected(tool))
-                .animate(delay: (index * 100).ms)
-                .slideX(
-                  begin: 0.3,
-                  duration: 600.ms,
-                  curve: Curves.easeOutCubic,
-                )
-                .fadeIn(duration: 600.ms);
-          },
-        ),
-      ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.textPrimary, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildRecentActivitySection() {
+  Widget _buildRecentActivity() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          AppStrings.recentConversions,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        FuturisticCard(
-          child: Column(
-            children: [
-              _buildActivityItem(
-                'document.pdf',
-                'PDF to Word',
-                '2 minutes ago',
-                AppColors.success,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.secondaryGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.history_outlined,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Recent Activity',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.backgroundCard,
+                    AppColors.backgroundSurface,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primaryBlue.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withOpacity(0.1),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              const Divider(color: AppColors.textTertiary),
-              _buildActivityItem(
-                'image.jpg',
-                'Image to PDF',
-                '5 minutes ago',
-                AppColors.info,
+              child: Column(
+                children: [
+                  _buildActivityItem(
+                    'document.pdf',
+                    'PDF to Word',
+                    '2 minutes ago',
+                    AppColors.secondaryGreen,
+                  ),
+                  const Divider(color: AppColors.backgroundSurface),
+                  _buildActivityItem(
+                    'image.jpg',
+                    'Image to PDF',
+                    '5 minutes ago',
+                    AppColors.primaryBlue,
+                  ),
+                  const Divider(color: AppColors.backgroundSurface),
+                  _buildActivityItem(
+                    'spreadsheet.xlsx',
+                    'Excel to PDF',
+                    '10 minutes ago',
+                    AppColors.primaryPurple,
+                  ),
+                ],
               ),
-              const Divider(color: AppColors.textTertiary),
-              _buildActivityItem(
-                'report.docx',
-                'Word to Text',
-                '10 minutes ago',
-                AppColors.warning,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+            ),
+          ],
+        )
+        .animate()
+        .fadeIn(duration: 800.ms, delay: 600.ms)
+        .slideY(begin: 0.3, duration: 800.ms, delay: 600.ms);
   }
 
   Widget _buildActivityItem(
@@ -455,53 +593,171 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 5,
+  Widget _buildAllToolsSection() {
+    return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.grid_view_outlined,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'All Conversion Tools',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primaryBlue.withOpacity(0.1),
+                    AppColors.secondaryGreen.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primaryBlue.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withOpacity(0.1),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome,
+                          color: AppColors.textPrimary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Explore All Tools',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Access 14+ categories with 90+ conversion tools',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Navigate to tools page using a simple approach
+                        _navigateToToolsPage();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: AppColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: AppColors.primaryBlue.withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.arrow_forward, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'View All Tools',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        )
+        .animate()
+        .fadeIn(duration: 800.ms, delay: 800.ms)
+        .slideY(begin: 0.3, duration: 800.ms, delay: 800.ms);
+  }
+
+  void _navigateToToolsPage() {
+    // Use a simple approach to navigate to tools page
+    // Since we're in MainNavigation, we can use a static reference
+    try {
+      // Find the parent MainNavigation state
+      final mainNavigationState = context
+          .findAncestorStateOfType<MainNavigationState>();
+      if (mainNavigationState != null) {
+        mainNavigationState.setState(() {
+          mainNavigationState.selectedIndex = 1; // Tools page index
+        });
+      }
+    } catch (e) {
+      // Fallback: show a message that tools page is available via bottom navigation
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Use the Tools tab in bottom navigation to access all tools',
           ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primaryBlue,
-        unselectedItemColor: AppColors.textTertiary,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: AppStrings.home,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.auto_awesome_outlined),
-            activeIcon: Icon(Icons.auto_awesome),
-            label: AppStrings.tools,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: AppStrings.settings,
-          ),
-        ],
-      ),
-    );
+          backgroundColor: AppColors.primaryBlue,
+        ),
+      );
+    }
   }
 }

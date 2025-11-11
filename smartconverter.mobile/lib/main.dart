@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'constants/app_strings.dart';
 import 'constants/app_theme.dart';
 import 'services/conversion_service.dart';
+import 'services/admob_service.dart';
 import 'views/splash_screen.dart';
 import 'views/sign_in_page.dart';
 import 'views/sign_up_page.dart';
@@ -11,9 +12,16 @@ import 'views/sign_up_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize AdMob
+  await AdMobService.initialize();
+
   // Initialize services
   final conversionService = ConversionService();
   await conversionService.initialize();
+
+  // Preload rewarded ad
+  final admobService = AdMobService();
+  admobService.preloadAd();
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

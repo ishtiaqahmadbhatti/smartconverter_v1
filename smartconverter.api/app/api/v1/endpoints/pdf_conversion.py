@@ -41,7 +41,7 @@ async def convert_pdf_to_json(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -88,7 +88,7 @@ async def convert_pdf_to_markdown(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -132,7 +132,7 @@ async def convert_pdf_to_csv(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -176,7 +176,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -220,7 +220,7 @@ async def convert_html_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -264,7 +264,7 @@ async def convert_word_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -308,7 +308,7 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -352,7 +352,7 @@ async def convert_oxps_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -396,7 +396,7 @@ async def convert_jpg_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -440,7 +440,7 @@ async def convert_png_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -484,7 +484,7 @@ async def convert_markdown_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -528,7 +528,7 @@ async def convert_excel_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -572,7 +572,7 @@ async def convert_excel_to_xps(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -616,7 +616,7 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -660,7 +660,7 @@ async def convert_pdf_to_csv_extract(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -704,7 +704,7 @@ async def convert_pdf_to_excel_extract(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -748,7 +748,7 @@ async def convert_pdf_to_word_extract(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -792,7 +792,7 @@ async def convert_pdf_to_jpg(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -838,7 +838,7 @@ async def convert_pdf_to_png(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -884,7 +884,7 @@ async def convert_pdf_to_tiff(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -930,7 +930,7 @@ async def convert_pdf_to_svg(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -976,7 +976,7 @@ async def convert_pdf_to_html(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -1020,7 +1020,7 @@ async def convert_pdf_to_text(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -1085,7 +1085,7 @@ async def merge_pdfs(files: List[UploadFile] = File(...)):
     try:
         # Save uploaded files
         for file in files:
-            FileService.validate_file(file)
+            FileService.validate_file(file, "document")
             input_path = FileService.save_uploaded_file(file)
             input_paths.append(input_path)
         
@@ -1127,7 +1127,7 @@ async def split_pdf(
     output_files = []
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Parse page ranges if provided
@@ -1169,7 +1169,7 @@ async def compress_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Get original file size
@@ -1213,7 +1213,7 @@ async def remove_pages(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Parse pages to remove
@@ -1252,7 +1252,7 @@ async def extract_pages(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Parse pages to extract
@@ -1291,7 +1291,7 @@ async def rotate_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Rotate PDF
@@ -1328,7 +1328,7 @@ async def add_watermark(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Add watermark
@@ -1361,7 +1361,7 @@ async def add_page_numbers(file: UploadFile = File(...)):
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Add page numbers
@@ -1400,7 +1400,7 @@ async def crop_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Crop PDF
@@ -1437,7 +1437,7 @@ async def protect_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Protect PDF
@@ -1473,7 +1473,7 @@ async def unlock_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Unlock PDF
@@ -1506,7 +1506,7 @@ async def repair_pdf(file: UploadFile = File(...)):
     output_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Repair PDF
@@ -1581,7 +1581,7 @@ async def get_pdf_metadata(file: UploadFile = File(...)):
     input_path = None
     
     try:
-        FileService.validate_file(file)
+        FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
         # Get metadata
