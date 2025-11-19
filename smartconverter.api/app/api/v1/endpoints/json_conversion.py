@@ -1,142 +1,366 @@
 import json
 import os
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
+import uuid
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel
+
 from app.models.schemas import ConversionResponse
 from app.services.json_conversion_service import JSONConversionService
-from app.core.exceptions import (
-    FileProcessingError, 
-    UnsupportedFileTypeError, 
-    FileSizeExceededError,
-    create_error_response
-)
+from app.services.pdf_conversion_service import PDFConversionService
+from app.services.image_conversion_service import ImageConversionService
 from app.services.file_service import FileService
-# from app.api.v1.dependencies import get_current_user  # Removed authentication
+from app.core.config import settings
+from app.core.exceptions import (
+    FileProcessingError,
+    UnsupportedFileTypeError,
+    FileSizeExceededError,
+    create_error_response,
+)
+
 
 router = APIRouter()
 
 
-# Request/Response Models
+# ---------------------------------------------------------------------------
+# Request Models
+# ---------------------------------------------------------------------------
+
 class XMLToJSONRequest(BaseModel):
     xml_content: str
+
 
 class JSONToXMLRequest(BaseModel):
     json_data: Dict[str, Any]
     root_name: Optional[str] = "root"
 
+
 class JSONFormatRequest(BaseModel):
     json_data: Dict[str, Any]
 
+
 class JSONValidateRequest(BaseModel):
     json_content: str
+
 
 class JSONToCSVRequest(BaseModel):
     json_data: List[Dict[str, Any]]
     delimiter: Optional[str] = ","
 
+
 class JSONToYAMLRequest(BaseModel):
     json_data: Dict[str, Any]
 
+
 class YAMLToJSONRequest(BaseModel):
     yaml_content: str
+
 
 class JSONObjectsToCSVRequest(BaseModel):
     json_objects: List[Dict[str, Any]]
     delimiter: Optional[str] = ","
 
+
 class JSONObjectsToExcelRequest(BaseModel):
     json_objects: List[Dict[str, Any]]
 
 
-# XML to JSON - Accepts both multipart/form-data and JSON body
+# ---------------------------------------------------------------------------
+# Helper utilities
+# ---------------------------------------------------------------------------
+
+def _build_download_url(filename: str) -> str:
+    """Build consistent download url for generated files."""
+    return f"/api/v1/jsonconversiontools/download/{filename}"
+
+
+def _cleanup_files(*paths: Optional[str]) -> None:
+    """Cleanup temporary files if they exist."""
+    for path in paths:
+        if path:
+            FileService.cleanup_file(path)
+
+
+# ---------------------------------------------------------------------------
+# 1. AI: Convert PDF to JSON
+# ---------------------------------------------------------------------------
+
+@router.post("/ai/pdf-to-json", response_model=ConversionResponse)
+async def ai_convert_pdf_to_json(file: UploadFile = File(...)):
+    """AI-assisted PDF to JSON conversion with structured extraction."""
+    input_path: Optional[str] = None
+    output_path: Optional[str] = None
+
+    try:
+        FileService.validate_file(file, "document")
+        input_path = FileService.save_uploaded_file(file)
+        output_path = FileService.get_output_path(input_path, ".json")
+
+        result_path = PDFConversionService.pdf_to_json(input_path, output_path)
+        with open(result_path, "r", encoding="utf-8") as f:
+            json_payload = f.read()
+
+        JSONConversionService.log_conversion(
+            "ai-pdf-to-json",
+            f"File: {file.filename}",
+            json_payload[:500],
+            True,
+            user_id=None,
+        )
+
+        return ConversionResponse(
+            success=True,
+            message="AI: PDF converted to JSON successfully",
+            output_filename=os.path.basename(result_path),
+            download_url=_build_download_url(os.path.basename(result_path)),
+            converted_data=json_payload,
+        )
+
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        JSONConversionService.log_conversion(
+            "ai-pdf-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        JSONConversionService.log_conversion(
+            "ai-pdf-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500,
+        )
+    finally:
+        _cleanup_files(input_path)
+
+
+# ---------------------------------------------------------------------------
+# 2. AI: Convert PNG to JSON
+# ---------------------------------------------------------------------------
+
+@router.post("/ai/png-to-json", response_model=ConversionResponse)
+async def ai_convert_png_to_json(
+    file: UploadFile = File(...),
+    include_metadata: bool = Form(True),
+):
+    """AI-assisted PNG to JSON conversion (base64 + metadata)."""
+    input_path: Optional[str] = None
+    output_path: Optional[str] = None
+
+    try:
+        FileService.validate_file(file, "image")
+        ext = os.path.splitext(file.filename or "")[1].lower()
+        if ext != ".png":
+            raise UnsupportedFileTypeError("Only PNG images are allowed for this tool.")
+
+        input_path = FileService.save_uploaded_file(file)
+        output_path = ImageConversionService.image_to_json(input_path, include_metadata)
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            json_payload = f.read()
+
+        JSONConversionService.log_conversion(
+            "ai-png-to-json",
+            f"File: {file.filename}",
+            json_payload[:500],
+            True,
+            user_id=None,
+        )
+
+        return ConversionResponse(
+            success=True,
+            message="AI: PNG converted to JSON successfully",
+            output_filename=os.path.basename(output_path),
+            download_url=_build_download_url(os.path.basename(output_path)),
+            converted_data=json_payload,
+        )
+
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        JSONConversionService.log_conversion(
+            "ai-png-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        JSONConversionService.log_conversion(
+            "ai-png-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500,
+        )
+    finally:
+        _cleanup_files(input_path)
+
+
+# ---------------------------------------------------------------------------
+# 3. AI: Convert JPG to JSON
+# ---------------------------------------------------------------------------
+
+@router.post("/ai/jpg-to-json", response_model=ConversionResponse)
+async def ai_convert_jpg_to_json(
+    file: UploadFile = File(...),
+    include_metadata: bool = Form(True),
+):
+    """AI-assisted JPG/JPEG to JSON conversion (base64 + metadata)."""
+    input_path: Optional[str] = None
+    output_path: Optional[str] = None
+
+    try:
+        FileService.validate_file(file, "image")
+        ext = os.path.splitext(file.filename or "")[1].lower()
+        if ext not in {".jpg", ".jpeg"}:
+            raise UnsupportedFileTypeError("Only JPG or JPEG images are allowed for this tool.")
+
+        input_path = FileService.save_uploaded_file(file)
+        output_path = ImageConversionService.image_to_json(input_path, include_metadata)
+
+        with open(output_path, "r", encoding="utf-8") as f:
+            json_payload = f.read()
+
+        JSONConversionService.log_conversion(
+            "ai-jpg-to-json",
+            f"File: {file.filename}",
+            json_payload[:500],
+            True,
+            user_id=None,
+        )
+
+        return ConversionResponse(
+            success=True,
+            message="AI: JPG converted to JSON successfully",
+            output_filename=os.path.basename(output_path),
+            download_url=_build_download_url(os.path.basename(output_path)),
+            converted_data=json_payload,
+        )
+
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        JSONConversionService.log_conversion(
+            "ai-jpg-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        JSONConversionService.log_conversion(
+            "ai-jpg-to-json",
+            f"File: {file.filename if file else 'unknown'}",
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500,
+        )
+    finally:
+        _cleanup_files(input_path)
+
+
+# ---------------------------------------------------------------------------
+# 4. Convert XML to JSON
+# ---------------------------------------------------------------------------
+
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
     request: Request,
     xml_content: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
 ):
     """
-    Convert XML to JSON format.
-    
-    Accepts XML input via:
-    1. multipart/form-data: xml_content=<xml_string> OR file=<xml_file> (RECOMMENDED)
-    2. application/json: {"xml_content": "<xml_string>"} (fallback, may fail with special chars)
-    
-    Note: Use multipart/form-data for XML with special characters to avoid JSON parsing errors.
+    Convert XML to JSON format (supports multipart/form-data and JSON body).
     """
-    import uuid
-    from app.core.config import settings
-    
-    xml_data = None
-    input_path = None
-    
+    xml_data: Optional[str] = None
+    input_path: Optional[str] = None
+
     try:
-        # Priority: file > form data > JSON body
         if file and file.filename:
-            # Read XML from uploaded file
             input_path = FileService.save_uploaded_file(file)
-            with open(input_path, 'r', encoding='utf-8') as f:
+            with open(input_path, "r", encoding="utf-8") as f:
                 xml_data = f.read()
         elif xml_content:
-            # Use XML content from Form data (handles special characters better)
-            # Clean XML content - remove leading/trailing whitespace
             xml_data = xml_content.strip()
-            
-            # Validate XML is not empty
             if not xml_data:
                 raise ValueError("XML content cannot be empty")
         else:
-            # Try to parse JSON body as fallback
             content_type = request.headers.get("content-type", "")
             if "application/json" in content_type:
-                try:
-                    body = await request.json()
-                    if isinstance(body, dict) and "xml_content" in body:
-                        xml_data = body["xml_content"]
-                    else:
-                        raise ValueError("JSON body must contain 'xml_content' field")
-                except Exception as json_error:
-                    raise ValueError(
-                        f"Failed to parse JSON body (XML with special characters may cause this). "
-                        f"Use multipart/form-data instead. Error: {str(json_error)}"
-                    )
+                body = await request.json()
+                if isinstance(body, dict) and "xml_content" in body:
+                    xml_data = body["xml_content"]
+                else:
+                    raise ValueError("JSON body must contain 'xml_content' field")
             else:
                 raise ValueError(
                     "Either xml_content (multipart/form-data) or file must be provided. "
                     "For JSON body, ensure Content-Type is application/json."
                 )
-        
-        # Convert XML to JSON
+
         json_result = JSONConversionService.xml_to_json(xml_data)
-        
-        # Convert result to formatted JSON string
         json_string = json.dumps(json_result, indent=2)
-        
-        # Save JSON to file for download
+
         output_filename = f"xml_to_json_{uuid.uuid4().hex[:8]}.json"
         output_path = os.path.join(settings.output_dir, output_filename)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(json_string)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "xml-to-json",
-            xml_data[:500] if len(xml_data) > 500 else xml_data,
+            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
             json_string[:500] if len(json_string) > 500 else json_string,
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="XML converted to JSON successfully",
-            converted_data=json_string,  # JSON content as string (for preview)
-            output_filename=output_filename,  # JSON file name (for download)
-            download_url=f"/api/v1/jsonconversiontools/download/{output_filename}"  # Full download URL
+            converted_data=json_string,
+            output_filename=output_filename,
+            download_url=_build_download_url(output_filename),
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "xml-to-json",
@@ -144,18 +368,12 @@ async def convert_xml_to_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
-        # Cleanup uploaded file if exists
-        if input_path:
-            try:
-                FileService.cleanup_file(input_path)
-            except:
-                pass
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -164,103 +382,42 @@ async def convert_xml_to_json(
             "",
             False,
             str(e),
-            None
-        )
-        # Cleanup uploaded file if exists
-        if input_path:
-            try:
-                FileService.cleanup_file(input_path)
-            except:
-                pass
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
-
-
-# JSON to XML
-@router.post("/json-to-xml", response_model=ConversionResponse)
-async def convert_json_to_xml(
-    request: JSONToXMLRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
-    """Convert JSON to XML format."""
-    try:
-        result = JSONConversionService.json_to_xml(request.json_data, request.root_name)
-        
-        # Log conversion
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json.dumps(request.json_data),
-            result,
-            True,
-            user_id=None
-        )
-        
-        return ConversionResponse(
-            success=True,
-            message="JSON converted to XML successfully",
-            converted_data=result
-        )
-        
-    except FileProcessingError as e:
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json.dumps(request.json_data),
-            "",
-            False,
-            str(e),
-            None
-        )
-        raise create_error_response(
-            error_type="FileProcessingError",
-            message=str(e),
-            status_code=400
-        )
-    except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json.dumps(request.json_data),
-            "",
-            False,
-            str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
-# JSON Formatter
+# ---------------------------------------------------------------------------
+# 5. JSON Formatter
+# ---------------------------------------------------------------------------
+
 @router.post("/json-formatter", response_model=ConversionResponse)
-async def format_json(
-    request: JSONFormatRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def format_json(request: JSONFormatRequest):
     """Format JSON with proper indentation."""
     try:
-        result = JSONConversionService.format_json(request.json_data)
-        
-        # Log conversion
+        formatted = JSONConversionService.format_json(request.json_data)
+
         JSONConversionService.log_conversion(
             "json-formatter",
             json.dumps(request.json_data),
-            result,
+            formatted,
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="JSON formatted successfully",
-            converted_data=result
+            converted_data=formatted,
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-formatter",
@@ -268,12 +425,12 @@ async def format_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -282,37 +439,38 @@ async def format_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# JSON Validator (accepts JSON directly)
+# ---------------------------------------------------------------------------
+# 6. JSON Validator
+# ---------------------------------------------------------------------------
+
 @router.post("/json-validator")
 async def validate_json(json_data: dict):
     """Validate JSON directly without string wrapper."""
     try:
-        # Convert dict to JSON string for validation
         json_string = json.dumps(json_data)
         result = JSONConversionService.validate_json(json_string)
-        
-        # Log validation without user info
+
         JSONConversionService.log_conversion(
             "json-validator",
             json_string,
             json.dumps(result),
             result.get("valid", False),
             None if result.get("valid") else result.get("message"),
-            None
+            None,
         )
-        
+
         return result
-        
+
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-validator",
@@ -320,94 +478,95 @@ async def validate_json(json_data: dict):
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# Public JSON Formatter (no authentication required)
-@router.post("/public/json-formatter", response_model=ConversionResponse)
-async def format_json_public(request: JSONFormatRequest):
-    """Format JSON with proper indentation (public endpoint)."""
+# ---------------------------------------------------------------------------
+# 7. Convert JSON to XML
+# ---------------------------------------------------------------------------
+
+@router.post("/json-to-xml", response_model=ConversionResponse)
+async def convert_json_to_xml(request: JSONToXMLRequest):
+    """Convert JSON to XML format."""
     try:
-        result = JSONConversionService.format_json(request.json_data)
-        
-        # Log conversion without user info
+        result = JSONConversionService.json_to_xml(request.json_data, request.root_name)
+
         JSONConversionService.log_conversion(
-            "json-formatter-public",
+            "json-to-xml",
             json.dumps(request.json_data),
             result,
             True,
-            None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
-            message="JSON formatted successfully",
-            converted_data=result
+            message="JSON converted to XML successfully",
+            converted_data=result,
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
-            "json-formatter-public",
+            "json-to-xml",
             json.dumps(request.json_data),
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
-            "json-formatter-public",
+            "json-to-xml",
             json.dumps(request.json_data),
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# JSON to CSV
+# ---------------------------------------------------------------------------
+# 8. Convert JSON to CSV
+# ---------------------------------------------------------------------------
+
 @router.post("/json-to-csv", response_model=ConversionResponse)
-async def convert_json_to_csv(
-    request: JSONToCSVRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_json_to_csv(request: JSONToCSVRequest):
     """Convert JSON to CSV format."""
     try:
         result = JSONConversionService.json_to_csv(request.json_data, request.delimiter)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "json-to-csv",
             json.dumps(request.json_data),
             result,
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="JSON converted to CSV successfully",
-            converted_data=result
+            converted_data=result,
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-to-csv",
@@ -415,12 +574,12 @@ async def convert_json_to_csv(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -429,42 +588,42 @@ async def convert_json_to_csv(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# JSON to Excel
+# ---------------------------------------------------------------------------
+# 9. Convert JSON to Excel
+# ---------------------------------------------------------------------------
+
 @router.post("/json-to-excel", response_model=ConversionResponse)
-async def convert_json_to_excel(
-    request: JSONObjectsToExcelRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_json_to_excel(request: JSONObjectsToExcelRequest):
     """Convert JSON to Excel file."""
     try:
         output_path = JSONConversionService.json_to_excel(request.json_objects)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "json-to-excel",
             json.dumps(request.json_objects),
             f"File: {output_path}",
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
+        filename = os.path.basename(output_path)
         return ConversionResponse(
             success=True,
             message="JSON converted to Excel successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=filename,
+            download_url=_build_download_url(filename),
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-to-excel",
@@ -472,12 +631,12 @@ async def convert_json_to_excel(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -486,50 +645,45 @@ async def convert_json_to_excel(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# Excel to JSON
+# ---------------------------------------------------------------------------
+# 10. Convert Excel to JSON
+# ---------------------------------------------------------------------------
+
 @router.post("/excel-to-json", response_model=ConversionResponse)
-async def convert_excel_to_json(
-    file: UploadFile = File(...),
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_excel_to_json(file: UploadFile = File(...)):
     """Convert Excel file to JSON."""
-    input_path = None
-    
+    input_path: Optional[str] = None
+
     try:
-        # Validate file
         FileService.validate_file(file)
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
-        
-        # Convert Excel to JSON
+
         result = JSONConversionService.excel_to_json(input_path)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "excel-to-json",
             f"File: {file.filename}",
             json.dumps(result),
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="Excel converted to JSON successfully",
-            converted_data=result
+            converted_data=result,
         )
-        
+
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
         JSONConversionService.log_conversion(
             "excel-to-json",
@@ -537,12 +691,12 @@ async def convert_excel_to_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -551,59 +705,53 @@ async def convert_excel_to_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
     finally:
-        # Cleanup temporary files
-        if input_path:
-            JSONConversionService.cleanup_temp_files(input_path)
+        _cleanup_files(input_path)
 
 
-# CSV to JSON
+# ---------------------------------------------------------------------------
+# 11. Convert CSV to JSON
+# ---------------------------------------------------------------------------
+
 @router.post("/csv-to-json", response_model=ConversionResponse)
 async def convert_csv_to_json(
     file: UploadFile = File(...),
     delimiter: str = Form(","),
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
 ):
     """Convert CSV file to JSON."""
-    input_path = None
-    
+    input_path: Optional[str] = None
+
     try:
-        # Validate file
         FileService.validate_file(file)
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
-        
-        # Read CSV content
-        with open(input_path, 'r', encoding='utf-8') as f:
+
+        with open(input_path, "r", encoding="utf-8") as f:
             csv_content = f.read()
-        
-        # Convert CSV to JSON
+
         result = JSONConversionService.csv_to_json(csv_content, delimiter)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "csv-to-json",
             f"File: {file.filename}",
             json.dumps(result),
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="CSV converted to JSON successfully",
-            converted_data=result
+            converted_data=result,
         )
-        
+
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
         JSONConversionService.log_conversion(
             "csv-to-json",
@@ -611,12 +759,12 @@ async def convert_csv_to_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -625,45 +773,42 @@ async def convert_csv_to_json(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
     finally:
-        # Cleanup temporary files
-        if input_path:
-            JSONConversionService.cleanup_temp_files(input_path)
+        _cleanup_files(input_path)
 
 
-# JSON to YAML
+# ---------------------------------------------------------------------------
+# 12. Convert JSON to YAML
+# ---------------------------------------------------------------------------
+
 @router.post("/json-to-yaml", response_model=ConversionResponse)
-async def convert_json_to_yaml(
-    request: JSONToYAMLRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_json_to_yaml(request: JSONToYAMLRequest):
     """Convert JSON to YAML format."""
     try:
         result = JSONConversionService.json_to_yaml(request.json_data)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "json-to-yaml",
             json.dumps(request.json_data),
             result,
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="JSON converted to YAML successfully",
-            converted_data=result
+            converted_data=result,
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-to-yaml",
@@ -671,12 +816,12 @@ async def convert_json_to_yaml(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -685,97 +830,40 @@ async def convert_json_to_yaml(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# YAML to JSON
-@router.post("/yaml-to-json", response_model=ConversionResponse)
-async def convert_yaml_to_json(
-    request: YAMLToJSONRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
-    """Convert YAML to JSON format."""
-    try:
-        result = JSONConversionService.yaml_to_json(request.yaml_content)
-        
-        # Log conversion
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            request.yaml_content,
-            json.dumps(result),
-            True,
-            user_id=None
-        )
-        
-        return ConversionResponse(
-            success=True,
-            message="YAML converted to JSON successfully",
-            converted_data=result
-        )
-        
-    except FileProcessingError as e:
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            request.yaml_content,
-            "",
-            False,
-            str(e),
-            None
-        )
-        raise create_error_response(
-            error_type="FileProcessingError",
-            message=str(e),
-            status_code=400
-        )
-    except Exception as e:
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            request.yaml_content,
-            "",
-            False,
-            str(e),
-            None
-        )
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+# ---------------------------------------------------------------------------
+# 13. Convert JSON objects to CSV
+# ---------------------------------------------------------------------------
 
-
-# JSON Objects to CSV
 @router.post("/json-objects-to-csv", response_model=ConversionResponse)
-async def convert_json_objects_to_csv(
-    request: JSONObjectsToCSVRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_json_objects_to_csv(request: JSONObjectsToCSVRequest):
     """Convert JSON objects array to CSV format."""
     try:
         result = JSONConversionService.json_objects_to_csv(request.json_objects, request.delimiter)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "json-objects-to-csv",
             json.dumps(request.json_objects),
             result,
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
         return ConversionResponse(
             success=True,
             message="JSON objects converted to CSV successfully",
-            converted_data=result
+            converted_data=result,
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-objects-to-csv",
@@ -783,12 +871,12 @@ async def convert_json_objects_to_csv(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -797,42 +885,42 @@ async def convert_json_objects_to_csv(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# JSON Objects to Excel
+# ---------------------------------------------------------------------------
+# 14. Convert JSON objects to Excel
+# ---------------------------------------------------------------------------
+
 @router.post("/json-objects-to-excel", response_model=ConversionResponse)
-async def convert_json_objects_to_excel(
-    request: JSONObjectsToExcelRequest,
-    # current_user: dict = Depends(get_current_user)  # Removed authentication
-):
+async def convert_json_objects_to_excel(request: JSONObjectsToExcelRequest):
     """Convert JSON objects array to Excel file."""
     try:
         output_path = JSONConversionService.json_objects_to_excel(request.json_objects)
-        
-        # Log conversion
+
         JSONConversionService.log_conversion(
             "json-objects-to-excel",
             json.dumps(request.json_objects),
             f"File: {output_path}",
             True,
-            user_id=None
+            user_id=None,
         )
-        
+
+        filename = os.path.basename(output_path)
         return ConversionResponse(
             success=True,
             message="JSON objects converted to Excel successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=filename,
+            download_url=_build_download_url(filename),
         )
-        
+
     except FileProcessingError as e:
         JSONConversionService.log_conversion(
             "json-objects-to-excel",
@@ -840,12 +928,12 @@ async def convert_json_objects_to_excel(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="FileProcessingError",
             message=str(e),
-            status_code=400
+            status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
@@ -854,30 +942,140 @@ async def convert_json_objects_to_excel(
             "",
             False,
             str(e),
-            None
+            None,
         )
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
             details={"error": str(e)},
-            status_code=500
+            status_code=500,
         )
 
 
-# Download endpoint for generated files
+# ---------------------------------------------------------------------------
+# 15. Convert YAML to JSON
+# ---------------------------------------------------------------------------
+
+@router.post("/yaml-to-json", response_model=ConversionResponse)
+async def convert_yaml_to_json(request: YAMLToJSONRequest):
+    """Convert YAML to JSON format."""
+    try:
+        result = JSONConversionService.yaml_to_json(request.yaml_content)
+
+        JSONConversionService.log_conversion(
+            "yaml-to-json",
+            request.yaml_content,
+            json.dumps(result),
+            True,
+            user_id=None,
+        )
+
+        return ConversionResponse(
+            success=True,
+            message="YAML converted to JSON successfully",
+            converted_data=result,
+        )
+
+    except FileProcessingError as e:
+        JSONConversionService.log_conversion(
+            "yaml-to-json",
+            request.yaml_content,
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="FileProcessingError",
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        JSONConversionService.log_conversion(
+            "yaml-to-json",
+            request.yaml_content,
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Additional Public Utilities
+# ---------------------------------------------------------------------------
+
+@router.post("/public/json-formatter", response_model=ConversionResponse)
+async def format_json_public(request: JSONFormatRequest):
+    """Public JSON formatter (no authentication required)."""
+    try:
+        formatted = JSONConversionService.format_json(request.json_data)
+
+        JSONConversionService.log_conversion(
+            "json-formatter-public",
+            json.dumps(request.json_data),
+            formatted,
+            True,
+            None,
+        )
+
+        return ConversionResponse(
+            success=True,
+            message="JSON formatted successfully",
+            converted_data=formatted,
+        )
+
+    except FileProcessingError as e:
+        JSONConversionService.log_conversion(
+            "json-formatter-public",
+            json.dumps(request.json_data),
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="FileProcessingError",
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        JSONConversionService.log_conversion(
+            "json-formatter-public",
+            json.dumps(request.json_data),
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Download Endpoint
+# ---------------------------------------------------------------------------
+
 @router.get("/download/{filename}")
 async def download_file(filename: str):
     """Download converted file."""
-    from app.core.config import settings
-    import os
-    
     file_path = os.path.join(settings.output_dir, filename)
-    
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     return FileResponse(
         path=file_path,
         filename=filename,
-        media_type='application/octet-stream'
+        media_type="application/octet-stream",
     )
