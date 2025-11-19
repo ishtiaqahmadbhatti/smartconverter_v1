@@ -1447,32 +1447,55 @@ async def merge_pdfs(
 async def split_pdf(
     file: UploadFile = File(...),
     split_type: str = Form("every_page"),
-    page_ranges: Optional[str] = Form(None)
+    page_ranges: Optional[str] = Form(None),
+    output_prefix: Optional[str] = Form(None),
+    zip: bool = Form(False)
 ):
     """Split PDF into multiple files."""
     input_path = None
-    output_files = []
+    final_filename = None
     
     try:
         FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
         
-        # Parse page ranges if provided
         ranges = None
         if page_ranges:
             ranges = [r.strip() for r in page_ranges.split(',')]
-        
-        # Split PDF
-        output_dir = os.path.dirname(FileService.get_output_path(input_path, "_split"))
-        result_files = PDFConversionService.split_pdf(input_path, output_dir, split_type, ranges)
-        output_files = result_files
-        
-        return PDFConversionResponse(
-            success=True,
-            message=f"PDF split into {len(result_files)} files",
-            output_filename=f"{len(result_files)}_files.zip",
-            download_url=f"/download/split_results"
+
+        st = (split_type or "").strip().lower()
+        # Default split behavior: if ranges provided and no explicit type, use page_ranges; else every_page
+        if st == "" and ranges:
+            st = "page_ranges"
+        elif st == "":
+            st = "every_page"
+
+        result = PDFConversionService.split_pdf(
+            input_path=input_path,
+            split_type=st,
+            ranges=ranges,
+            output_prefix=output_prefix,
+            zip_output=zip,
         )
+
+        folder_name = result.get("folder_name")
+        files_payload = [
+            {
+                "filename": item["filename"],
+                "download_url": f"/download/{folder_name}/{item['filename']}" if folder_name else f"/download/{item['filename']}",
+                "pages": item.get("pages", [])
+            }
+            for item in result.get("files", [])
+        ]
+
+        resp = PDFConversionResponse(
+            success=True,
+            message=f"PDF split into {result.get('count', 0)} files",
+            output_filename=result.get("zip_filename"),
+            download_url=(f"/download/{result['zip_filename']}" if result.get("zip_filename") else None),
+            extracted_data={"files": files_payload}
+        )
+        return resp
         
     except Exception as e:
         raise create_error_response(

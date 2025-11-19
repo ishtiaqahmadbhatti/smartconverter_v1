@@ -34,6 +34,11 @@ except ImportError:
     CAIROSVG_AVAILABLE = False
 from io import BytesIO
 import base64
+import re
+import zipfile
+from datetime import datetime
+from PyPDF2 import PdfReader, PdfWriter
+from app.core.config import settings
 from app.core.exceptions import FileProcessingError
 from PyPDF2 import PdfMerger
 
@@ -1161,3 +1166,133 @@ class PDFConversionService:
                 os.remove(file_path)
         except Exception:
             pass  # Ignore cleanup errors
+
+    @staticmethod
+    def split_pdf(
+        input_path: str,
+        split_type: str = "every_page",
+        ranges: Optional[List[str]] = None,
+        output_prefix: Optional[str] = None,
+        zip_output: bool = False,
+    ) -> Dict[str, Any]:
+        try:
+            base_name = os.path.splitext(os.path.basename(input_path))[0] or "pdf"
+            prefix_base = (output_prefix or base_name)
+            sanitized_prefix = re.sub(r"[^A-Za-z0-9._-]+", "_", prefix_base).strip("._") or "pdf"
+
+            output_root = settings.output_dir if settings and settings.output_dir else os.path.dirname(input_path)
+            os.makedirs(output_root, exist_ok=True)
+            folder_name = sanitized_prefix
+            output_folder = os.path.join(output_root, folder_name)
+            os.makedirs(output_folder, exist_ok=True)
+
+            reader = PdfReader(input_path)
+            total_pages = len(reader.pages)
+            results: List[Dict[str, Any]] = []
+
+            def _unique_path(name_without_ext: str) -> str:
+                candidate = f"{name_without_ext}.pdf"
+                path = os.path.join(output_folder, candidate)
+                counter = 1
+                while os.path.exists(path):
+                    candidate = f"{name_without_ext}_{counter}.pdf"
+                    path = os.path.join(output_folder, candidate)
+                    counter += 1
+                return path
+
+            def _emit(start: int, end: int, pages_desc: str, pages_list: List[int]):
+                writer = PdfWriter()
+                for p in pages_list:
+                    if p < 1 or p > total_pages:
+                        raise FileProcessingError("Invalid page range")
+                    writer.add_page(reader.pages[p - 1])
+                name_without_ext = f"{sanitized_prefix}_{pages_desc}" if pages_desc else f"{sanitized_prefix}"
+                out_path = _unique_path(name_without_ext)
+                with open(out_path, "wb") as f:
+                    writer.write(f)
+                results.append({
+                    "path": out_path,
+                    "filename": os.path.basename(out_path),
+                    "pages": pages_list,
+                })
+
+            st = (split_type or "").strip().lower()
+            if st == "every_page" or (st == "" and not ranges):
+                for i in range(1, total_pages + 1):
+                    _emit(i, i, f"page_{i}", [i])
+            elif st == "page_ranges" or (st == "" and ranges):
+                if not ranges:
+                    raise FileProcessingError("page_ranges required for split_type=page_ranges")
+                for token in ranges:
+                    token = (token or "").strip()
+                    if not token:
+                        continue
+                    if "-" in token:
+                        s, e = token.split("-", 1)
+                        start = int(s)
+                        end = int(e)
+                    else:
+                        start = int(token)
+                        end = start
+                    if start > end:
+                        start, end = end, start
+                    pages_list = list(range(start, end + 1))
+                    # Naming as requested: prefix_page_1 and prefix_page_3_5
+                    desc = f"page_{start}_{end}" if start != end else f"page_{start}"
+                    _emit(start, end, desc, pages_list)
+            else:
+                raise FileProcessingError("Unsupported split type")
+
+            result: Dict[str, Any] = {"files": results, "count": len(results), "folder_name": folder_name}
+            if zip_output:
+                zip_name = f"{folder_name}.zip"
+                zip_path = os.path.join(output_root, zip_name)
+                counter = 1
+                while os.path.exists(zip_path):
+                    zip_name = f"{folder_name}_{counter}.zip"
+                    zip_path = os.path.join(output_root, zip_name)
+                    counter += 1
+                with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for item in results:
+                        zf.write(item["path"], arcname=os.path.join(folder_name, item["filename"]))
+                result["zip_path"] = zip_path
+                result["zip_filename"] = os.path.basename(zip_path)
+            return result
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def extract_pages_to_single(input_path: str, output_path: str, ranges: List[str]) -> str:
+        try:
+            reader = PdfReader(input_path)
+            writer = PdfWriter()
+            total_pages = len(reader.pages)
+
+            for token in ranges:
+                token = (token or "").strip()
+                if not token:
+                    continue
+                if "-" in token:
+                    s, e = token.split("-", 1)
+                    start = int(s)
+                    end = int(e)
+                else:
+                    start = int(token)
+                    end = start
+                if start < 1 or end < 1 or start > total_pages or end > total_pages:
+                    raise FileProcessingError("Invalid page range")
+                if start > end:
+                    start, end = end, start
+                for p in range(start, end + 1):
+                    writer.add_page(reader.pages[p - 1])
+
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
