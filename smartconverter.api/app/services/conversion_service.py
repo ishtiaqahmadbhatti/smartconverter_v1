@@ -23,14 +23,20 @@ class ConversionService:
     """Service for handling file conversions."""
     
     @staticmethod
-    def pdf_to_word(input_path: str) -> str:
+    def pdf_to_word(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert PDF to Word document."""
         try:
             # Validate input file exists
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input PDF file not found: {input_path}")
             
-            output_path = FileService.get_output_path(input_path, ".docx")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(),
+                    default_extension=".docx",
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".docx")
             
             # Use pdf2docx to convert PDF to Word
             cv = Converter(input_path)

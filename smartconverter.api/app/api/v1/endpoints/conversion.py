@@ -1,5 +1,6 @@
 import os
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from typing import Optional
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form
 from fastapi.responses import FileResponse
 from app.models.schemas import ConversionResponse, ConversionType
 from app.services.file_service import FileService
@@ -15,7 +16,10 @@ router = APIRouter()
 
 
 @router.post("/pdf-to-word", response_model=ConversionResponse)
-async def convert_pdf_to_word(file: UploadFile = File(...)):
+async def convert_pdf_to_word(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
+):
     """Convert PDF file to Word document."""
     input_path = None
     output_path = None
@@ -28,7 +32,10 @@ async def convert_pdf_to_word(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert PDF to Word
-        output_path = ConversionService.pdf_to_word(input_path)
+        sanitized_filename = output_filename.strip() if output_filename else None
+        output_path = ConversionService.pdf_to_word(
+            input_path, output_filename=sanitized_filename
+        )
         
         return ConversionResponse(
             success=True,

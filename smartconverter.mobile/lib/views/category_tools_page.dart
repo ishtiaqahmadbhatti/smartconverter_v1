@@ -135,6 +135,7 @@ import 'conversions/pdf/pdf_to_png_page.dart';
 import 'conversions/pdf/pdf_to_tiff_page.dart';
 import 'conversions/pdf/pdf_to_svg_page.dart';
 import 'conversions/pdf/pdf_to_text_page.dart';
+import 'conversions/pdf/pdf_to_word_page.dart';
 import 'conversions/pdf/pdf_to_html_page.dart';
 import 'conversions/pdf/markdown_to_pdf_page.dart';
 import 'conversions/pdf/jpg_to_pdf_page.dart';
@@ -605,7 +606,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert PDF to Excel':
           return const PdfToExcelPage();
         case 'Convert PDF to Word':
-          return const PdfToWordOfficePage();
+          return const PdfToWordPage();
         case 'Convert PDF to JPG':
           return const PdfToJpgPage();
         case 'Convert PDF to PNG':

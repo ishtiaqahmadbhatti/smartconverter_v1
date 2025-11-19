@@ -154,7 +154,7 @@ class JSONConversionService:
             
             root_dict = xml_to_dict(root)
             root_name = format_name(root.tag)
-            
+                
             # Inject namespace declarations into root attributes
             if namespace_prefix_to_uri:
                 ns_attrs = {}
@@ -165,11 +165,11 @@ class JSONConversionService:
                     root_attrs = root_dict.setdefault('@attributes', {})
                     for key, value in ns_attrs.items():
                         root_attrs.setdefault(key, value)
-                else:
-                    root_dict = {
-                        '@attributes': ns_attrs,
-                        '#text': root_dict
-                    }
+                    else:
+                        root_dict = {
+                            '@attributes': ns_attrs,
+                            '#text': root_dict
+                        }
             
             # Attach comments at root level (trimmed)
             if comments:

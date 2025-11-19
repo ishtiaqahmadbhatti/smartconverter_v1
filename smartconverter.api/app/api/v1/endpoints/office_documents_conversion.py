@@ -68,14 +68,19 @@ async def convert_pdf_to_excel(file: UploadFile = File(...)):
 
 
 @router.post("/pdf-to-word", response_model=ConversionResponse)
-async def convert_pdf_to_word(file: UploadFile = File(...)):
+async def convert_pdf_to_word(
+    file: UploadFile = File(...), output_filename: Optional[str] = Form(None)
+):
     """Convert PDF to Word document."""
     try:
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="File must be a PDF")
         
         file_content = await file.read()
-        output_path = OfficeDocumentsConversionService.pdf_to_word(file_content)
+        sanitized_filename = output_filename.strip() if output_filename else None
+        output_path = OfficeDocumentsConversionService.pdf_to_word(
+            file_content, output_filename=sanitized_filename
+        )
         
         # Create download URL
         filename = os.path.basename(output_path)

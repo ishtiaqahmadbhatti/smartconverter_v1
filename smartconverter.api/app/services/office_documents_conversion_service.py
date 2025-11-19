@@ -29,6 +29,7 @@ import xlsxwriter
 
 # Database logging
 from app.services.request_logging_service import RequestLoggingService
+from app.services.file_service import FileService
 
 logger = logging.getLogger(__name__)
 
@@ -124,18 +125,24 @@ class OfficeDocumentsConversionService:
             raise Exception(f"Failed to convert PDF to Excel: {str(e)}")
     
     @staticmethod
-    def pdf_to_word(file_content: bytes) -> str:
+    def pdf_to_word(file_content: bytes, output_filename: Optional[str] = None) -> str:
         """Convert PDF to Word document."""
         try:
             import uuid
             
-            # Create unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"pdf_to_word_{unique_id}.docx"
-            output_path = os.path.join("outputs", filename)
-            
-            # Ensure outputs directory exists
-            os.makedirs("outputs", exist_ok=True)
+            if output_filename and output_filename.strip():
+                output_path, filename = FileService.generate_output_path_with_filename(
+                    output_filename.strip(),
+                    default_extension=".docx",
+                )
+            else:
+                # Create unique filename
+                unique_id = str(uuid.uuid4())
+                filename = f"pdf_to_word_{unique_id}.docx"
+                output_path = os.path.join("outputs", filename)
+                
+                # Ensure outputs directory exists
+                os.makedirs("outputs", exist_ok=True)
             
             # Create temporary file for PDF
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as pdf_file:

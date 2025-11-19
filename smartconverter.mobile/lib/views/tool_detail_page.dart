@@ -120,7 +120,10 @@ class _ToolDetailPageState extends State<ToolDetailPage>
 
       switch (widget.tool.id) {
         case 'pdf_word':
-          result = await _conversionService.convertPdfToWord(_selectedFile!);
+          final pdfWordResult = await _conversionService.convertPdfToWord(
+            _selectedFile!,
+          );
+          result = pdfWordResult?.file;
           break;
         case 'image_pdf':
           result = await _conversionService.convertImageToPdf([_selectedFile!]);
@@ -132,8 +135,9 @@ class _ToolDetailPageState extends State<ToolDetailPage>
           result = await _conversionService.convertWordToText(_selectedFile!);
           break;
         case 'html_pdf':
-          final htmlResult =
-              await _conversionService.convertHtmlToPdf(_selectedFile!);
+          final htmlResult = await _conversionService.convertHtmlToPdf(
+            _selectedFile!,
+          );
           result = htmlResult?.file;
           break;
       }

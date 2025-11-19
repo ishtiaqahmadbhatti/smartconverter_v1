@@ -123,14 +123,32 @@ class ConversionService {
   }
 
   // PDF to Word conversion
-  Future<File?> convertPdfToWord(File pdfFile) async {
+  Future<ImageToPdfResult?> convertPdfToWord(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
     try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
       FormData formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          pdfFile.path,
-          filename: pdfFile.path.split('/').last,
-        ),
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
       });
+
+      _debugLog('📤 Uploading PDF file for Word conversion...');
 
       Response response = await _dio.post(
         ApiConfig.pdfToWordEndpoint,
@@ -138,12 +156,24 @@ class ConversionService {
       );
 
       if (response.statusCode == 200) {
-        // Download the converted file
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.docx';
 
-        String fileName =
-            response.data['output_filename'] ?? 'converted_document.docx';
-        return await _tryDownloadFile(fileName, downloadUrl);
+        _debugLog('✅ PDF converted to Word successfully!');
+        _debugLog('📥 Downloading Word document: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
       }
 
       return null;
