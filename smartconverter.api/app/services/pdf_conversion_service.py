@@ -261,11 +261,11 @@ class PDFConversionService:
                 # Extract and add table data
                 for table in tables:
                     try:
-                    table_data = table.extract()
+                        table_data = table.extract()
                         if table_data and len(table_data) > 0:
                             has_table_data = True
-                        for row_idx, row in enumerate(table_data):
-                            for col_idx, cell in enumerate(row):
+                            for row_idx, row in enumerate(table_data):
+                                for col_idx, cell in enumerate(row):
                                     if cell:  # Only add non-empty cells
                                         ws.cell(row=row_offset + row_idx, column=col_idx + 1, value=str(cell))
                             row_offset += len(table_data) + 2  # Add spacing between tables
@@ -274,7 +274,7 @@ class PDFConversionService:
                         pass
                 
                 # Extract text content
-                    text = page.get_text()
+                text = page.get_text()
                 if text and text.strip():
                     # If we have table data, add text after tables, otherwise start from row 1
                     if not has_table_data:
@@ -435,7 +435,7 @@ class PDFConversionService:
                 html_content = markdown.markdown(md_content, extensions=md_extensions)
             except:
                 # Fallback to basic markdown if extensions not available
-            html_content = markdown.markdown(md_content)
+                html_content = markdown.markdown(md_content)
             
             if not WEASYPRINT_AVAILABLE:
                 # Fallback to reportlab with proper HTML parsing using BeautifulSoup
@@ -1048,7 +1048,7 @@ class PDFConversionService:
                     image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
                     image.save(output_file, format="TIFF")
                 else:
-                pix.save(output_file)
+                    pix.save(output_file)
                 output_files.append(output_file)
             
             doc.close()
