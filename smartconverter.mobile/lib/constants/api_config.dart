@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.102';
+  static const String networkIp = '192.168.8.100';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -65,7 +65,38 @@ class ApiConfig {
   static const String compressPdfEndpoint = '/convert/compress-pdf';
   static const String rotatePdfEndpoint = '/api/v1/pdf/rotate';
   static const String addPageNumbersEndpoint = '/api/v1/pdf/add-page-numbers';
-  static const String mergePdfEndpoint = '/api/v1/pdf/merge';
+  static const String mergePdfEndpoint = '/api/v1/pdfconversiontools/merge';
+  static const String markdownToPdfEndpoint =
+      '/api/v1/pdfconversiontools/markdown-to-pdf';
+  static const String jpgToPdfEndpoint =
+      '/api/v1/pdfconversiontools/jpg-to-pdf';
+  static const String pngToPdfEndpoint =
+      '/api/v1/pdfconversiontools/png-to-pdf';
+  // PDF to HTML conversion endpoint
+  static const String pdfToHtmlEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-html';
+  static const String htmlToPdfEndpoint =
+      '/api/v1/pdfconversiontools/html-to-pdf';
+  static const String pdfToMarkdownEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-markdown';
+  static const String pdfToJsonEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-json';
+  static const String pdfToCsvEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-csv';
+  static const String pdfToExcelEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-excel';
+  // PDF to Text conversion endpoint
+  static const String pdfToTextEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-text';
+  // PDF to image conversion endpoints
+  static const String pdfToJpgEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-jpg';
+  static const String pdfToPngEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-png';
+  static const String pdfToTiffEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-tiff';
+  static const String pdfToSvgEndpoint =
+      '/api/v1/pdfconversiontools/pdf-to-svg';
   static const String protectPdfEndpoint = '/api/v1/pdf/protect';
   static const String unlockPdfEndpoint = '/api/v1/pdf/unlock';
   static const String watermarkPdfEndpoint = '/api/v1/pdf/add-watermark';

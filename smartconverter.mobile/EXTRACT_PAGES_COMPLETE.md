@@ -10,7 +10,7 @@ The Extract Pages tool allows users to extract specific pages from PDF documents
 
 ### **1. API Configuration** ✅
 - **Endpoint**: `/api/v1/pdf/extract-pages`
-- **Base URL**: `http://192.168.8.102:8000`
+- **Base URL**: `http://192.168.8.103:8000`
 - **File**: `lib/constants/api_config.dart` (Line 24)
 
 ### **2. Conversion Service Method** ✅
@@ -87,7 +87,7 @@ User selects PDF
 📄 Pages to extract: 1,3,4,5,8
 ✅ Pages extracted successfully!
 📥 Downloading extracted PDF: abc123_extracted.pdf
-✅ Successfully downloaded from: http://192.168.8.102:8000/api/v1/convert/download/...
+✅ Successfully downloaded from: http://192.168.8.103:8000/api/v1/convert/download/...
 ✅ File saved to organized directory: Documents/SmartConverter/ExtractPages/extracted_20251002_1430.pdf
 ```
 

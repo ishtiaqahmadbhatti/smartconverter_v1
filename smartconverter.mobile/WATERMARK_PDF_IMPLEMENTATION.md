@@ -10,7 +10,7 @@ The PDF watermark functionality has been fully implemented with an intuitive UI 
 
 ### 1. **API Configuration** (`lib/constants/api_config.dart`)
 - ✅ Added `watermarkPdfEndpoint = '/api/v1/pdf/add-watermark'`
-- ✅ Configured to use base URL: `http://192.168.8.102:8000`
+- ✅ Configured to use base URL: `http://192.168.8.103:8000`
 
 ### 2. **FileManager Utility** (`lib/utils/file_manager.dart`)
 - ✅ Added `_watermarkPdfFolder = 'WatermarkPDF'`
@@ -147,7 +147,7 @@ if (tool.id == 'watermark_pdf') {
 ## 📡 **API Integration**
 
 ### **Endpoint Details:**
-- **URL**: `http://192.168.8.102:8000/api/v1/pdf/add-watermark`
+- **URL**: `http://192.168.8.103:8000/api/v1/pdf/add-watermark`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 

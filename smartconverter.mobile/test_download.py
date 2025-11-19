@@ -8,7 +8,7 @@ import requests
 import sys
 
 def test_download_endpoint():
-    base_url = "http://192.168.8.102:8003"
+    base_url = "http://192.168.8.100:8003"
     
     print("🧪 Testing FastAPI Download Endpoint")
     print(f"🔗 Base URL: {base_url}")

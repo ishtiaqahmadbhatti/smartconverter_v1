@@ -73,7 +73,7 @@ After these changes:
 
 Test the endpoint directly:
 ```bash
-curl -X GET "http://192.168.8.100:8003/download/test.pdf"
+curl -X GET "http://192.168.8.103:8003/download/test.pdf"
 ```
 
 Should return the file or 404 (which is expected if file doesn't exist).

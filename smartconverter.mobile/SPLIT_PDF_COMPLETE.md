@@ -12,7 +12,7 @@ The Split PDF tool allows users to split PDF documents into multiple files using
 
 ### **1. API Configuration** ✅
 - **Endpoint**: `/api/v1/pdf/split`
-- **Base URL**: `http://192.168.8.100:8000`
+- **Base URL**: `http://192.168.8.103:8000`
 - **File**: `lib/constants/api_config.dart` (Line 25)
 
 ### **2. Conversion Service Method** ✅
@@ -95,7 +95,7 @@ User selects PDF
 📄 Page ranges: 1-3,4-6,7-10
 ✅ PDF split successfully into 3 file(s)!
 📥 Downloading result: split_results.zip
-✅ Successfully downloaded from: http://192.168.8.100:8000/api/v1/convert/download/...
+✅ Successfully downloaded from: http://192.168.8.103:8000/api/v1/convert/download/...
 ✅ File saved to organized directory: Documents/SmartConverter/SplitPDF/split_20251002_1430.zip
 ```
 

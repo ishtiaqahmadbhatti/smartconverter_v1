@@ -2,7 +2,7 @@
 
 ## ✅ **Complete Feature Implementation**
 
-All PDF tools have been successfully integrated with your FastAPI backend running at `http://192.168.8.102:8000`.
+All PDF tools have been successfully integrated with your FastAPI backend running at `http://192.168.8.103:8000`.
 
 ---
 
@@ -16,7 +16,7 @@ All PDF tools have been successfully integrated with your FastAPI backend runnin
 - ✅ Adjust font size
 - ✅ Save to: `Documents/SmartConverter/AddPageNumbers/`
 
-### 2. **📑 Merge PDF** (`/api/v1/pdf/merge`)
+### 2. **📑 Merge PDF** (`/api/v1/pdfconversiontools/merge`)
 - ✅ Select multiple PDFs
 - ✅ Reorder files with ↑ ↓ arrows
 - ✅ Visual order numbers
@@ -81,12 +81,12 @@ Documents/SmartConverter/
 
 ### **Base URL:**
 ```
-http://192.168.8.102:8000
+http://192.168.8.103:8000
 ```
 
 ### **Implemented Endpoints:**
 1. `POST /api/v1/pdf/add-page-numbers` - Add page numbers
-2. `POST /api/v1/pdf/merge` - Merge multiple PDFs
+2. `POST /api/v1/pdfconversiontools/merge` - Merge multiple PDFs
 3. `POST /api/v1/pdf/protect` - Add password protection
 4. `POST /api/v1/pdf/unlock` - Remove password protection
 5. `POST /api/v1/pdf/add-watermark` - Add text watermark

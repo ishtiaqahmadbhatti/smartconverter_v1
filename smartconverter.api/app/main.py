@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler as fastapi_validation_handler
 from app.core.config import settings
 from app.core.exceptions import SmartConvertException
 from app.core.database import init_db, test_connection, SessionLocal
@@ -261,6 +263,21 @@ async def root():
         "docs": "/docs",
         "health": "/api/v1/health/"
     }
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Provide friendly validation errors for specific endpoints."""
+    if request.url.path == "/api/v1/pdfconversiontools/merge":
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error_type": "ValidationError",
+                "message": "Please select at least 2 PDF files before merging.",
+                "details": {"errors": exc.errors()}
+            },
+        )
+
+    return await fastapi_validation_handler(request, exc)
 
 # Global exception handler
 @app.exception_handler(SmartConvertException)

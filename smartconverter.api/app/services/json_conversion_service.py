@@ -92,65 +92,98 @@ class JSONConversionService:
                 else:
                     raise FileProcessingError(f"XML parsing failed: {error_msg}. Please validate your XML format.")
             
-            # Convert to dictionary with full data preservation
-            def xml_to_dict(element, parent_tag=None):
-                result = {}
+            # Capture namespace declarations for cleaner attribute names
+            namespace_uri_to_prefix = {}
+            namespace_prefix_to_uri = {}
+            namespace_pattern = r'xmlns(?::(\w+))?="([^"]+)"'
+            for match in re.findall(namespace_pattern, xml_content):
+                prefix = match[0] or ""
+                uri = match[1]
+                namespace_uri_to_prefix[uri] = prefix
+                namespace_prefix_to_uri[prefix] = uri
+            
+            def format_name(name: str) -> str:
+                """Format XML tag/attribute name with namespace prefixes."""
+                if name.startswith('{'):
+                    uri, local = name[1:].split('}', 1)
+                    prefix = namespace_uri_to_prefix.get(uri)
+                    return f"{prefix}:{local}" if prefix else local
+                return name
+            
+            # Convert to dictionary with cleaned structure
+            def xml_to_dict(element):
+                node: Dict[str, Any] = {}
                 
-                # Add attributes - preserve namespace prefixes
+                # Attributes
                 if element.attrib:
-                    result['@attributes'] = {}
+                    attrs = {}
                     for key, value in element.attrib.items():
-                        # Preserve namespace prefixes in attribute names
-                        result['@attributes'][key] = value
+                        attrs[format_name(key)] = value
+                    if attrs:
+                        node['@attributes'] = attrs
                 
-                # Preserve ALL text content - NEVER STRIP to preserve every word and character
-                text_content = element.text
-                if text_content is not None:
-                    # CRITICAL: Don't strip - preserve original text exactly as is
-                    # Check if it's a CDATA placeholder and restore
-                    text_to_store = text_content  # Preserve original, don't strip
+                # Text content (trim whitespace-only nodes)
+                text_content = element.text or ""
+                text_stripped = text_content.strip()
+                if text_stripped:
+                    text_to_store = text_stripped
                     for placeholder, cdata_content in cdata_map.items():
                         if placeholder in text_to_store:
-                            text_to_store = text_to_store.replace(placeholder, f"<![CDATA[{cdata_content}]]>")
-                    
-                    # If leaf node (no children), return text directly
-                    if len(element) == 0:
+                            text_to_store = text_to_store.replace(
+                                placeholder,
+                                f"<![CDATA[{cdata_content}]]>"
+                            )
+                    if len(element) == 0 and not element.attrib:
                         return text_to_store
-                    else:
-                        # Has children - store text in #text field
-                        # Store even if empty string - preserve structure
-                        result['#text'] = text_to_store
+                    node['#text'] = text_to_store
                 
-                # Process children
-                children = {}
+                # Children
+                children: Dict[str, List[Any]] = {}
                 for child in element:
-                    child_data = xml_to_dict(child, child.tag)
-                    if child.tag in children:
-                        if not isinstance(children[child.tag], list):
-                            children[child.tag] = [children[child.tag]]
-                        children[child.tag].append(child_data)
+                    child_name = format_name(child.tag)
+                    child_value = xml_to_dict(child)
+                    children.setdefault(child_name, []).append(child_value)
+                
+                for key, values in children.items():
+                    if len(values) == 1:
+                        node[key] = values[0]
                     else:
-                        children[child.tag] = child_data
+                        node[key] = values
                 
-                # Add tail text (text after closing tag) - preserve all tail text
-                if element.tail:
-                    # Preserve tail text even if it's just whitespace
-                    if '#tail' not in result:
-                        result['#tail'] = element.tail
+                return node
+            
+            root_dict = xml_to_dict(root)
+            root_name = format_name(root.tag)
+            
+            # Inject namespace declarations into root attributes
+            if namespace_prefix_to_uri:
+                ns_attrs = {}
+                for prefix, uri in namespace_prefix_to_uri.items():
+                    attr_name = f"xmlns:{prefix}" if prefix else "xmlns"
+                    ns_attrs[attr_name] = uri
+                if isinstance(root_dict, dict):
+                    root_attrs = root_dict.setdefault('@attributes', {})
+                    for key, value in ns_attrs.items():
+                        root_attrs.setdefault(key, value)
+                else:
+                    root_dict = {
+                        '@attributes': ns_attrs,
+                        '#text': root_dict
+                    }
+            
+            # Attach comments at root level (trimmed)
+            if comments:
+                cleaned_comments = [c['text'].strip() for c in comments if c['text'].strip()]
+                if cleaned_comments:
+                    if isinstance(root_dict, dict):
+                        root_dict['_comments'] = cleaned_comments
                     else:
-                        result['#tail'] += element.tail
-                
-                result.update(children)
-                
-                return result
+                        root_dict = {
+                            root_name: root_dict,
+                            '_comments': cleaned_comments
+                        }
             
-            json_dict = xml_to_dict(root)
-            
-            # Add comments to root if available
-            if comments_dict and isinstance(json_dict, dict):
-                json_dict['_comments'] = comments_dict['_comments']
-            
-            return json_dict
+            return {root_name: root_dict}
             
         except FileProcessingError:
             # Re-raise FileProcessingError as-is

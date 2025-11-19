@@ -46,8 +46,10 @@ class _XmlToJsonPageState extends State<XmlToJsonPage> {
         type: 'custom',
       );
       if (file != null) {
+        final xmlText = await file.readAsString();
         setState(() {
           _selectedXmlFile = file;
+          _xmlController.text = xmlText;
           _status = 'Selected: ${file.path.split('/').last}';
         });
       }
@@ -63,27 +65,15 @@ class _XmlToJsonPageState extends State<XmlToJsonPage> {
   }
 
   Future<void> _convertXmlToJson() async {
-    // Validate input - at least one must be provided
-    final hasTextContent = _xmlController.text.trim().isNotEmpty;
-    final hasFile = _selectedXmlFile != null;
-
-    if (!hasTextContent && !hasFile) {
+    if (_selectedXmlFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please enter XML content OR select an XML file (at least one is required)',
-          ),
+          content: Text('Please select an XML file to convert.'),
           backgroundColor: AppColors.warning,
           duration: Duration(seconds: 3),
         ),
       );
       return;
-    }
-
-    // If both are provided, prefer file over text content
-    if (hasFile && hasTextContent) {
-      // Clear text content to avoid confusion
-      _xmlController.clear();
     }
 
     setState(() {
@@ -104,34 +94,12 @@ class _XmlToJsonPageState extends State<XmlToJsonPage> {
         ),
       );
 
-      FormData formData;
-
-      // Prepare form data - either file or content
-      if (_selectedXmlFile != null) {
-        formData = FormData.fromMap({
-          'file': await MultipartFile.fromFile(
-            _selectedXmlFile!.path,
-            filename: _selectedXmlFile!.path.split('/').last,
-          ),
-        });
-      } else {
-        // Get XML content and ensure it's properly formatted
-        String xmlContent = _xmlController.text.trim();
-        
-        // Validate XML content is not empty
-        if (xmlContent.isEmpty) {
-          throw Exception('XML content cannot be empty');
-        }
-        
-        // Basic XML validation - should start with < or <?xml
-        if (!xmlContent.startsWith('<')) {
-          throw Exception('Invalid XML: XML must start with "<" or "<?xml"');
-        }
-        
-        formData = FormData.fromMap({
-          'xml_content': xmlContent,
-        });
-      }
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          _selectedXmlFile!.path,
+          filename: _selectedXmlFile!.path.split('/').last,
+        ),
+      });
 
       final response = await dio.post(
         '/api/v1/jsonconversiontools/xml-to-json',
@@ -372,39 +340,18 @@ class _XmlToJsonPageState extends State<XmlToJsonPage> {
                     const SizedBox(height: 12),
                     const Divider(color: AppColors.textTertiary),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text(
-                          'OR Enter XML Content:',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'Required if no file',
-                            style: TextStyle(
-                              color: AppColors.warning,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      'XML Preview (read-only):',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _xmlController,
+                      readOnly: true,
                       maxLines: 10,
                       minLines: 8,
                       style: const TextStyle(
@@ -413,14 +360,13 @@ class _XmlToJsonPageState extends State<XmlToJsonPage> {
                         fontSize: 13,
                       ),
                       decoration: InputDecoration(
-                        hintText:
-                            'Paste or type XML content here...\n\nExample:\n<?xml version="1.0"?>\n<root>\n  <item>Value</item>\n</root>',
+                        hintText: 'Selected XML file contents will appear here for preview.',
                         hintStyle: TextStyle(
                           color: AppColors.textSecondary.withOpacity(0.7),
                           fontFamily: 'monospace',
                           fontSize: 11,
                         ),
-                        helperText: 'Tip: Ensure all XML tags are properly closed (e.g., <tag>content</tag>)',
+                        helperText: 'Pick an XML file to view its contents. Editing is disabled because the API now requires file uploads.',
                         helperStyle: TextStyle(
                           color: AppColors.textSecondary.withOpacity(0.6),
                           fontSize: 11,

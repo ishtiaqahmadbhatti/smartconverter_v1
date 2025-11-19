@@ -11,14 +11,14 @@ import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
-class PdfToExcelPage extends StatefulWidget {
-  const PdfToExcelPage({super.key});
+class PdfToHtmlPage extends StatefulWidget {
+  const PdfToHtmlPage({super.key});
 
   @override
-  State<PdfToExcelPage> createState() => _PdfToExcelPageState();
+  State<PdfToHtmlPage> createState() => _PdfToHtmlPageState();
 }
 
-class _PdfToExcelPageState extends State<PdfToExcelPage> {
+class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -142,7 +142,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _convertPdfToExcel() async {
+  Future<void> _convertPdfToHtml() async {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -155,17 +155,18 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting PDF to Excel...';
+      _statusMessage = 'Converting PDF to HTML...';
       _conversionResult = null;
       _savedFilePath = null;
     });
 
     try {
+      // Get custom filename if provided
       final customFilename = _fileNameController.text.trim().isNotEmpty
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertPdfToExcel(
+      final result = await _service.convertPdfToHtml(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -180,8 +181,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Conversion completed, but unable to download the file.',
-            ),
+                'Conversion completed, but unable to download the file.'),
             backgroundColor: AppColors.warning,
           ),
         );
@@ -190,13 +190,13 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Excel file converted successfully!';
+        _statusMessage = 'HTML file converted successfully!';
         _savedFilePath = null;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Excel file ready: ${result.fileName}'),
+          content: Text('HTML file ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -213,19 +213,20 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _saveExcelFile() async {
+  Future<void> _saveHtmlFile() async {
     final result = _conversionResult;
     if (result == null) return;
 
     setState(() => _isSaving = true);
 
     try {
-      final directory = await FileManager.getPdfToExcelDirectory();
+      final directory = await FileManager.getPdfToHtmlDirectory();
 
+      // Use custom filename if provided, otherwise use API filename
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensureExcelExtension(customName);
+        targetFileName = _ensureHtmlExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -235,7 +236,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'xlsx',
+          'html',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -268,7 +269,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _shareExcelFile() async {
+  Future<void> _shareHtmlFile() async {
     final result = _conversionResult;
     if (result == null) return;
     final pathToShare = _savedFilePath ?? result.file.path;
@@ -278,7 +279,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Excel file is not available on disk.'),
+            content: Text('HTML file is not available on disk.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -288,7 +289,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted Excel: ${result.fileName}');
+    ], text: 'Converted HTML: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
@@ -315,8 +316,12 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.xlsx')) {
+    if (base.toLowerCase().endsWith('.html') ||
+        base.toLowerCase().endsWith('.htm')) {
       base = base.substring(0, base.length - 5);
+      if (base.toLowerCase().endsWith('.ht')) {
+        base = base.substring(0, base.length - 3);
+      }
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
@@ -327,9 +332,13 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensureExcelExtension(String base) {
+  String _ensureHtmlExtension(String base) {
     final trimmed = base.trim();
-    return trimmed.toLowerCase().endsWith('.xlsx') ? trimmed : '$trimmed.xlsx';
+    if (trimmed.toLowerCase().endsWith('.html') ||
+        trimmed.toLowerCase().endsWith('.htm')) {
+      return trimmed;
+    }
+    return '$trimmed.html';
   }
 
   void _resetForNewConversion() {
@@ -364,7 +373,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'PDF to Excel',
+          'PDF to HTML',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -439,7 +448,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.table_chart_outlined,
+              Icons.public_outlined,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -450,7 +459,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text(
-                  'Convert PDF to Excel',
+                  'Convert PDF to HTML',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -459,7 +468,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Turn your PDF content into organized Excel sheets that you can edit, filter, and analyze.',
+                  'Convert your PDF files to HTML format for web viewing and editing.',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -594,7 +603,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.xlsx extension is added automatically',
+        helperText: '.html extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -607,7 +616,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertPdfToExcel : null,
+        onPressed: canConvert ? _convertPdfToHtml : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -629,8 +638,11 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 ),
               )
             : const Text(
-                'Convert to Excel',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                'Convert to HTML',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
       ),
     );
@@ -649,13 +661,13 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
             _isConverting
                 ? Icons.hourglass_empty
                 : _conversionResult != null
-                ? Icons.check_circle
-                : Icons.info_outline,
+                    ? Icons.check_circle
+                    : Icons.info_outline,
             color: _isConverting
                 ? AppColors.warning
                 : _conversionResult != null
-                ? AppColors.success
-                : AppColors.textSecondary,
+                    ? AppColors.success
+                    : AppColors.textSecondary,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -666,8 +678,8 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 color: _isConverting
                     ? AppColors.warning
                     : _conversionResult != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -706,7 +718,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.grid_on,
+                  Icons.code,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -717,7 +729,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Excel Ready',
+                      'HTML File Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -745,7 +757,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               Flexible(
                 flex: isSaved ? 3 : 1,
                 child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveExcelFile,
+                  onPressed: _isSaving ? null : _saveHtmlFile,
                   icon: _isSaving
                       ? const SizedBox(
                           width: 16,
@@ -761,7 +773,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   label: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: const Text(
-                      'Save Workbook',
+                      'Save Document',
                       style: TextStyle(fontSize: 14),
                     ),
                   ),
@@ -784,9 +796,12 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 Flexible(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: _shareExcelFile,
+                    onPressed: _shareHtmlFile,
                     icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share', style: TextStyle(fontSize: 14)),
+                    label: const Text(
+                      'Share',
+                      style: TextStyle(fontSize: 14),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.backgroundSurface,
                       foregroundColor: AppColors.textPrimary,
@@ -821,7 +836,11 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
+              Icon(
+                Icons.info_outline,
+                color: AppColors.primaryBlue,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 'How to use',
@@ -834,16 +853,19 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select a PDF file (.pdf)'),
+          _buildInstructionStep(
+            '1',
+            'Select a PDF file (.pdf)',
+          ),
           const SizedBox(height: 8),
           _buildInstructionStep(
             '2',
-            'Tap "Convert to Excel" to start the conversion',
+            'Click "Convert to HTML" to start conversion',
           ),
           const SizedBox(height: 8),
           _buildInstructionStep(
             '3',
-            'Save the .xlsx file to your device or share it',
+            'Save the HTML file to your device or share it',
           ),
         ],
       ),
@@ -886,3 +908,4 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     );
   }
 }
+

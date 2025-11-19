@@ -11,10 +11,10 @@ The PDF merge functionality is now fully integrated into your SmartConverter app
 ### **1. Make Sure Your FastAPI Server is Running**
 ```bash
 # Server should be accessible at:
-http://192.168.8.102:8000
+http://192.168.8.103:8000
 
 # Required endpoint:
-http://192.168.8.102:8000/api/v1/pdf/merge
+http://192.168.8.103:8000/api/v1/pdfconversiontools/merge
 ```
 
 ### **2. Run Your Flutter App**
@@ -58,7 +58,7 @@ flutter run
 
 Your FastAPI server needs to handle this request:
 
-**Endpoint:** `POST /api/v1/pdf/merge`
+**Endpoint:** `POST /api/v1/pdfconversiontools/merge`
 
 **Request:**
 - Content-Type: `multipart/form-data`
@@ -120,9 +120,9 @@ Documents/SmartConverter/MergePDF/
 - ✅ Tool ID should be `merge_pdf`
 
 ### **Issue: API not responding**
-- ✅ Verify server is running on `http://192.168.8.102:8000`
-- ✅ Check `/api/v1/pdf/merge` endpoint exists
-- ✅ Test health check: `http://192.168.8.102:8000/api/v1/health/health`
+- ✅ Verify server is running on `http://192.168.8.103:8000`
+- ✅ Check `/api/v1/pdfconversiontools/merge` endpoint exists
+- ✅ Test health check: `http://192.168.8.103:8000/api/v1/health/health`
 - ✅ Use drawer "API Health Check" button
 
 ### **Issue: Files not merging**
@@ -177,7 +177,7 @@ The Merge PDF page includes:
 
 ## ✅ **Ready to Test!**
 
-Everything is implemented and ready to use. Just make sure your FastAPI server has the `/api/v1/pdf/merge` endpoint configured, and you're good to go!
+Everything is implemented and ready to use. Just make sure your FastAPI server has the `/api/v1/pdfconversiontools/merge` endpoint configured, and you're good to go!
 
 **Happy Merging! 📄➕📄 = 📄✨**
 

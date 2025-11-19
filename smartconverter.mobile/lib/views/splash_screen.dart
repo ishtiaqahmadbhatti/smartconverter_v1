@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
+import '../services/admob_service.dart';
 import 'main_navigation.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -95,6 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Start progress and wait 3s, then navigate
     _progressController.forward();
     await Future.delayed(const Duration(seconds: 3));
+    await AdMobService.showAppOpenAdIfAvailable();
     _navigateToHome();
   }
 

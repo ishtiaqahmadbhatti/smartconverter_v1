@@ -132,7 +132,9 @@ class _ToolDetailPageState extends State<ToolDetailPage>
           result = await _conversionService.convertWordToText(_selectedFile!);
           break;
         case 'html_pdf':
-          result = await _conversionService.convertHtmlToPdf(_selectedFile!);
+          final htmlResult =
+              await _conversionService.convertHtmlToPdf(_selectedFile!);
+          result = htmlResult?.file;
           break;
       }
 

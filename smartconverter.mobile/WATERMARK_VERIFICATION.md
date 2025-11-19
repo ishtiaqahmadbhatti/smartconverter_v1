@@ -17,7 +17,7 @@ static const String watermarkPdfEndpoint = '/api/v1/pdf/add-watermark';
 **Status**: ✅ **CONFIRMED**
 - Endpoint correctly defined
 - Matches FastAPI route: `POST /api/v1/pdf/add-watermark`
-- Uses correct base URL: `http://192.168.8.102:8000`
+- Uses correct base URL: `http://192.168.8.103:8000`
 
 ---
 
@@ -191,7 +191,7 @@ _addWatermark() validates inputs
    - file: MultipartFile
    - watermark_text: "CONFIDENTIAL"
    - position: "diagonal"
-→ POST to http://192.168.8.102:8000/api/v1/pdf/add-watermark
+→ POST to http://192.168.8.103:8000/api/v1/pdf/add-watermark
 ```
 
 ### **4. API Response** ✅
@@ -209,8 +209,8 @@ Backend processes watermark
 ### **5. Download** ✅
 ```
 _tryDownloadFile() attempts multiple endpoints:
-1. http://192.168.8.102:8000/api/v1/convert/download/abc123_watermarked.pdf ✓
-2. http://192.168.8.102:8000/download/abc123_watermarked.pdf (fallback)
+1. http://192.168.8.103:8000/api/v1/convert/download/abc123_watermarked.pdf ✓
+2. http://192.168.8.103:8000/download/abc123_watermarked.pdf (fallback)
 3. Other fallbacks...
 → Downloads file to temp directory
 → Returns File object
@@ -316,7 +316,7 @@ Success dialog shows
 ┌─────────────────────────────────────────────────────────────┐
 │                      API Config                             │
 │  watermarkPdfEndpoint = '/api/v1/pdf/add-watermark'        │
-│  baseUrl = 'http://192.168.8.102:8000'                     │
+│  baseUrl = 'http://192.168.8.103:8000'                     │
 └─────────────────────┬───────────────────────────────────────┘
                       │
                       ▼
@@ -415,8 +415,8 @@ To test the watermark feature:
    📍 Position: diagonal
    ✅ Watermark added successfully!
    📥 Downloading watermarked PDF: abc123_watermarked.pdf
-   Trying download URL: http://192.168.8.102:8000/api/v1/convert/download/...
-   ✅ Successfully downloaded from: http://192.168.8.102:8000/api/v1/convert/download/...
+   Trying download URL: http://192.168.8.103:8000/api/v1/convert/download/...
+   ✅ Successfully downloaded from: http://192.168.8.103:8000/api/v1/convert/download/...
    ✅ File saved to organized directory: Documents/SmartConverter/WatermarkPDF/watermarked_20251002_1430.pdf
    ```
 
@@ -440,7 +440,7 @@ async def add_watermark(
 **Verify Backend**:
 ```bash
 # Check API is running
-curl http://192.168.8.102:8000/api/v1/health/health
+curl http://192.168.8.103:8000/api/v1/health/health
 
 # Should return:
 {"status":"healthy",...}
@@ -471,7 +471,7 @@ All code components are correctly implemented and integrated:
 **Feature**: Add Watermark to PDF  
 **Status**: ✅ **FULLY IMPLEMENTED & VERIFIED**  
 **API Endpoint**: `POST /api/v1/pdf/add-watermark`  
-**Server**: `http://192.168.8.102:8000`  
+**Server**: `http://192.168.8.103:8000`  
 **Save Location**: `Documents/SmartConverter/WatermarkPDF/`  
 **Filename Format**: `watermarked_YYYYMMDD_HHMM.pdf`  
 

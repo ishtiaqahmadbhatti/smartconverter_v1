@@ -304,38 +304,21 @@ async def ai_convert_jpg_to_json(
 
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
-    request: Request,
-    xml_content: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
+    file: UploadFile = File(...)
 ):
     """
-    Convert XML to JSON format (supports multipart/form-data and JSON body).
+    Convert XML to JSON format.
+
+    Only multipart/form-data with an uploaded XML file is supported.
     """
     xml_data: Optional[str] = None
     input_path: Optional[str] = None
-
+    
     try:
-        if file and file.filename:
-            input_path = FileService.save_uploaded_file(file)
-            with open(input_path, "r", encoding="utf-8") as f:
-                xml_data = f.read()
-        elif xml_content:
-            xml_data = xml_content.strip()
-            if not xml_data:
-                raise ValueError("XML content cannot be empty")
-        else:
-            content_type = request.headers.get("content-type", "")
-            if "application/json" in content_type:
-                body = await request.json()
-                if isinstance(body, dict) and "xml_content" in body:
-                    xml_data = body["xml_content"]
-                else:
-                    raise ValueError("JSON body must contain 'xml_content' field")
-            else:
-                raise ValueError(
-                    "Either xml_content (multipart/form-data) or file must be provided. "
-                    "For JSON body, ensure Content-Type is application/json."
-                )
+        FileService.validate_file(file, "xml")
+        input_path = FileService.save_uploaded_file(file)
+        with open(input_path, "r", encoding="utf-8") as f:
+            xml_data = f.read()
 
         json_result = JSONConversionService.xml_to_json(xml_data)
         json_string = json.dumps(json_result, indent=2)
@@ -361,7 +344,7 @@ async def convert_xml_to_json(
             download_url=_build_download_url(output_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "xml-to-json",
             xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
@@ -371,7 +354,7 @@ async def convert_xml_to_json(
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
@@ -994,61 +977,6 @@ async def convert_yaml_to_json(request: YAMLToJSONRequest):
         JSONConversionService.log_conversion(
             "yaml-to-json",
             request.yaml_content,
-            "",
-            False,
-            str(e),
-            None,
-        )
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500,
-        )
-
-
-# ---------------------------------------------------------------------------
-# Additional Public Utilities
-# ---------------------------------------------------------------------------
-
-@router.post("/public/json-formatter", response_model=ConversionResponse)
-async def format_json_public(request: JSONFormatRequest):
-    """Public JSON formatter (no authentication required)."""
-    try:
-        formatted = JSONConversionService.format_json(request.json_data)
-
-        JSONConversionService.log_conversion(
-            "json-formatter-public",
-            json.dumps(request.json_data),
-            formatted,
-            True,
-            None,
-        )
-
-        return ConversionResponse(
-            success=True,
-            message="JSON formatted successfully",
-            converted_data=formatted,
-        )
-
-    except FileProcessingError as e:
-        JSONConversionService.log_conversion(
-            "json-formatter-public",
-            json.dumps(request.json_data),
-            "",
-            False,
-            str(e),
-            None,
-        )
-        raise create_error_response(
-            error_type="FileProcessingError",
-            message=str(e),
-            status_code=400,
-        )
-    except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-formatter-public",
-            json.dumps(request.json_data),
             "",
             False,
             str(e),

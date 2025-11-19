@@ -35,6 +35,7 @@ except ImportError:
 from io import BytesIO
 import base64
 from app.core.exceptions import FileProcessingError
+from PyPDF2 import PdfMerger
 
 
 class PDFConversionService:
@@ -51,6 +52,32 @@ class PDFConversionService:
         "PDF", "JSON", "MD", "CSV", "XLSX", "XPS", "JPG", "PNG", 
         "TIFF", "SVG", "HTML", "TXT", "DOCX"
     ]
+    
+    @staticmethod
+    def merge_pdfs(input_paths: List[str], output_path: str) -> str:
+        """Merge multiple PDF files into a single PDF."""
+        if not input_paths:
+            raise FileProcessingError("No PDF files provided for merging.")
+
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            merger = PdfMerger()
+
+            for path in input_paths:
+                if not os.path.exists(path):
+                    raise FileProcessingError(f"Input file not found: {path}")
+                with open(path, "rb") as pdf_file:
+                    merger.append(pdf_file)
+
+            with open(output_path, "wb") as merged_file:
+                merger.write(merged_file)
+            merger.close()
+
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(f"Error merging PDFs: {str(e)}")
     
     @staticmethod
     def pdf_to_json(pdf_path: str, output_path: str) -> str:
@@ -220,7 +247,6 @@ class PDFConversionService:
             workbook = Workbook()
             workbook.remove(workbook.active)  # Remove default sheet
             
-            sheet_num = 1
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
                 
@@ -228,25 +254,44 @@ class PDFConversionService:
                 ws = workbook.create_sheet(title=f"Page_{page_num + 1}")
                 
                 # Extract tables
-                tables = page.find_tables()
+                tables = list(page.find_tables())  # Convert to list to check if empty
                 row_offset = 1
+                has_table_data = False
                 
+                # Extract and add table data
                 for table in tables:
+                    try:
                     table_data = table.extract()
-                    if table_data:
+                        if table_data and len(table_data) > 0:
+                            has_table_data = True
                         for row_idx, row in enumerate(table_data):
                             for col_idx, cell in enumerate(row):
-                                ws.cell(row=row_offset + row_idx, column=col_idx + 1, value=cell)
-                        row_offset += len(table_data) + 1  # Add spacing between tables
+                                    if cell:  # Only add non-empty cells
+                                        ws.cell(row=row_offset + row_idx, column=col_idx + 1, value=str(cell))
+                            row_offset += len(table_data) + 2  # Add spacing between tables
+                    except Exception as e:
+                        # If table extraction fails, continue with text extraction
+                        pass
                 
-                # If no tables, add text content
-                if not tables:
+                # Extract text content
                     text = page.get_text()
+                if text and text.strip():
+                    # If we have table data, add text after tables, otherwise start from row 1
+                    if not has_table_data:
+                        row_offset = 1
+                    
                     lines = text.split('\n')
-                    for row_idx, line in enumerate(lines[:100]):  # Limit to 100 lines
-                        ws.cell(row=row_idx + 1, column=1, value=line)
-                
-                sheet_num += 1
+                    # Filter out empty lines and limit to reasonable number
+                    non_empty_lines = [line.strip() for line in lines if line.strip()][:500]
+                    
+                    if non_empty_lines:
+                        # Add header if we have both tables and text
+                        if has_table_data:
+                            ws.cell(row=row_offset, column=1, value="Text Content:")
+                            row_offset += 1
+                        
+                        for row_idx, line in enumerate(non_empty_lines):
+                            ws.cell(row=row_offset + row_idx, column=1, value=line)
             
             doc.close()
             workbook.save(output_path)
@@ -376,17 +421,510 @@ class PDFConversionService:
     
     @staticmethod
     def markdown_to_pdf(md_path: str, output_path: str) -> str:
-        """Convert Markdown to PDF."""
+        """Convert Markdown to PDF with proper handling of emojis, headings, and tables."""
         try:
             with open(md_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
             
-            # Convert markdown to HTML
+            # Convert markdown to HTML with extensions for tables and other features
+            try:
+                # Try to use markdown extensions if available
+                import markdown.extensions.tables
+                import markdown.extensions.fenced_code
+                md_extensions = ['tables', 'fenced_code', 'nl2br']
+                html_content = markdown.markdown(md_content, extensions=md_extensions)
+            except:
+                # Fallback to basic markdown if extensions not available
             html_content = markdown.markdown(md_content)
             
-            # Convert HTML to PDF
+            if not WEASYPRINT_AVAILABLE:
+                # Fallback to reportlab with proper HTML parsing using BeautifulSoup
+                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+                from reportlab.lib.pagesizes import A4
+                from reportlab.lib import colors
+                from reportlab.lib.units import inch
+                from bs4 import BeautifulSoup
+                import re
+                
+                # Parse HTML with BeautifulSoup for better handling of nested tags
+                soup = BeautifulSoup(html_content, 'html.parser')
+                story = []
+                styles = getSampleStyleSheet()
+                
+                # Register Unicode fonts for emoji support
+                unicode_font_name = 'Helvetica'  # Default fallback
+                try:
+                    from reportlab.pdfbase import pdfmetrics
+                    from reportlab.pdfbase.ttfonts import TTFont
+                    import sys
+                    import os
+                    
+                    # Try to register fonts with better Unicode/Emoji support
+                    # Try multiple font paths that might support emojis
+                    try:
+                        # Common system font paths (prioritize fonts with emoji support)
+                        font_paths = [
+                            # Windows fonts (better emoji support)
+                            'C:/Windows/Fonts/seguiemj.ttf',  # Segoe UI Emoji
+                            'C:/Windows/Fonts/segmdl2.ttf',   # Segoe MDL2 Assets
+                            'C:/Windows/Fonts/arial.ttf',     # Arial (basic Unicode)
+                            'C:/Windows/Fonts/calibri.ttf',  # Calibri
+                            # Linux fonts
+                            '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
+                            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                            # macOS fonts
+                            '/System/Library/Fonts/Supplemental/Apple Color Emoji.ttc',
+                            '/System/Library/Fonts/Helvetica.ttc',
+                        ]
+                        
+                        # Try to find and register a Unicode font
+                        for font_path in font_paths:
+                            if os.path.exists(font_path):
+                                try:
+                                    pdfmetrics.registerFont(TTFont('UnicodeFont', font_path))
+                                    unicode_font_name = 'UnicodeFont'
+                                    break
+                                except Exception as e:
+                                    # Continue trying other fonts
+                                    continue
+                    except:
+                        pass
+                except:
+                    pass  # Keep default Helvetica
+                
+                # Define heading styles with Unicode font support
+                heading_styles = {
+                    'h1': ParagraphStyle(
+                        'CustomH1',
+                        parent=styles['Heading1'],
+                        fontSize=24,
+                        spaceAfter=12,
+                        textColor=colors.HexColor('#1a1a1a'),
+                        fontName=unicode_font_name
+                    ),
+                    'h2': ParagraphStyle(
+                        'CustomH2',
+                        parent=styles['Heading2'],
+                        fontSize=20,
+                        spaceAfter=10,
+                        textColor=colors.HexColor('#2a2a2a'),
+                        fontName=unicode_font_name
+                    ),
+                    'h3': ParagraphStyle(
+                        'CustomH3',
+                        parent=styles['Heading3'],
+                        fontSize=16,
+                        spaceAfter=8,
+                        textColor=colors.HexColor('#3a3a3a'),
+                        fontName=unicode_font_name
+                    ),
+                    'h4': ParagraphStyle(
+                        'CustomH4',
+                        parent=styles['Heading4'],
+                        fontSize=14,
+                        spaceAfter=6,
+                        fontName=unicode_font_name
+                    ),
+                    'h5': ParagraphStyle(
+                        'CustomH5',
+                        parent=styles['Heading5'],
+                        fontSize=12,
+                        spaceAfter=4,
+                        fontName=unicode_font_name
+                    ),
+                    'h6': ParagraphStyle(
+                        'CustomH6',
+                        parent=styles['Heading6'],
+                        fontSize=11,
+                        spaceAfter=4,
+                        fontName=unicode_font_name
+                    ),
+                }
+                
+                # Normal style with Unicode font
+                normal_style = ParagraphStyle(
+                    'UnicodeNormal',
+                    parent=styles['Normal'],
+                    fontName=unicode_font_name,
+                    encoding='utf-8'
+                )
+                
+                def get_text_with_emojis(element):
+                    """Extract text from element preserving emojis and special characters."""
+                    if element is None:
+                        return ""
+                    # Get all text including emojis - preserve Unicode characters
+                    text = element.get_text(separator=' ', strip=False)
+                    # Clean up extra whitespace but preserve structure and emojis
+                    text = re.sub(r'\s+', ' ', text).strip()
+                    # Ensure text is properly encoded as UTF-8
+                    if isinstance(text, bytes):
+                        text = text.decode('utf-8', errors='ignore')
+                    return text
+                
+                def create_paragraph_with_emojis(text, style):
+                    """Create a paragraph that properly handles emojis."""
+                    if not text:
+                        return None
+                    try:
+                        # Ensure text is UTF-8 encoded
+                        if isinstance(text, bytes):
+                            text = text.decode('utf-8', errors='ignore')
+                        # Escape XML special characters but preserve emojis
+                        from xml.sax.saxutils import escape
+                        # Don't escape emojis - they should be preserved as-is
+                        # Only escape XML special chars
+                        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        # Create paragraph with UTF-8 encoding
+                        return Paragraph(text, style)
+                    except Exception as e:
+                        # Fallback: try without escaping
+                        try:
+                            return Paragraph(str(text), style)
+                        except:
+                            # Last resort: remove problematic characters but keep emojis
+                            safe_text = ''.join(c if ord(c) < 0x10000 or c.isprintable() else '?' for c in str(text))
+                            return Paragraph(safe_text, style)
+                
+                def process_element(element):
+                    """Recursively process HTML elements and add to story."""
+                    if element is None:
+                        return
+                    
+                    tag_name = element.name if hasattr(element, 'name') else None
+                    
+                    if tag_name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                        text = get_text_with_emojis(element)
+                        if text:
+                            style = heading_styles.get(tag_name, styles['Heading1'])
+                            para = create_paragraph_with_emojis(text, style)
+                            if para:
+                                story.append(para)
+                                story.append(Spacer(1, 6))
+                    
+                    elif tag_name == 'p':
+                        text = get_text_with_emojis(element)
+                        if text:
+                            para = create_paragraph_with_emojis(text, normal_style)
+                            if para:
+                                story.append(para)
+                                story.append(Spacer(1, 8))
+                    
+                    elif tag_name in ['ul', 'ol']:
+                        for li in element.find_all('li', recursive=False):
+                            text = get_text_with_emojis(li)
+                            if text:
+                                bullet = "•" if tag_name == 'ul' else "1."
+                                para = create_paragraph_with_emojis(f"{bullet} {text}", normal_style)
+                                if para:
+                                    story.append(para)
+                                    story.append(Spacer(1, 4))
+                        story.append(Spacer(1, 6))
+                    
+                    elif tag_name == 'table':
+                        # Extract table data
+                        table_data = []
+                        rows = element.find_all('tr')
+                        for row in rows:
+                            cells = row.find_all(['td', 'th'])
+                            row_data = [get_text_with_emojis(cell) for cell in cells]
+                            if row_data:
+                                table_data.append(row_data)
+                        
+                        if table_data:
+                            # Convert table cells to Paragraphs to support emojis
+                            formatted_table_data = []
+                            for row_idx, row in enumerate(table_data):
+                                formatted_row = []
+                                for cell_text in row:
+                                    if cell_text:
+                                        # Create paragraph for each cell to support emojis
+                                        cell_para = create_paragraph_with_emojis(
+                                            cell_text, 
+                                            normal_style if row_idx > 0 else heading_styles.get('h4', normal_style)
+                                        )
+                                        formatted_row.append(cell_para if cell_para else cell_text)
+                                    else:
+                                        formatted_row.append('')
+                                formatted_table_data.append(formatted_row)
+                            
+                            # Create table with proper styling
+                            pdf_table = Table(formatted_table_data)
+                            pdf_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                                ('FONTNAME', (0, 0), (-1, 0), unicode_font_name),
+                                ('FONTSIZE', (0, 0), (-1, 0), 11),
+                                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                                ('TOPPADDING', (0, 0), (-1, 0), 10),
+                                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                                ('FONTSIZE', (0, 1), (-1, -1), 10),
+                                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+                                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                            ]))
+                            story.append(pdf_table)
+                            story.append(Spacer(1, 12))
+                    
+                    elif tag_name == 'hr':
+                        story.append(Spacer(1, 12))
+                        # Add a line separator
+                        from reportlab.platypus import HRFlowable
+                        story.append(HRFlowable(width="100%", thickness=1, lineCap='round', color=colors.grey))
+                        story.append(Spacer(1, 12))
+                    
+                    elif tag_name == 'br':
+                        story.append(Spacer(1, 6))
+                    
+                    elif tag_name == 'pre':
+                        # Handle pre-formatted code blocks (from triple backticks)
+                        # Extract all text preserving line breaks and formatting
+                        code_text = ""
+                        if element.find('code'):
+                            # If there's a code tag inside pre, get its text
+                            code_text = element.find('code').get_text(separator='\n', strip=False)
+                        else:
+                            # Otherwise get all text from pre tag
+                            code_text = element.get_text(separator='\n', strip=False)
+                        
+                        if code_text:
+                            # Preserve line breaks and formatting
+                            code_text = code_text.rstrip()  # Remove trailing newlines
+                            
+                            # Create a code block style with monospace font
+                            pre_code_style = ParagraphStyle(
+                                'PreCode',
+                                parent=styles['Normal'],
+                                fontName='Courier',
+                                fontSize=8,
+                                leading=10,
+                                encoding='utf-8',
+                                leftIndent=0,
+                                rightIndent=0
+                            )
+                            
+                            # Split by lines and create paragraphs to preserve formatting
+                            lines = code_text.split('\n')
+                            code_paragraphs = []
+                            for line in lines:
+                                # Preserve all lines including empty ones for proper formatting
+                                # Escape XML special chars but preserve structure
+                                safe_line = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                                # Preserve spaces at the beginning (for indentation)
+                                para = Paragraph(safe_line, pre_code_style)
+                                code_paragraphs.append(para)
+                            
+                            # Wrap code block in a Table to create background and border effect
+                            # Each line becomes a cell in a single-column table
+                            code_table_data = [[para] for para in code_paragraphs]
+                            code_table = Table(code_table_data, colWidths=[None])  # Auto width
+                            
+                            # Style the table to look like a code block
+                            code_table.setStyle(TableStyle([
+                                # Background color for all cells
+                                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f5f5f5')),
+                                # Border around the entire block
+                                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#ddd')),
+                                # Padding inside cells
+                                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                                # Alignment
+                                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                            ]))
+                            
+                            story.append(Spacer(1, 8))
+                            story.append(code_table)
+                            story.append(Spacer(1, 8))
+                    
+                    elif tag_name == 'code':
+                        # Handle inline code (single backticks)
+                        text = get_text_with_emojis(element)
+                        if text:
+                            code_style = ParagraphStyle(
+                                'Code',
+                                parent=styles['Normal'],
+                                fontName='Courier',
+                                fontSize=9,
+                                backColor=colors.lightgrey,
+                                leftIndent=12,
+                                rightIndent=12,
+                                spaceBefore=4,
+                                spaceAfter=4,
+                                encoding='utf-8'
+                            )
+                            para = create_paragraph_with_emojis(text, code_style)
+                            if para:
+                                story.append(para)
+                                story.append(Spacer(1, 6))
+                    
+                    elif tag_name == 'blockquote':
+                        text = get_text_with_emojis(element)
+                        if text:
+                            quote_style = ParagraphStyle(
+                                'Quote',
+                                parent=normal_style,
+                                leftIndent=20,
+                                rightIndent=20,
+                                fontStyle='Italic',
+                                textColor=colors.HexColor('#555555')
+                            )
+                            para = create_paragraph_with_emojis(f'"{text}"', quote_style)
+                            if para:
+                                story.append(para)
+                                story.append(Spacer(1, 8))
+                    
+                    else:
+                        # Process children recursively
+                        if hasattr(element, 'children'):
+                            for child in element.children:
+                                if hasattr(child, 'name'):
+                                    process_element(child)
+                                elif isinstance(child, str) and child.strip():
+                                    # Handle text nodes
+                                    text = child.strip()
+                                    if text:
+                                        para = create_paragraph_with_emojis(text, normal_style)
+                                        if para:
+                                            story.append(para)
+                                            story.append(Spacer(1, 6))
+                
+                # Process all top-level elements
+                for element in soup.children:
+                    if hasattr(element, 'name'):
+                        process_element(element)
+                
+                # If no content was added, add body content
+                if not story:
+                    body = soup.find('body')
+                    if body:
+                        for element in body.children:
+                            if hasattr(element, 'name'):
+                                process_element(element)
+                    else:
+                        # Fallback: process all elements
+                        for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'table']):
+                            process_element(element)
+                
+                # Create PDF
+                doc = SimpleDocTemplate(
+                    output_path,
+                    pagesize=A4,
+                    rightMargin=72,
+                    leftMargin=72,
+                    topMargin=72,
+                    bottomMargin=72,
+                    encoding='utf-8'
+                )
+                doc.build(story)
+            else:
+                # Use WeasyPrint for proper HTML to PDF conversion with CSS styling
+                css_content = """
+                @page {
+                    size: A4;
+                    margin: 2cm;
+                }
+                body {
+                    font-family: 'DejaVu Sans', Arial, sans-serif;
+                    font-size: 11pt;
+                    line-height: 1.6;
+                    color: #333;
+                }
+                h1 {
+                    font-size: 24pt;
+                    color: #1a1a1a;
+                    margin-top: 20pt;
+                    margin-bottom: 12pt;
+                    border-bottom: 2px solid #ddd;
+                    padding-bottom: 8pt;
+                }
+                h2 {
+                    font-size: 20pt;
+                    color: #2a2a2a;
+                    margin-top: 16pt;
+                    margin-bottom: 10pt;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 6pt;
+                }
+                h3 {
+                    font-size: 16pt;
+                    color: #3a3a3a;
+                    margin-top: 12pt;
+                    margin-bottom: 8pt;
+                }
+                h4 {
+                    font-size: 14pt;
+                    color: #4a4a4a;
+                    margin-top: 10pt;
+                    margin-bottom: 6pt;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 12pt 0;
+                }
+                th {
+                    background-color: #f0f0f0;
+                    color: #000;
+                    font-weight: bold;
+                    padding: 8pt;
+                    border: 1px solid #ddd;
+                }
+                td {
+                    padding: 6pt;
+                    border: 1px solid #ddd;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                p {
+                    margin: 8pt 0;
+                }
+                ul, ol {
+                    margin: 8pt 0;
+                    padding-left: 24pt;
+                }
+                li {
+                    margin: 4pt 0;
+                }
+                code {
+                    background-color: #f4f4f4;
+                    padding: 2pt 4pt;
+                    border-radius: 3pt;
+                    font-family: 'Courier New', monospace;
+                }
+                pre {
+                    background-color: #f5f5f5;
+                    border: 1px solid #ddd;
+                    border-radius: 4pt;
+                    padding: 12pt;
+                    margin: 12pt 0;
+                    overflow-x: auto;
+                    font-family: 'Courier New', 'Courier', monospace;
+                    font-size: 8pt;
+                    line-height: 1.4;
+                    white-space: pre;
+                    word-wrap: normal;
+                }
+                pre code {
+                    background-color: transparent;
+                    padding: 0;
+                    border-radius: 0;
+                    font-size: inherit;
+                }
+                """
+                
             font_config = FontConfiguration()
-            HTML(string=html_content).write_pdf(output_path, font_config=font_config)
+            HTML(string=html_content).write_pdf(
+                output_path,
+                font_config=font_config,
+                stylesheets=[CSS(string=css_content)]
+            )
             
             return output_path
             
@@ -497,12 +1035,19 @@ class PDFConversionService:
         try:
             doc = fitz.open(pdf_path)
             output_files = []
+            target_format = (format or "jpg").lower()
             
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
                 pix = page.get_pixmap()
                 
-                output_file = os.path.join(output_dir, f"page_{page_num + 1}.{format}")
+                output_file = os.path.join(output_dir, f"page_{page_num + 1}.{target_format}")
+                
+                if target_format in {"tiff", "tif"}:
+                    mode = "RGBA" if pix.alpha else "RGB"
+                    image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+                    image.save(output_file, format="TIFF")
+                else:
                 pix.save(output_file)
                 output_files.append(output_file)
             

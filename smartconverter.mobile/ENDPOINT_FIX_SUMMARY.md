@@ -4,8 +4,8 @@
 
 ### **Problem:**
 Your Flutter app was trying to download from the wrong endpoint:
-- ❌ **Flutter was trying**: `http://192.168.8.100:8003/download/{filename}`
-- ✅ **Correct endpoint**: `http://192.168.8.100:8003/api/v1/convert/download/{filename}`
+- ❌ **Flutter was trying**: `http://192.168.8.103:8003/download/{filename}`
+- ✅ **Correct endpoint**: `http://192.168.8.103:8003/api/v1/convert/download/{filename}`
 
 ### **Solution Applied:**
 1. ✅ **Updated Flutter app** to try the correct endpoint first
@@ -33,8 +33,8 @@ Your Flutter app was trying to download from the wrong endpoint:
 2. **Try the "Add page numbers" feature** again
 3. **Check console logs** - you should see:
    ```
-   Trying download URL: http://192.168.8.100:8003/api/v1/convert/download/filename.pdf
-   ✅ Successfully downloaded from: http://192.168.8.100:8003/api/v1/convert/download/filename.pdf
+   Trying download URL: http://192.168.8.103:8003/api/v1/convert/download/filename.pdf
+   ✅ Successfully downloaded from: http://192.168.8.103:8003/api/v1/convert/download/filename.pdf
    ```
 
 ### **Expected Result:**
@@ -61,7 +61,7 @@ This mismatch caused the 404 errors and fallback to placeholder files.
 
 The Flutter app now tries the correct endpoint first:
 ```
-http://192.168.8.100:8003/api/v1/convert/download/{filename}
+http://192.168.8.103:8003/api/v1/convert/download/{filename}
 ```
 
 **Try the feature now - it should work perfectly!** 🚀

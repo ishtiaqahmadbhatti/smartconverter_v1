@@ -18,6 +18,7 @@ void main() async {
   // Initialize services
   final conversionService = ConversionService();
   await conversionService.initialize();
+  await AdMobService.loadAppOpenAd();
 
   // Preload rewarded ad
   final admobService = AdMobService();

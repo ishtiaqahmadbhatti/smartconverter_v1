@@ -7,7 +7,6 @@ class FileManager {
 
   // Tool-specific folder names
   static const String _addPageNumbersFolder = 'AddPageNumbers';
-  static const String _mergePdfFolder = 'MergePDF';
   static const String _splitPdfFolder = 'SplitPDF';
   static const String _compressPdfFolder = 'CompressPDF';
   static const String _pdfToWordFolder = 'PdfToWord';
@@ -20,9 +19,30 @@ class FileManager {
   static const String _watermarkPdfFolder = 'WatermarkPDF';
   static const String _removePagesFolder = 'RemovePages';
   static const String _extractPagesFolder = 'ExtractPages';
+  static const String _pdfConversionsFolder = 'PDFConversions';
+  static const String _mergedPdfsSubFolder = 'merged_pdfs';
+  static const String _markdownToPdfSubFolder = 'markdown_to_pdf';
+  static const String _htmlToPdfSubFolder = 'html_to_pdf';
+  static const String _jpgToPdfSubFolder = 'jpg_to_pdf';
+  static const String _pngToPdfSubFolder = 'png_to_pdf';
+  static const String _pdfToHtmlSubFolder = 'pdf_to_html';
+  static const String _pdfToMarkdownSubFolder = 'pdf_to_markdown';
+  static const String _pdfToJsonSubFolder = 'pdf_to_json';
+  static const String _pdfToCsvSubFolder = 'pdf_to_csv';
+  static const String _pdfToExcelSubFolder = 'pdf_to_excel';
+  static const String _pdfToTextSubFolder = 'pdf_to_text';
+  static const String _pdfToJpgImagesSubFolder = 'pdf_to_jpg';
+  static const String _pdfToPngImagesSubFolder = 'pdf_to_png';
+  static const String _pdfToTiffImagesSubFolder = 'pdf_to_tiff';
+  static const String _pdfToSvgImagesSubFolder = 'pdf_to_svg';
   static const String _videoConversionsFolder = 'VideoConversions';
   static const String _audioConversionsFolder = 'AudioConversions';
   static const String _videoToAudioFolder = 'video-to-audio';
+  static const String _imageConversionsFolder = 'ImageConversions';
+  static const String _imagePdfToJpgSubFolder = 'pdf_to_jpg';
+  static const String _imagePdfToPngSubFolder = 'pdf_to_png';
+  static const String _imagePdfToTiffSubFolder = 'pdf_to_tiff';
+  static const String _imagePdfToSvgSubFolder = 'pdf_to_svg';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -71,7 +91,7 @@ class FileManager {
 
   /// Get directory for Merge PDF tool
   static Future<Directory> getMergePdfDirectory() async {
-    return await getToolDirectory(_mergePdfFolder);
+    return await getMergedPdfsDirectory();
   }
 
   /// Get directory for Split PDF tool
@@ -237,5 +257,235 @@ class FileManager {
     } catch (e) {
       return {'error': e.toString()};
     }
+  }
+
+  /// Get or create the PDF conversions directory
+  static Future<Directory> getPdfConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final pdfConversionsDir = Directory(
+      '${smartConverterDir.path}/$_pdfConversionsFolder',
+    );
+    if (!await pdfConversionsDir.exists()) {
+      await pdfConversionsDir.create(recursive: true);
+    }
+    return pdfConversionsDir;
+  }
+
+  /// Get directory for merged PDF outputs
+  static Future<Directory> getMergedPdfsDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final mergedPdfsDir = Directory(
+      '${pdfConversionsDir.path}/$_mergedPdfsSubFolder',
+    );
+    if (!await mergedPdfsDir.exists()) {
+      await mergedPdfsDir.create(recursive: true);
+    }
+    return mergedPdfsDir;
+  }
+
+  /// Get directory for markdown to PDF outputs
+  static Future<Directory> getMarkdownToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final markdownToPdfDir = Directory(
+      '${pdfConversionsDir.path}/$_markdownToPdfSubFolder',
+    );
+    if (!await markdownToPdfDir.exists()) {
+      await markdownToPdfDir.create(recursive: true);
+    }
+    return markdownToPdfDir;
+  }
+
+  /// Get directory for JPG to PDF outputs
+  static Future<Directory> getJpgToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final jpgToPdfDir = Directory(
+      '${pdfConversionsDir.path}/$_jpgToPdfSubFolder',
+    );
+    if (!await jpgToPdfDir.exists()) {
+      await jpgToPdfDir.create(recursive: true);
+    }
+    return jpgToPdfDir;
+  }
+
+  /// Get directory for PNG to PDF outputs
+  static Future<Directory> getPngToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pngToPdfDir = Directory(
+      '${pdfConversionsDir.path}/$_pngToPdfSubFolder',
+    );
+    if (!await pngToPdfDir.exists()) {
+      await pngToPdfDir.create(recursive: true);
+    }
+    return pngToPdfDir;
+  }
+
+  /// Get directory for HTML to PDF outputs
+  static Future<Directory> getHtmlToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final htmlToPdfDir = Directory(
+      '${pdfConversionsDir.path}/$_htmlToPdfSubFolder',
+    );
+    if (!await htmlToPdfDir.exists()) {
+      await htmlToPdfDir.create(recursive: true);
+    }
+    return htmlToPdfDir;
+  }
+
+  /// Get directory for PDF to HTML outputs
+  static Future<Directory> getPdfToHtmlDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToHtmlDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToHtmlSubFolder',
+    );
+    if (!await pdfToHtmlDir.exists()) {
+      await pdfToHtmlDir.create(recursive: true);
+    }
+    return pdfToHtmlDir;
+  }
+
+  /// Get directory for PDF to Markdown outputs
+  static Future<Directory> getPdfToMarkdownDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToMarkdownDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToMarkdownSubFolder',
+    );
+    if (!await pdfToMarkdownDir.exists()) {
+      await pdfToMarkdownDir.create(recursive: true);
+    }
+    return pdfToMarkdownDir;
+  }
+
+  /// Get directory for PDF to JSON outputs
+  static Future<Directory> getPdfToJsonDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToJsonDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToJsonSubFolder',
+    );
+    if (!await pdfToJsonDir.exists()) {
+      await pdfToJsonDir.create(recursive: true);
+    }
+    return pdfToJsonDir;
+  }
+
+  /// Get directory for PDF to CSV outputs
+  static Future<Directory> getPdfToCsvDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToCsvDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToCsvSubFolder',
+    );
+    if (!await pdfToCsvDir.exists()) {
+      await pdfToCsvDir.create(recursive: true);
+    }
+    return pdfToCsvDir;
+  }
+
+  /// Get directory for PDF to Excel outputs
+  static Future<Directory> getPdfToExcelDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToExcelDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToExcelSubFolder',
+    );
+    if (!await pdfToExcelDir.exists()) {
+      await pdfToExcelDir.create(recursive: true);
+    }
+    return pdfToExcelDir;
+  }
+
+  /// Get directory for PDF to Text outputs
+  static Future<Directory> getPdfToTextDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToTextDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToTextSubFolder',
+    );
+    if (!await pdfToTextDir.exists()) {
+      await pdfToTextDir.create(recursive: true);
+    }
+    return pdfToTextDir;
+  }
+
+  /// Get directory for PDF to JPG image outputs
+  static Future<Directory> getPdfToJpgImagesDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToJpgDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToJpgImagesSubFolder',
+    );
+    if (!await pdfToJpgDir.exists()) {
+      await pdfToJpgDir.create(recursive: true);
+    }
+    return pdfToJpgDir;
+  }
+
+  /// Get directory for PDF to PNG image outputs
+  static Future<Directory> getPdfToPngImagesDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToPngDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToPngImagesSubFolder',
+    );
+    if (!await pdfToPngDir.exists()) {
+      await pdfToPngDir.create(recursive: true);
+    }
+    return pdfToPngDir;
+  }
+
+  /// Get directory for PDF to TIFF image outputs (under PDFConversions)
+  static Future<Directory> getPdfToTiffImagesDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToTiffDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToTiffImagesSubFolder',
+    );
+    if (!await pdfToTiffDir.exists()) {
+      await pdfToTiffDir.create(recursive: true);
+    }
+    return pdfToTiffDir;
+  }
+
+  /// Get directory for PDF to SVG image outputs (under PDFConversions)
+  static Future<Directory> getPdfToSvgImagesDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final pdfToSvgDir = Directory(
+      '${pdfConversionsDir.path}/$_pdfToSvgImagesSubFolder',
+    );
+    if (!await pdfToSvgDir.exists()) {
+      await pdfToSvgDir.create(recursive: true);
+    }
+    return pdfToSvgDir;
+  }
+
+  /// Get directory for Image Conversions folder
+  static Future<Directory> getImageConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final imageConversionsDir = Directory(
+      '${smartConverterDir.path}/$_imageConversionsFolder',
+    );
+    if (!await imageConversionsDir.exists()) {
+      await imageConversionsDir.create(recursive: true);
+    }
+    return imageConversionsDir;
+  }
+
+  /// Get directory for Image category subfolders
+  static Future<Directory> getImageCategoryDirectory(String subFolder) async {
+    final imageConversionsDir = await getImageConversionsDirectory();
+    final targetDir = Directory('${imageConversionsDir.path}/$subFolder');
+    if (!await targetDir.exists()) {
+      await targetDir.create(recursive: true);
+    }
+    return targetDir;
+  }
+
+  static Future<Directory> getImagePdfToJpgDirectory() async {
+    return getImageCategoryDirectory(_imagePdfToJpgSubFolder);
+  }
+
+  static Future<Directory> getImagePdfToPngDirectory() async {
+    return getImageCategoryDirectory(_imagePdfToPngSubFolder);
+  }
+
+  static Future<Directory> getImagePdfToTiffDirectory() async {
+    return getImageCategoryDirectory(_imagePdfToTiffSubFolder);
+  }
+
+  static Future<Directory> getImagePdfToSvgDirectory() async {
+    return getImageCategoryDirectory(_imagePdfToSvgSubFolder);
   }
 }

@@ -10,7 +10,7 @@ The PDF password protection functionality has been fully implemented with a secu
 
 ### 1. **API Configuration** (`lib/constants/api_config.dart`)
 - ✅ Added `protectPdfEndpoint = '/api/v1/pdf/protect'`
-- ✅ Configured to use base URL: `http://192.168.8.102:8000`
+- ✅ Configured to use base URL: `http://192.168.8.103:8000`
 
 ### 2. **Conversion Service** (`lib/services/conversion_service.dart`)
 - ✅ Added `protectPdf(File pdfFile, String password)` method
@@ -123,7 +123,7 @@ if (tool.id == 'protect_pdf') {
 ## 📡 **API Integration**
 
 ### **Endpoint Details:**
-- **URL**: `http://192.168.8.102:8000/api/v1/pdf/protect`
+- **URL**: `http://192.168.8.103:8000/api/v1/pdf/protect`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 

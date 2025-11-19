@@ -10,7 +10,7 @@ The PDF unlock functionality has been fully implemented with a secure, user-frie
 
 ### 1. **API Configuration** (`lib/constants/api_config.dart`)
 - ✅ Added `unlockPdfEndpoint = '/api/v1/pdf/unlock'`
-- ✅ Configured to use base URL: `http://192.168.8.102:8000`
+- ✅ Configured to use base URL: `http://192.168.8.103:8000`
 
 ### 2. **Conversion Service** (`lib/services/conversion_service.dart`)
 - ✅ Added `unlockPdf(File pdfFile, String password)` method
@@ -120,7 +120,7 @@ if (tool.id == 'unlock_pdf') {
 ## 📡 **API Integration**
 
 ### **Endpoint Details:**
-- **URL**: `http://192.168.8.102:8000/api/v1/pdf/unlock`
+- **URL**: `http://192.168.8.103:8000/api/v1/pdf/unlock`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 

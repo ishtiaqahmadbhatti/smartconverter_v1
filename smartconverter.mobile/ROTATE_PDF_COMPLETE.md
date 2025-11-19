@@ -10,7 +10,7 @@ The Rotate PDF tool allows users to rotate all pages in a PDF document by 90°, 
 
 ### **1. API Configuration** ✅
 - **Endpoint**: `/api/v1/pdf/rotate`
-- **Base URL**: `http://192.168.8.100:8000`
+- **Base URL**: `http://192.168.8.103:8000`
 - **File**: `lib/constants/api_config.dart` (Line 16)
 
 ### **2. Conversion Service Method** ✅
@@ -91,7 +91,7 @@ User selects PDF
 🔄 Rotation angle: 90 degrees
 ✅ PDF rotated successfully!
 📥 Downloading rotated PDF: abc123_rotated_90.pdf
-✅ Successfully downloaded from: http://192.168.8.100:8000/api/v1/convert/download/...
+✅ Successfully downloaded from: http://192.168.8.103:8000/api/v1/convert/download/...
 ✅ File saved to organized directory: Documents/SmartConverter/RotatePDF/rotated_20251002_1430.pdf
 ```
 

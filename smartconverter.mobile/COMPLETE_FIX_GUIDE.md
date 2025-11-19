@@ -220,10 +220,10 @@ async def add_page_numbers(
 
 ```bash
 # Test if the downloads directory is accessible
-curl -X GET "http://192.168.8.100:8003/download/"
+curl -X GET "http://192.168.8.103:8003/download/"
 
 # Test with a real file (replace with actual filename from your logs)
-curl -X GET "http://192.168.8.100:8003/download/7df6a93f-cda6-4982-8710-d9ab6d5d3140_numbered.pdf"
+curl -X GET "http://192.168.8.103:8003/download/7df6a93f-cda6-4982-8710-d9ab6d5d3140_numbered.pdf"
 ```
 
 ### **Step 5: Debug Your Server**
@@ -264,10 +264,10 @@ async def debug_check_file(filename: str):
 
 ```bash
 # Check what files exist
-curl -X GET "http://192.168.8.100:8003/debug/files"
+curl -X GET "http://192.168.8.103:8003/debug/files"
 
 # Check specific file
-curl -X GET "http://192.168.8.100:8003/debug/check-file/7df6a93f-cda6-4982-8710-d9ab6d5d3140_numbered.pdf"
+curl -X GET "http://192.168.8.103:8003/debug/check-file/7df6a93f-cda6-4982-8710-d9ab6d5d3140_numbered.pdf"
 ```
 
 ## 🎯 **Most Likely Issues**

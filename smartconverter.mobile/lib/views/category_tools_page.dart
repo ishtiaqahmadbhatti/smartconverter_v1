@@ -130,13 +130,20 @@ import 'conversions/pdf/ai_pdf_to_markdown_page.dart';
 import 'conversions/pdf/ai_pdf_to_csv_page.dart';
 import 'conversions/pdf/ai_pdf_to_excel_page.dart';
 import 'conversions/pdf/pdf_to_excel_page.dart';
+import 'conversions/pdf/pdf_to_jpg_page.dart';
+import 'conversions/pdf/pdf_to_png_page.dart';
+import 'conversions/pdf/pdf_to_tiff_page.dart';
+import 'conversions/pdf/pdf_to_svg_page.dart';
+import 'conversions/pdf/pdf_to_text_page.dart';
+import 'conversions/pdf/pdf_to_html_page.dart';
 import 'conversions/pdf/markdown_to_pdf_page.dart';
+import 'conversions/pdf/jpg_to_pdf_page.dart';
+import 'conversions/pdf/png_to_pdf_page.dart';
+import 'conversions/pdf/merge_pdf_page.dart';
 import 'conversions/pdf/oxps_to_pdf_page.dart';
 import 'conversions/pdf/excel_to_xps_page.dart';
 import 'conversions/pdf/ods_to_pdf_page.dart';
 import 'conversions/image/ai_jpg_to_json_page.dart';
-import 'conversions/image/jpg_to_pdf_page.dart';
-import 'conversions/image/png_to_pdf_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
 import 'conversions/image/pdf_to_png_page.dart';
 import 'conversions/image/pdf_to_tiff_page.dart';
@@ -563,6 +570,8 @@ class CategoryToolsPage extends StatelessWidget {
 
     if (categoryId == 'pdf_conversion') {
       switch (toolName) {
+        case 'Merge PDF':
+          return const MergePdfPage();
         case 'AI: Convert PDF to JSON':
           return const AiPdfToJsonPage();
         case 'AI: Convert PDF to Markdown':
@@ -580,9 +589,9 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert OXPS to PDF':
           return const OxpsToPdfPage();
         case 'Convert JPG to PDF':
-          return const JpgToPdfImagePage();
+          return const JpgToPdfPage();
         case 'Convert PNG to PDF':
-          return const PngToPdfImagePage();
+          return const PngToPdfPage();
         case 'Convert Markdown to PDF':
           return const MarkdownToPdfPage();
         case 'Convert Excel to PDF':
@@ -598,17 +607,17 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert PDF to Word':
           return const PdfToWordOfficePage();
         case 'Convert PDF to JPG':
-          return const PdfToJpgImagePage();
+          return const PdfToJpgPage();
         case 'Convert PDF to PNG':
-          return const PdfToPngImagePage();
+          return const PdfToPngPage();
         case 'Convert PDF to TIFF':
-          return const PdfToTiffImagePage();
+          return const PdfToTiffPage();
         case 'Convert PDF to SVG':
-          return const PdfToSvgImagePage();
+          return const PdfToSvgPage();
         case 'Convert PDF to HTML':
-          return const PdfToHtmlWebPage();
+          return const PdfToHtmlPage();
         case 'Convert PDF to Text':
-          return const PdfToTextTextPage();
+          return const PdfToTextPage();
       }
     }
 
@@ -776,9 +785,9 @@ class CategoryToolsPage extends StatelessWidget {
         case 'AI: Convert JPG to JSON':
           return const AiJpgToJsonImagePage();
         case 'Convert JPG to PDF':
-          return const JpgToPdfImagePage();
+          return const JpgToPdfPage();
         case 'Convert PNG to PDF':
-          return const PngToPdfImagePage();
+          return const PngToPdfPage();
         case 'Convert Website to JPG':
           return const WebsiteToJpgPage();
         case 'Convert HTML to JPG':
@@ -788,13 +797,13 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert HTML to PNG':
           return const HtmlToPngWebPage();
         case 'Convert PDF to JPG':
-          return const PdfToJpgImagePage();
+          return const PdfToJpgImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to PNG':
-          return const PdfToPngImagePage();
+          return const PdfToPngImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to TIFF':
-          return const PdfToTiffImagePage();
+          return const PdfToTiffImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to SVG':
-          return const PdfToSvgImagePage();
+          return const PdfToSvgImagePage(useImageCategoryStorage: true);
         case 'Convert AI to SVG':
           return const AiToSvgImagePage();
         // Remaining format conversions can initially route to generic ToolActionPage

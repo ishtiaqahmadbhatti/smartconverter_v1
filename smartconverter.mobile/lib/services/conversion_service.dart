@@ -1,10 +1,64 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import '../models/conversion_tool.dart';
 import '../constants/api_config.dart';
 import '../utils/file_manager.dart';
+
+class MergePdfResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+
+  const MergePdfResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+  });
+}
+
+class MarkdownToPdfResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+
+  const MarkdownToPdfResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+  });
+}
+
+class ImageToPdfResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+
+  const ImageToPdfResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+  });
+}
+
+class PdfToImagesResult {
+  final List<File> files;
+  final List<String> fileNames;
+  final String folderName;
+  final String downloadUrl;
+  final int pagesProcessed;
+
+  const PdfToImagesResult({
+    required this.files,
+    required this.fileNames,
+    required this.folderName,
+    required this.downloadUrl,
+    required this.pagesProcessed,
+  });
+}
 
 class ConversionService {
   static final ConversionService _instance = ConversionService._internal();
@@ -14,8 +68,17 @@ class ConversionService {
   final Dio _dio = Dio();
   String? _baseUrl;
 
+  static const Duration _heavyConnectTimeout = Duration(minutes: 2);
+  static const Duration _heavyReceiveTimeout = Duration(minutes: 5);
+
   // FastAPI backend URL (cached after initialization)
   String? get baseUrl => _baseUrl;
+
+  void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
 
   // Initialize the service
   Future<void> initialize() async {
@@ -29,7 +92,7 @@ class ConversionService {
       LogInterceptor(
         requestBody: true,
         responseBody: true,
-        logPrint: (object) => print('API: $object'),
+        logPrint: (object) => _debugLog('API: $object'),
       ),
     );
 
@@ -37,10 +100,10 @@ class ConversionService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) {
-          print('API Error: ${error.message}');
+          _debugLog('API Error: ${error.message}');
           if (error.response != null) {
-            print('Response data: ${error.response?.data}');
-            print('Response status: ${error.response?.statusCode}');
+            _debugLog('Response data: ${error.response?.data}');
+            _debugLog('Response status: ${error.response?.statusCode}');
           }
           handler.next(error);
         },
@@ -54,7 +117,7 @@ class ConversionService {
       Response response = await _dio.get(ApiConfig.healthEndpoint);
       return response.statusCode == 200;
     } catch (e) {
-      print('API Connection test failed: $e');
+      _debugLog('API Connection test failed: $e');
       return false;
     }
   }
@@ -150,24 +213,26 @@ class ConversionService {
     }
   }
 
-  // Placeholder method for PDF to Image conversion
+  // Generic helper for legacy callers who just need JPG images list
   Future<List<File>> convertPdfToImages(File pdfFile) async {
-    try {
-      // TODO: Implement actual API call to FastAPI backend
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+    final result = await _convertPdfToImages(
+      pdfFile,
+      endpoint: ApiConfig.pdfToJpgEndpoint,
+      imageExtension: 'jpg',
+    );
 
-      // For now, return empty list as placeholder
+    if (result == null || result.files.isEmpty) {
       return [];
-    } catch (e) {
-      throw Exception('PDF to Images conversion failed: $e');
     }
+
+    return result.files;
   }
 
   // Placeholder method for Text to Word conversion
   Future<File?> convertTextToWord(File textFile) async {
     try {
-      // TODO: Implement actual API call to FastAPI backend
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      // Simulated processing until backend endpoint is available
+      await Future.delayed(const Duration(seconds: 2));
 
       // For now, return null as placeholder
       return null;
@@ -179,8 +244,8 @@ class ConversionService {
   // Placeholder method for Word to Text conversion
   Future<File?> convertWordToText(File wordFile) async {
     try {
-      // TODO: Implement actual API call to FastAPI backend
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      // Simulated processing until backend endpoint is available
+      await Future.delayed(const Duration(seconds: 2));
 
       // For now, return null as placeholder
       return null;
@@ -189,29 +254,63 @@ class ConversionService {
     }
   }
 
-  // Placeholder method for HTML to PDF conversion
-  Future<File?> convertHtmlToPdf(File htmlFile) async {
+  // Convert HTML to PDF
+  Future<ImageToPdfResult?> convertHtmlToPdf(
+    File htmlFile, {
+    String? outputFilename,
+  }) async {
     try {
-      // TODO: Implement actual API call to FastAPI backend
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      if (!htmlFile.existsSync()) {
+        throw Exception('HTML file does not exist');
+      }
 
-      // For now, return null as placeholder
+      final extension = p.extension(htmlFile.path).toLowerCase();
+      if (extension != '.html' && extension != '.htm') {
+        throw Exception('Only .html or .htm files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        htmlFile.path,
+        filename: p.basename(htmlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading HTML file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.htmlToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(htmlFile.path)}.pdf';
+
+        _debugLog('✅ HTML converted to PDF successfully!');
+        _debugLog('📥 Downloading PDF: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
       return null;
     } catch (e) {
       throw Exception('HTML to PDF conversion failed: $e');
-    }
-  }
-
-  // Placeholder method for PDF to HTML conversion
-  Future<File?> convertPdfToHtml(File pdfFile) async {
-    try {
-      // TODO: Implement actual API call to FastAPI backend
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-
-      // For now, return null as placeholder
-      return null;
-    } catch (e) {
-      throw Exception('PDF to HTML conversion failed: $e');
     }
   }
 
@@ -256,7 +355,10 @@ class ConversionService {
   }
 
   // Merge multiple PDF files
-  Future<File?> mergePdfFiles(List<File> pdfFiles) async {
+  Future<MergePdfResult?> mergePdfFiles(
+    List<File> pdfFiles, {
+    String? outputFileName,
+  }) async {
     try {
       if (pdfFiles.isEmpty) {
         throw Exception('No PDF files provided for merging');
@@ -266,19 +368,31 @@ class ConversionService {
         throw Exception('At least 2 PDF files are required for merging');
       }
 
-      // Create FormData with multiple files
-      FormData formData = FormData.fromMap({
-        'files': await Future.wait(
-          pdfFiles.map(
-            (file) => MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split('/').last,
-            ),
+      final trimmedName = outputFileName?.trim();
+      String? sanitizedName;
+      if (trimmedName != null && trimmedName.isNotEmpty) {
+        sanitizedName = trimmedName.toLowerCase().endsWith('.pdf')
+            ? trimmedName
+            : '$trimmedName.pdf';
+      }
+
+      final files = await Future.wait(
+        pdfFiles.map(
+          (file) => MultipartFile.fromFile(
+            file.path,
+            filename: p.basename(file.path),
           ),
         ),
-      });
+      );
 
-      print('📤 Uploading ${pdfFiles.length} PDF files for merging...');
+      final formDataMap = <String, dynamic>{'files': files};
+      if (sanitizedName != null) {
+        formDataMap['output_filename'] = sanitizedName;
+      }
+
+      FormData formData = FormData.fromMap(formDataMap);
+
+      _debugLog('📤 Uploading ${pdfFiles.length} PDF files for merging...');
 
       Response response = await _dio.post(
         ApiConfig.mergePdfEndpoint,
@@ -290,16 +404,629 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'merged_document.pdf';
 
-        print('✅ PDFs merged successfully!');
-        print('📥 Downloading merged PDF: $fileName');
+        _debugLog('✅ PDFs merged successfully!');
+        _debugLog('📥 Downloading merged PDF: $fileName');
 
         // Try multiple download endpoints
-        return await _tryDownloadFile(fileName, downloadUrl);
+        final file = await _tryDownloadFile(fileName, downloadUrl);
+        if (file == null) {
+          return null;
+        }
+
+        return MergePdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
       }
 
       return null;
     } catch (e) {
       throw Exception('Failed to merge PDFs: $e');
+    }
+  }
+
+  // Convert Markdown to PDF
+  Future<MarkdownToPdfResult?> convertMarkdownToPdf(
+    File markdownFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!markdownFile.existsSync()) {
+        throw Exception('Markdown file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(markdownFile.path).toLowerCase();
+      if (extension != '.md' && extension != '.markdown') {
+        throw Exception('Only .md and .markdown files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        markdownFile.path,
+        filename: p.basename(markdownFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading markdown file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.markdownToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(markdownFile.path)}.pdf';
+
+        _debugLog('✅ Markdown converted to PDF successfully!');
+        _debugLog('📥 Downloading PDF: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return MarkdownToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Markdown to PDF: $e');
+    }
+  }
+
+  // Convert JPG to PDF
+  Future<ImageToPdfResult?> convertJpgToPdf(
+    File jpgFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!jpgFile.existsSync()) {
+        throw Exception('JPG file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(jpgFile.path).toLowerCase();
+      if (extension != '.jpg' && extension != '.jpeg') {
+        throw Exception('Only .jpg and .jpeg files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jpgFile.path,
+        filename: p.basename(jpgFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JPG file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jpgToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jpgFile.path)}.pdf';
+
+        _debugLog('✅ JPG converted to PDF successfully!');
+        _debugLog('📥 Downloading PDF: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JPG to PDF: $e');
+    }
+  }
+
+  // Convert PNG to PDF
+  Future<ImageToPdfResult?> convertPngToPdf(
+    File pngFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pngFile.existsSync()) {
+        throw Exception('PNG file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(pngFile.path).toLowerCase();
+      if (extension != '.png') {
+        throw Exception('Only .png files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pngFile.path,
+        filename: p.basename(pngFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PNG file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pngToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pngFile.path)}.pdf';
+
+        _debugLog('✅ PNG converted to PDF successfully!');
+        _debugLog('📥 Downloading PDF: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PNG to PDF: $e');
+    }
+  }
+
+  // Convert PDF to JPG (multiple images)
+  Future<PdfToImagesResult?> convertPdfToJpg(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    return _convertPdfToImages(
+      pdfFile,
+      outputFilename: outputFilename,
+      endpoint: ApiConfig.pdfToJpgEndpoint,
+      imageExtension: 'jpg',
+    );
+  }
+
+  // Convert PDF to PNG (multiple images)
+  Future<PdfToImagesResult?> convertPdfToPng(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    return _convertPdfToImages(
+      pdfFile,
+      outputFilename: outputFilename,
+      endpoint: ApiConfig.pdfToPngEndpoint,
+      imageExtension: 'png',
+    );
+  }
+
+  // Convert PDF to TIFF (multiple images)
+  Future<PdfToImagesResult?> convertPdfToTiff(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    return _convertPdfToImages(
+      pdfFile,
+      outputFilename: outputFilename,
+      endpoint: ApiConfig.pdfToTiffEndpoint,
+      imageExtension: 'tiff',
+    );
+  }
+
+  // Convert PDF to SVG (multiple files)
+  Future<PdfToImagesResult?> convertPdfToSvg(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    return _convertPdfToImages(
+      pdfFile,
+      outputFilename: outputFilename,
+      endpoint: ApiConfig.pdfToSvgEndpoint,
+      imageExtension: 'svg',
+    );
+  }
+
+  // Convert PDF to HTML
+  Future<ImageToPdfResult?> convertPdfToHtml(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for HTML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToHtmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.html';
+
+        _debugLog('✅ PDF converted to HTML successfully!');
+        _debugLog('📥 Downloading HTML: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to HTML: $e');
+    }
+  }
+
+  // Convert PDF to Excel
+  Future<ImageToPdfResult?> convertPdfToExcel(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.xlsx';
+
+        _debugLog('✅ PDF converted to Excel successfully!');
+        _debugLog('📥 Downloading Excel: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to Excel: $e');
+    }
+  }
+
+  // Convert PDF to JSON
+  Future<ImageToPdfResult?> convertPdfToJson(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for JSON conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.json';
+
+        _debugLog('✅ PDF converted to JSON successfully!');
+        _debugLog('📥 Downloading JSON: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to JSON: $e');
+    }
+  }
+
+  // Convert PDF to Markdown
+  Future<ImageToPdfResult?> convertPdfToMarkdown(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for Markdown conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToMarkdownEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.md';
+
+        _debugLog('✅ PDF converted to Markdown successfully!');
+        _debugLog('📥 Downloading Markdown: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to Markdown: $e');
+    }
+  }
+
+  // Convert PDF to CSV
+  Future<ImageToPdfResult?> convertPdfToCsv(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.csv';
+
+        _debugLog('✅ PDF converted to CSV successfully!');
+        _debugLog('📥 Downloading CSV: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to CSV: $e');
+    }
+  }
+
+  // Convert PDF to Text
+  Future<ImageToPdfResult?> convertPdfToText(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      // Validate file extension
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF file for Text conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.pdfToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pdfFile.path)}.txt';
+
+        _debugLog('✅ PDF converted to Text successfully!');
+        _debugLog('📥 Downloading Text: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to Text: $e');
     }
   }
 
@@ -319,8 +1046,8 @@ class ConversionService {
         'password': password,
       });
 
-      print('📤 Uploading PDF for password protection...');
-      print('🔐 Password length: ${password.length} characters');
+      _debugLog('📤 Uploading PDF for password protection...');
+      _debugLog('🔐 Password length: ${password.length} characters');
 
       Response response = await _dio.post(
         ApiConfig.protectPdfEndpoint,
@@ -332,8 +1059,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'protected_document.pdf';
 
-        print('✅ PDF protected successfully!');
-        print('📥 Downloading protected PDF: $fileName');
+        _debugLog('✅ PDF protected successfully!');
+        _debugLog('📥 Downloading protected PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -361,8 +1088,8 @@ class ConversionService {
         'password': password,
       });
 
-      print('📤 Uploading PDF for unlocking...');
-      print('🔓 Attempting to remove password protection...');
+      _debugLog('📤 Uploading PDF for unlocking...');
+      _debugLog('🔓 Attempting to remove password protection...');
 
       Response response = await _dio.post(
         ApiConfig.unlockPdfEndpoint,
@@ -374,8 +1101,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'unlocked_document.pdf';
 
-        print('✅ PDF unlocked successfully!');
-        print('📥 Downloading unlocked PDF: $fileName');
+        _debugLog('✅ PDF unlocked successfully!');
+        _debugLog('📥 Downloading unlocked PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -408,9 +1135,9 @@ class ConversionService {
         'position': position,
       });
 
-      print('📤 Uploading PDF for watermarking...');
-      print('💧 Watermark text: "$watermarkText"');
-      print('📍 Position: $position');
+      _debugLog('📤 Uploading PDF for watermarking...');
+      _debugLog('💧 Watermark text: "$watermarkText"');
+      _debugLog('📍 Position: $position');
 
       Response response = await _dio.post(
         ApiConfig.watermarkPdfEndpoint,
@@ -422,8 +1149,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'watermarked_document.pdf';
 
-        print('✅ Watermark added successfully!');
-        print('📥 Downloading watermarked PDF: $fileName');
+        _debugLog('✅ Watermark added successfully!');
+        _debugLog('📥 Downloading watermarked PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -454,8 +1181,8 @@ class ConversionService {
         'pages_to_remove': pagesString,
       });
 
-      print('📤 Uploading PDF for page removal...');
-      print('🗑️ Pages to remove: $pagesString');
+      _debugLog('📤 Uploading PDF for page removal...');
+      _debugLog('🗑️ Pages to remove: $pagesString');
 
       Response response = await _dio.post(
         ApiConfig.removePagesEndpoint,
@@ -467,8 +1194,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'pages_removed_document.pdf';
 
-        print('✅ Pages removed successfully!');
-        print('📥 Downloading modified PDF: $fileName');
+        _debugLog('✅ Pages removed successfully!');
+        _debugLog('📥 Downloading modified PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -499,8 +1226,8 @@ class ConversionService {
         'pages_to_extract': pagesString,
       });
 
-      print('📤 Uploading PDF for page extraction...');
-      print('📄 Pages to extract: $pagesString');
+      _debugLog('📤 Uploading PDF for page extraction...');
+      _debugLog('📄 Pages to extract: $pagesString');
 
       Response response = await _dio.post(
         ApiConfig.extractPagesEndpoint,
@@ -512,8 +1239,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'extracted_document.pdf';
 
-        print('✅ Pages extracted successfully!');
-        print('📥 Downloading extracted PDF: $fileName');
+        _debugLog('✅ Pages extracted successfully!');
+        _debugLog('📥 Downloading extracted PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -543,10 +1270,10 @@ class ConversionService {
           'page_ranges': pageRanges,
       });
 
-      print('📤 Uploading PDF for splitting...');
-      print('✂️ Split type: $splitType');
+      _debugLog('📤 Uploading PDF for splitting...');
+      _debugLog('✂️ Split type: $splitType');
       if (pageRanges != null && pageRanges.isNotEmpty) {
-        print('📄 Page ranges: $pageRanges');
+        _debugLog('📄 Page ranges: $pageRanges');
       }
 
       Response response = await _dio.post(
@@ -567,8 +1294,8 @@ class ConversionService {
           fileCount = int.parse(match.group(1)!);
         }
 
-        print('✅ PDF split successfully into $fileCount file(s)!');
-        print('📥 Downloading result: $fileName');
+        _debugLog('✅ PDF split successfully into $fileCount file(s)!');
+        _debugLog('📥 Downloading result: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -596,8 +1323,8 @@ class ConversionService {
         'rotation': rotation,
       });
 
-      print('📤 Uploading PDF for rotation...');
-      print('🔄 Rotation angle: $rotation degrees');
+      _debugLog('📤 Uploading PDF for rotation...');
+      _debugLog('🔄 Rotation angle: $rotation degrees');
 
       Response response = await _dio.post(
         ApiConfig.rotatePdfEndpoint,
@@ -609,8 +1336,8 @@ class ConversionService {
         String fileName =
             response.data['output_filename'] ?? 'rotated_document.pdf';
 
-        print('✅ PDF rotated successfully!');
-        print('📥 Downloading rotated PDF: $fileName');
+        _debugLog('✅ PDF rotated successfully!');
+        _debugLog('📥 Downloading rotated PDF: $fileName');
 
         // Try multiple download endpoints
         return await _tryDownloadFile(fileName, downloadUrl);
@@ -763,8 +1490,8 @@ class ConversionService {
   // Get conversion status (placeholder)
   Future<String> getConversionStatus(String conversionId) async {
     try {
-      // TODO: Implement actual API call to check conversion status
-      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+      // Simulated processing until backend endpoint is available
+      await Future.delayed(const Duration(seconds: 1));
 
       return 'completed'; // Placeholder response
     } catch (e) {
@@ -798,18 +1525,20 @@ class ConversionService {
 
     for (String url in possibleUrls) {
       try {
-        print('Trying download URL: $url');
-        final result = await _downloadFile(url, 'numbered_document.pdf');
-        print('✅ Successfully downloaded from: $url');
+        _debugLog('Trying download URL: $url');
+        final result = await _downloadFile(url, fileName);
+        _debugLog('✅ Successfully downloaded from: $url');
         return result;
       } catch (e) {
-        print('❌ Failed to download from $url: $e');
+        _debugLog('❌ Failed to download from $url: $e');
         continue;
       }
     }
 
     // If all download attempts fail, create a placeholder file with success message
-    print('All download endpoints failed. Creating success notification file.');
+    _debugLog(
+      'All download endpoints failed. Creating success notification file.',
+    );
     return await _createSuccessPlaceholderFile(fileName);
   }
 
@@ -847,7 +1576,7 @@ async def download_file(filename: str):
 ''';
 
       await file.writeAsString(content);
-      print('Created success placeholder file: ${file.path}');
+      _debugLog('Created success placeholder file: ${file.path}');
       return file;
     } catch (e) {
       throw Exception('Could not create success placeholder: $e');
@@ -862,22 +1591,151 @@ async def download_file(filename: str):
       );
       final filePath = '${directory.path}/$fileName';
 
-      print('📥 Starting download from: $url');
-      print('💾 Saving to: $filePath');
+      _debugLog('📥 Starting download from: $url');
+      _debugLog('💾 Saving to: $filePath');
 
       await _dio.download(url, filePath);
 
       final file = File(filePath);
       final fileSize = await file.length();
-      print('✅ File downloaded successfully!');
-      print('📁 File path: $filePath');
-      print('📏 File size: ${(fileSize / 1024).toStringAsFixed(1)} KB');
+      _debugLog('✅ File downloaded successfully!');
+      _debugLog('📁 File path: $filePath');
+      _debugLog('📏 File size: ${(fileSize / 1024).toStringAsFixed(1)} KB');
 
       return file;
     } catch (e) {
-      print('❌ Download error: $e');
+      _debugLog('❌ Download error: $e');
       throw Exception('Download failed: $e');
     }
+  }
+
+  // Shared logic for PDF to image conversions
+  Future<PdfToImagesResult?> _convertPdfToImages(
+    File pdfFile, {
+    required String endpoint,
+    required String imageExtension,
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF for $imageExtension conversion...');
+
+      final originalConnectTimeout = _dio.options.connectTimeout;
+      final originalReceiveTimeout = _dio.options.receiveTimeout;
+      final originalSendTimeout = _dio.options.sendTimeout;
+
+      Response response;
+      try {
+        _dio.options
+          ..connectTimeout = _heavyConnectTimeout
+          ..receiveTimeout = _heavyReceiveTimeout
+          ..sendTimeout = _heavyReceiveTimeout;
+
+        response = await _dio.post(endpoint, data: formData);
+      } finally {
+        _dio.options
+          ..connectTimeout = originalConnectTimeout
+          ..receiveTimeout = originalReceiveTimeout
+          ..sendTimeout = originalSendTimeout;
+      }
+
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final folderName =
+          (data['output_filename'] ?? p.basenameWithoutExtension(pdfFile.path))
+              .toString();
+      final rawDownloadUrl =
+          data[ApiConfig.downloadUrlKey]?.toString() ??
+          '/download/$folderName/';
+      final pagesProcessed = data['pages_processed'] is int
+          ? data['pages_processed'] as int
+          : int.tryParse(data['pages_processed']?.toString() ?? '') ?? 0;
+
+      final baseUrl = _baseUrl ?? await ApiConfig.baseUrl;
+      final normalizedFolderUrl = _normalizeFolderDownloadUrl(
+        rawDownloadUrl,
+        baseUrl,
+      );
+
+      final totalPages = pagesProcessed > 0 ? pagesProcessed : 1;
+      final List<File> downloadedFiles = [];
+      final List<String> downloadedNames = [];
+
+      for (int i = 1; i <= totalPages; i++) {
+        final fileName = '${folderName}_page_$i.$imageExtension';
+        final originalUrl = _buildFileDownloadUrl(
+          normalizedFolderUrl,
+          fileName,
+        );
+        final fileResult = await _tryDownloadFile(fileName, originalUrl);
+        if (fileResult != null) {
+          downloadedFiles.add(fileResult);
+          downloadedNames.add(fileName);
+        }
+      }
+
+      _debugLog(
+        '✅ Downloaded ${downloadedFiles.length} $imageExtension images for folder $folderName',
+      );
+
+      return PdfToImagesResult(
+        files: downloadedFiles,
+        fileNames: downloadedNames,
+        folderName: folderName,
+        downloadUrl: normalizedFolderUrl,
+        pagesProcessed: pagesProcessed,
+      );
+    } catch (e) {
+      throw Exception('Failed to convert PDF to $imageExtension: $e');
+    }
+  }
+
+  String _normalizeFolderDownloadUrl(String downloadUrl, String baseUrl) {
+    if (downloadUrl.isEmpty) {
+      return '$baseUrl/${ApiConfig.downloadEndpoint}';
+    }
+
+    if (downloadUrl.startsWith('http://') ||
+        downloadUrl.startsWith('https://')) {
+      return downloadUrl.endsWith('/') ? downloadUrl : '$downloadUrl/';
+    }
+
+    final hasLeadingSlash = downloadUrl.startsWith('/');
+    final combined = hasLeadingSlash
+        ? '$baseUrl$downloadUrl'
+        : '$baseUrl/$downloadUrl';
+    return combined.endsWith('/') ? combined : '$combined/';
+  }
+
+  String _buildFileDownloadUrl(String folderUrl, String fileName) {
+    if (folderUrl.isEmpty) {
+      return fileName;
+    }
+    return folderUrl.endsWith('/')
+        ? '$folderUrl$fileName'
+        : '$folderUrl/$fileName';
   }
 
   // Convert video to audio (MP4 to MP3) - Unified method for both Audio and Video categories
@@ -892,8 +1750,8 @@ async def download_file(filename: str):
     String? category, // Optional: 'audio' or 'video' to determine save location
   }) async {
     try {
-      print('🎬 Starting video to audio conversion...');
-      print('📁 Input file: ${videoFile.path}');
+      _debugLog('🎬 Starting video to audio conversion...');
+      _debugLog('📁 Input file: ${videoFile.path}');
 
       // Determine which endpoint to use
       // Both endpoints use the same implementation on backend (DRY principle)
@@ -922,7 +1780,7 @@ async def download_file(filename: str):
               'bitrate': bitrate,
             });
 
-      print('📡 Calling endpoint: $endpoint');
+      _debugLog('📡 Calling endpoint: $endpoint');
 
       // Call API endpoint (both use same backend implementation)
       Response response = await _dio.post(
@@ -935,17 +1793,17 @@ async def download_file(filename: str):
         ),
       );
 
-      print('📡 API Response: ${response.statusCode}');
-      print('📄 Response data: ${response.data}');
+      _debugLog('📡 API Response: ${response.statusCode}');
+      _debugLog('📄 Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String outputFilename =
             response.data['output_filename'] ?? 'converted_audio.mp3';
         String downloadUrl = response.data['download_url'] ?? '';
 
-        print('✅ Conversion successful!');
-        print('📦 Output filename: $outputFilename');
-        print('🔗 Download URL: $downloadUrl');
+        _debugLog('✅ Conversion successful!');
+        _debugLog('📦 Output filename: $outputFilename');
+        _debugLog('🔗 Download URL: $downloadUrl');
 
         // Download the converted audio file
         File? downloadedFile = await _downloadAudioFile(
@@ -960,12 +1818,12 @@ async def download_file(filename: str):
           Directory saveDirectory;
           if (category == 'audio' || preferredEndpoint == 'audio') {
             saveDirectory = await FileManager.getAudioVideoToAudioDirectory();
-            print(
+            _debugLog(
               '💾 Saving to AudioConversions/video-to-audio (Audio category)',
             );
           } else {
             saveDirectory = await FileManager.getVideoToAudioDirectory();
-            print(
+            _debugLog(
               '💾 Saving to VideoConversions/video-to-audio (Video category)',
             );
           }
@@ -973,7 +1831,7 @@ async def download_file(filename: str):
           final savedFilePath = '${saveDirectory.path}/$outputFilename';
           final savedFile = await downloadedFile.copy(savedFilePath);
 
-          print('💾 File saved to: ${savedFile.path}');
+          _debugLog('💾 File saved to: ${savedFile.path}');
           return savedFile;
         }
 
@@ -984,7 +1842,7 @@ async def download_file(filename: str):
         'Conversion failed: ${response.data['message'] ?? 'Unknown error'}',
       );
     } catch (e) {
-      print('❌ Video to audio conversion failed: $e');
+      _debugLog('❌ Video to audio conversion failed: $e');
       throw Exception('Video to audio conversion failed: $e');
     }
   }
@@ -1006,7 +1864,7 @@ async def download_file(filename: str):
 
       for (String url in possibleUrls) {
         try {
-          print('🔍 Trying download URL: $url');
+          _debugLog('🔍 Trying download URL: $url');
 
           final response = await _dio.get(
             url,
@@ -1022,18 +1880,18 @@ async def download_file(filename: str):
             final tempFile = File('${tempDir.path}/$filename');
             await tempFile.writeAsBytes(response.data as List<int>);
 
-            print('✅ Successfully downloaded from: $url');
+            _debugLog('✅ Successfully downloaded from: $url');
             return tempFile;
           }
         } catch (e) {
-          print('⚠️ Failed to download from $url: $e');
+          _debugLog('⚠️ Failed to download from $url: $e');
           continue;
         }
       }
 
       throw Exception('Could not download converted file from any endpoint');
     } catch (e) {
-      print('❌ Download failed: $e');
+      _debugLog('❌ Download failed: $e');
       throw Exception('File download failed: $e');
     }
   }
@@ -1058,10 +1916,10 @@ async def download_file(filename: str):
         fileName,
       );
 
-      print('✅ File saved to organized directory: ${savedFile.path}');
+      _debugLog('✅ File saved to organized directory: ${savedFile.path}');
       return savedFile;
     } catch (e) {
-      print('❌ Error saving to organized directory: $e');
+      _debugLog('❌ Error saving to organized directory: $e');
       throw Exception('Failed to save file to organized directory: $e');
     }
   }

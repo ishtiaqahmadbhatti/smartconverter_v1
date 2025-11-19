@@ -11,14 +11,14 @@ import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
-class PdfToExcelPage extends StatefulWidget {
-  const PdfToExcelPage({super.key});
+class PngToPdfPage extends StatefulWidget {
+  const PngToPdfPage({super.key});
 
   @override
-  State<PdfToExcelPage> createState() => _PdfToExcelPageState();
+  State<PngToPdfPage> createState() => _PngToPdfPageState();
 }
 
-class _PdfToExcelPageState extends State<PdfToExcelPage> {
+class _PngToPdfPageState extends State<PngToPdfPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -28,7 +28,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Select a PDF file to begin.';
+  String _statusMessage = 'Select a PNG file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -91,11 +91,11 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     ad.load();
   }
 
-  Future<void> _pickPdfFile() async {
+  Future<void> _pickPngFile() async {
     try {
       final file = await _service.pickFile(
-        allowedExtensions: const ['pdf'],
-        type: 'custom',
+        allowedExtensions: const ['png'],
+        type: 'custom', // Use custom to enforce extension filtering
       );
 
       if (file == null) {
@@ -105,16 +105,17 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         return;
       }
 
+      // Validate file extension after selection
       final extension = p.extension(file.path).toLowerCase();
-      if (extension != '.pdf') {
+      if (extension != '.png') {
         if (mounted) {
           setState(
-            () => _statusMessage = 'Please select a PDF file (.pdf extension).',
+            () => _statusMessage = 'Please select a PNG file (.png extension).',
           );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Only PDF files are supported. Please select a file with .pdf extension.',
+                'Only PNG files are supported. Please select a file with .png extension.',
               ),
               backgroundColor: AppColors.warning,
             ),
@@ -127,12 +128,12 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         _selectedFile = file;
         _conversionResult = null;
         _savedFilePath = null;
-        _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+        _statusMessage = 'PNG file selected: ${p.basename(file.path)}';
       });
 
       _updateSuggestedFileName();
     } catch (e) {
-      final message = 'Failed to select PDF file: $e';
+      final message = 'Failed to select PNG file: $e';
       if (mounted) {
         setState(() => _statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,11 +143,23 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _convertPdfToExcel() async {
+  Future<void> _convertPngToPdf() async {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a PDF file first.'),
+          content: Text('Please select a PNG file first.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    // Double-check file extension before conversion
+    final extension = p.extension(_selectedFile!.path).toLowerCase();
+    if (extension != '.png') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a PNG file (.png extension).'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -155,17 +168,18 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting PDF to Excel...';
+      _statusMessage = 'Converting PNG to PDF...';
       _conversionResult = null;
       _savedFilePath = null;
     });
 
     try {
+      // Get custom filename if provided
       final customFilename = _fileNameController.text.trim().isNotEmpty
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertPdfToExcel(
+      final result = await _service.convertPngToPdf(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -190,13 +204,13 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Excel file converted successfully!';
+        _statusMessage = 'PDF converted successfully!';
         _savedFilePath = null;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Excel file ready: ${result.fileName}'),
+          content: Text('PDF ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -213,19 +227,20 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _saveExcelFile() async {
+  Future<void> _savePdfFile() async {
     final result = _conversionResult;
     if (result == null) return;
 
     setState(() => _isSaving = true);
 
     try {
-      final directory = await FileManager.getPdfToExcelDirectory();
+      final directory = await FileManager.getPngToPdfDirectory();
 
+      // Use custom filename if provided, otherwise use API filename
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensureExcelExtension(customName);
+        targetFileName = _ensurePdfExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -235,7 +250,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'xlsx',
+          'pdf',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -268,7 +283,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     }
   }
 
-  Future<void> _shareExcelFile() async {
+  Future<void> _sharePdfFile() async {
     final result = _conversionResult;
     if (result == null) return;
     final pathToShare = _savedFilePath ?? result.file.path;
@@ -278,7 +293,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Excel file is not available on disk.'),
+            content: Text('PDF file is not available on disk.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -288,7 +303,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted Excel: ${result.fileName}');
+    ], text: 'Converted PDF: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
@@ -315,8 +330,8 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.xlsx')) {
-      base = base.substring(0, base.length - 5);
+    if (base.toLowerCase().endsWith('.pdf')) {
+      base = base.substring(0, base.length - 4);
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
@@ -327,9 +342,9 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensureExcelExtension(String base) {
+  String _ensurePdfExtension(String base) {
     final trimmed = base.trim();
-    return trimmed.toLowerCase().endsWith('.xlsx') ? trimmed : '$trimmed.xlsx';
+    return trimmed.toLowerCase().endsWith('.pdf') ? trimmed : '$trimmed.pdf';
   }
 
   void _resetForNewConversion() {
@@ -341,7 +356,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       _fileNameEdited = false;
       _suggestedBaseName = null;
       _savedFilePath = null;
-      _statusMessage = 'Select a PDF file to begin.';
+      _statusMessage = 'Select a PNG file to begin.';
       _fileNameController.clear();
     });
     _admobService.preloadAd();
@@ -364,7 +379,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'PDF to Excel',
+          'PNG to PDF',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -439,7 +454,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.table_chart_outlined,
+              Icons.image_outlined,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -450,7 +465,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text(
-                  'Convert PDF to Excel',
+                  'Convert PNG to PDF',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -459,7 +474,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Turn your PDF content into organized Excel sheets that you can edit, filter, and analyze.',
+                  'Convert your PNG images to PDF format. Perfect for creating PDFs from PNG images with transparency support.',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -479,10 +494,10 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickPdfFile,
+            onPressed: _isConverting ? null : () => _pickPngFile(),
             icon: const Icon(Icons.file_open_outlined),
             label: Text(
-              _selectedFile == null ? 'Select PDF File' : 'Change File',
+              _selectedFile == null ? 'Select PNG File' : 'Change File',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -541,7 +556,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
-              Icons.picture_as_pdf,
+              Icons.image,
               color: AppColors.primaryBlue,
               size: 24,
             ),
@@ -594,7 +609,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.xlsx extension is added automatically',
+        helperText: '.pdf extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -607,7 +622,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertPdfToExcel : null,
+        onPressed: canConvert ? _convertPngToPdf : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -629,7 +644,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 ),
               )
             : const Text(
-                'Convert to Excel',
+                'Convert to PDF',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -706,7 +721,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.grid_on,
+                  Icons.picture_as_pdf,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -717,7 +732,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Excel Ready',
+                      'PDF Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -745,7 +760,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
               Flexible(
                 flex: isSaved ? 3 : 1,
                 child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveExcelFile,
+                  onPressed: _isSaving ? null : _savePdfFile,
                   icon: _isSaving
                       ? const SizedBox(
                           width: 16,
@@ -761,7 +776,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                   label: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: const Text(
-                      'Save Workbook',
+                      'Save Document',
                       style: TextStyle(fontSize: 14),
                     ),
                   ),
@@ -784,7 +799,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
                 Flexible(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: _shareExcelFile,
+                    onPressed: _sharePdfFile,
                     icon: const Icon(Icons.share_outlined, size: 18),
                     label: const Text('Share', style: TextStyle(fontSize: 14)),
                     style: ElevatedButton.styleFrom(
@@ -834,17 +849,14 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select a PDF file (.pdf)'),
+          _buildInstructionStep('1', 'Select a PNG file'),
           const SizedBox(height: 8),
           _buildInstructionStep(
             '2',
-            'Tap "Convert to Excel" to start the conversion',
+            'Click "Convert to PDF" to start conversion',
           ),
           const SizedBox(height: 8),
-          _buildInstructionStep(
-            '3',
-            'Save the .xlsx file to your device or share it',
-          ),
+          _buildInstructionStep('3', 'Save the PDF to your device or share it'),
         ],
       ),
     );

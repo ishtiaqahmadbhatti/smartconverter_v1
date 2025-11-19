@@ -19,7 +19,7 @@ static const String removePagesEndpoint = '/api/v1/pdf/remove-pages';
 **Status**: ✅ **CONFIRMED**
 - Endpoint correctly defined
 - Matches FastAPI route: `POST /api/v1/pdf/remove-pages`
-- Uses correct base URL: `http://192.168.8.102:8000`
+- Uses correct base URL: `http://192.168.8.103:8000`
 
 ---
 
@@ -204,7 +204,7 @@ _removePages() validates inputs
 → Creates FormData with:
    - file: MultipartFile
    - pages_to_remove: "1,3,4,5,8"
-→ POST to http://192.168.8.102:8000/api/v1/pdf/remove-pages
+→ POST to http://192.168.8.103:8000/api/v1/pdf/remove-pages
 ```
 
 ### **4. API Response** ✅
@@ -222,8 +222,8 @@ Backend removes pages
 ### **5. Download** ✅
 ```
 _tryDownloadFile() attempts multiple endpoints:
-1. http://192.168.8.102:8000/api/v1/convert/download/abc123_pages_removed.pdf ✓
-2. http://192.168.8.102:8000/download/abc123_pages_removed.pdf (fallback)
+1. http://192.168.8.103:8000/api/v1/convert/download/abc123_pages_removed.pdf ✓
+2. http://192.168.8.103:8000/download/abc123_pages_removed.pdf (fallback)
 3. Other fallbacks...
 → Downloads file to temp directory
 → Returns File object
@@ -330,7 +330,7 @@ Success dialog shows
 ┌─────────────────────────────────────────────────────────────┐
 │                      API Config                             │
 │  removePagesEndpoint = '/api/v1/pdf/remove-pages'         │
-│  baseUrl = 'http://192.168.8.102:8000'                     │
+│  baseUrl = 'http://192.168.8.103:8000'                     │
 └─────────────────────┬───────────────────────────────────────┘
                       │
                       ▼
@@ -427,8 +427,8 @@ To test the remove pages feature:
    🗑️ Pages to remove: 1,3,4,5,8
    ✅ Pages removed successfully!
    📥 Downloading modified PDF: abc123_pages_removed.pdf
-   Trying download URL: http://192.168.8.102:8000/api/v1/convert/download/...
-   ✅ Successfully downloaded from: http://192.168.8.102:8000/api/v1/convert/download/...
+   Trying download URL: http://192.168.8.103:8000/api/v1/convert/download/...
+   ✅ Successfully downloaded from: http://192.168.8.103:8000/api/v1/convert/download/...
    ✅ File saved to organized directory: Documents/SmartConverter/RemovePages/pages_removed_20251002_1430.pdf
    ```
 
@@ -451,7 +451,7 @@ async def remove_pages(
 **Verify Backend**:
 ```bash
 # Check API is running
-curl http://192.168.8.102:8000/api/v1/health/health
+curl http://192.168.8.103:8000/api/v1/health/health
 
 # Should return:
 {"status":"healthy",...}
@@ -482,7 +482,7 @@ All code components are correctly implemented and integrated:
 **Feature**: Remove Pages from PDF  
 **Status**: ✅ **FULLY IMPLEMENTED & VERIFIED**  
 **API Endpoint**: `POST /api/v1/pdf/remove-pages`  
-**Server**: `http://192.168.8.102:8000`  
+**Server**: `http://192.168.8.103:8000`  
 **Save Location**: `Documents/SmartConverter/RemovePages/`  
 **Filename Format**: `pages_removed_YYYYMMDD_HHMM.pdf`  
 
