@@ -170,6 +170,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
         'category': 'PDF Tools',
         'tools': [
           'Merge PDF',
+          'Split PDF',
           'AI: Convert PDF to JSON',
           'AI: Convert PDF to Markdown',
           'AI: Convert PDF to CSV',

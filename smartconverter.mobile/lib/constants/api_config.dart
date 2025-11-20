@@ -103,6 +103,7 @@ class ApiConfig {
   static const String removePagesEndpoint = '/api/v1/pdf/remove-pages';
   static const String extractPagesEndpoint = '/api/v1/pdf/extract-pages';
   static const String splitPdfEndpoint = '/api/v1/pdf/split';
+  static const String splitPdfNewEndpoint = '/api/v1/pdfconversiontools/split';
   static const String downloadEndpoint = '/api/v1/convert/download';
   static const String videoToAudioEndpoint =
       '/api/v1/videoconversiontools/mp4-to-mp3';

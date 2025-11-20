@@ -1282,60 +1282,6 @@ class ConversionService {
     }
   }
 
-  // Split PDF into multiple files
-  Future<File?> splitPdf(
-    File pdfFile, {
-    String splitType = 'every_page',
-    String? pageRanges,
-  }) async {
-    try {
-      // Create FormData with file and split options
-      FormData formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          pdfFile.path,
-          filename: pdfFile.path.split('/').last,
-        ),
-        'split_type': splitType,
-        if (pageRanges != null && pageRanges.isNotEmpty)
-          'page_ranges': pageRanges,
-      });
-
-      _debugLog('📤 Uploading PDF for splitting...');
-      _debugLog('✂️ Split type: $splitType');
-      if (pageRanges != null && pageRanges.isNotEmpty) {
-        _debugLog('📄 Page ranges: $pageRanges');
-      }
-
-      Response response = await _dio.post(
-        ApiConfig.splitPdfEndpoint,
-        data: formData,
-      );
-
-      if (response.statusCode == 200) {
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ?? 'split_files.zip';
-        int fileCount = 0;
-
-        // Try to get file count from message
-        String message = response.data['message'] ?? '';
-        RegExp regExp = RegExp(r'(\d+)\s+files');
-        Match? match = regExp.firstMatch(message);
-        if (match != null) {
-          fileCount = int.parse(match.group(1)!);
-        }
-
-        _debugLog('✅ PDF split successfully into $fileCount file(s)!');
-        _debugLog('📥 Downloading result: $fileName');
-
-        // Try multiple download endpoints
-        return await _tryDownloadFile(fileName, downloadUrl);
-      }
-
-      return null;
-    } catch (e) {
-      throw Exception('Failed to split PDF: $e');
-    }
-  }
 
   // Rotate PDF
   Future<File?> rotatePdf(File pdfFile, int rotation) async {
@@ -2209,5 +2155,104 @@ async def download_file(filename: str):
         category: 'PDF',
       ),
     ];
+  }
+  Future<SplitResult?> splitPdf(
+    File pdfFile, {
+    required String splitType,
+    String? pageRanges,
+    required String outputPrefix,
+    bool zip = false,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+      final ext = p.extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+      final form = <String, dynamic>{
+        'file': file,
+        'split_type': splitType,
+        'output_prefix': outputPrefix,
+        'zip': zip,
+      };
+      if (pageRanges != null && pageRanges.isNotEmpty) {
+        form['page_ranges'] = pageRanges;
+      }
+      final formData = FormData.fromMap(form);
+      final originalConnectTimeout = _dio.options.connectTimeout;
+      final originalReceiveTimeout = _dio.options.receiveTimeout;
+      final originalSendTimeout = _dio.options.sendTimeout;
+      Response response;
+      try {
+        _dio.options
+          ..connectTimeout = _heavyConnectTimeout
+          ..receiveTimeout = _heavyReceiveTimeout
+          ..sendTimeout = _heavyReceiveTimeout;
+        response = await _dio.post(ApiConfig.splitPdfNewEndpoint, data: formData);
+      } finally {
+        _dio.options
+          ..connectTimeout = originalConnectTimeout
+          ..receiveTimeout = originalReceiveTimeout
+          ..sendTimeout = originalSendTimeout;
+      }
+      if (response.statusCode != 200) {
+        return null;
+      }
+      final data = response.data as Map<String, dynamic>;
+      final extracted = (data['extracted_data'] ?? {}) as Map<String, dynamic>;
+      final filesRaw = (extracted['files'] ?? []) as List<dynamic>;
+      final baseUrl = _baseUrl ?? await ApiConfig.baseUrl;
+      final List<SplitFileResult> results = [];
+      for (final item in filesRaw) {
+        final m = item as Map<String, dynamic>;
+        final fname = m['filename']?.toString() ?? '';
+        final dl = m['download_url']?.toString() ?? '';
+        final pages = (m['pages'] is List)
+            ? List<int>.from((m['pages'] as List).map((e) => int.tryParse('$e') ?? 0).where((e) => e > 0))
+            : <int>[];
+        String url;
+        if (dl.startsWith('http://') || dl.startsWith('https://')) {
+          url = dl;
+        } else {
+          final hasLeading = dl.startsWith('/');
+          url = hasLeading ? '$baseUrl$dl' : '$baseUrl/$dl';
+        }
+        results.add(SplitFileResult(fileName: fname, downloadUrl: url, pages: pages));
+      }
+      final zipFileName = data['output_filename']?.toString();
+      final zipUrlRaw = data[ApiConfig.downloadUrlKey]?.toString();
+      String? zipUrl;
+      if (zipUrlRaw != null && zipUrlRaw.isNotEmpty) {
+        zipUrl = zipUrlRaw.startsWith('http') ? zipUrlRaw : '${baseUrl}${zipUrlRaw.startsWith('/') ? '' : '/'}$zipUrlRaw';
+      }
+      final count = int.tryParse('${data['count'] ?? results.length}') ?? results.length;
+      final folderName = outputPrefix;
+      final downloaded = await _downloadSplitFiles(results, folderName);
+      return SplitResult(files: downloaded, zipFileName: zipFileName, zipDownloadUrl: zipUrl, count: count, folderName: folderName);
+    } catch (e) {
+      throw Exception('Split PDF failed: $e');
+    }
+  }
+
+  Future<List<SplitFileResult>> _downloadSplitFiles(List<SplitFileResult> files, String folderName) async {
+    final dir = await FileManager.getSplitPdfDirectory();
+    final target = Directory('${dir.path}/$folderName');
+    if (!await target.exists()) {
+      await target.create(recursive: true);
+    }
+    final List<SplitFileResult> saved = [];
+    for (final f in files) {
+      final tmp = await _downloadFile(f.downloadUrl, f.fileName);
+      final destPath = '${target.path}/${f.fileName}';
+      final dest = await File(tmp.path).copy(destPath);
+      saved.add(SplitFileResult(fileName: f.fileName, downloadUrl: f.downloadUrl, pages: f.pages));
+    }
+    return saved;
   }
 }

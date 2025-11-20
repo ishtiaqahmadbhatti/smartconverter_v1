@@ -75,3 +75,19 @@ class ConversionTool {
     return 'ConversionTool(id: $id, name: $name, description: $description, isAvailable: $isAvailable)';
   }
 }
+
+class SplitFileResult {
+  final String fileName;
+  final String downloadUrl;
+  final List<int> pages;
+  const SplitFileResult({required this.fileName, required this.downloadUrl, required this.pages});
+}
+
+class SplitResult {
+  final List<SplitFileResult> files;
+  final String? zipFileName;
+  final String? zipDownloadUrl;
+  final int count;
+  final String? folderName;
+  const SplitResult({required this.files, this.zipFileName, this.zipDownloadUrl, required this.count, this.folderName});
+}
