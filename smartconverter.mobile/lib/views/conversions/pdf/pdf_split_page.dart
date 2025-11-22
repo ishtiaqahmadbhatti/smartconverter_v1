@@ -6,6 +6,16 @@ import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
 import '../../../models/conversion_tool.dart';
 
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../constants/app_colors.dart';
+import '../../../services/admob_service.dart';
+import '../../../services/conversion_service.dart';
+import '../../../utils/file_manager.dart';
+
 class PdfSplitPage extends StatefulWidget {
   const PdfSplitPage({super.key});
   @override
@@ -14,36 +24,95 @@ class PdfSplitPage extends StatefulWidget {
 
 class _PdfSplitPageState extends State<PdfSplitPage> {
   final ConversionService _service = ConversionService();
-  File? _pdfFile;
-  String _splitType = 'page_ranges';
-  final TextEditingController _rangesCtrl = TextEditingController();
+  final AdMobService _admobService = AdMobService();
   final TextEditingController _prefixCtrl = TextEditingController();
+  final TextEditingController _rangesCtrl = TextEditingController();
+  File? _selectedFile;
+  String _splitType = 'page_ranges';
   bool _zip = false;
-  bool _loading = false;
+  bool _isProcessing = false;
+  BannerAd? _bannerAd;
+  bool _isBannerReady = false;
   List<SplitFileResult> _results = [];
+  String? _savedFolderPath;
+  String _statusMessage = 'Select a PDF file to begin.';
 
-  Future<void> _pickFile() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
-    if (res != null && res.files.isNotEmpty) {
-      final path = res.files.first.path;
-      if (path != null) {
-        final f = File(path);
-        setState(() {
-          _pdfFile = f;
-          _prefixCtrl.text = p.basenameWithoutExtension(f.path);
-        });
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    _admobService.preloadAd();
+    _loadBannerAd();
   }
 
-  Future<void> _split() async {
-    if (_pdfFile == null) return;
-    final prefix = _prefixCtrl.text.trim().isEmpty ? p.basenameWithoutExtension(_pdfFile!.path) : _prefixCtrl.text.trim();
-    final ranges = _splitType == 'page_ranges' ? _rangesCtrl.text.trim() : null;
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    _admobService.dispose();
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() {
+    final ad = BannerAd(
+      adUnitId: AdMobService.bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
+            ad.dispose();
+            return;
+          }
+          setState(() {
+            _bannerAd = ad as BannerAd;
+            _isBannerReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (!mounted) return;
+          setState(() {
+            _bannerAd = null;
+            _isBannerReady = false;
+          });
+        },
+      ),
+    );
+    _bannerAd = ad;
+    ad.load();
+  }
+
+  Future<void> _pickPdfFile() async {
+    final file = await _service.pickFile(allowedExtensions: const ['pdf'], type: 'custom');
+    if (file == null) {
+      setState(() => _statusMessage = 'No file selected.');
+      return;
+    }
+    if (p.extension(file.path).toLowerCase() != '.pdf') {
+      setState(() => _statusMessage = 'Please select a PDF file (.pdf extension).');
+      return;
+    }
+    setState(() {
+      _selectedFile = file;
+      _results = [];
+      _savedFolderPath = null;
+      _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+      _prefixCtrl.text = p.basenameWithoutExtension(file.path);
+    });
+  }
+
+  Future<void> _splitPdf() async {
+    if (_selectedFile == null) {
+      setState(() => _statusMessage = 'Please select a PDF file first.');
+      return;
+    }
+    setState(() => _isProcessing = true);
     try {
+      final prefix = _prefixCtrl.text.trim().isEmpty
+          ? p.basenameWithoutExtension(_selectedFile!.path)
+          : _prefixCtrl.text.trim();
+      final ranges = _splitType == 'page_ranges' ? _rangesCtrl.text.trim() : null;
       final result = await _service.splitPdf(
-        _pdfFile!,
+        _selectedFile!,
         splitType: _splitType,
         pageRanges: ranges,
         outputPrefix: prefix,
@@ -51,12 +120,35 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       );
       setState(() {
         _results = result?.files ?? [];
-        _loading = false;
+        _statusMessage = 'Split completed: ${_results.length} files.';
       });
     } catch (e) {
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      setState(() => _statusMessage = 'Split failed: $e');
+    } finally {
+      setState(() => _isProcessing = false);
     }
+  }
+
+  Future<void> _savePartsLocally() async {
+    if (_results.isEmpty) return;
+    final baseDir = await FileManager.getSplitPdfsDirectory();
+    String targetFolder = _prefixCtrl.text.trim().isEmpty
+        ? (_selectedFile != null ? p.basenameWithoutExtension(_selectedFile!.path) : 'split')
+        : _prefixCtrl.text.trim();
+    Directory destination = Directory(p.join(baseDir.path, targetFolder));
+    int counter = 1;
+    while (await destination.exists()) {
+      destination = Directory(p.join(baseDir.path, '${targetFolder}_$counter'));
+      counter++;
+    }
+    await destination.create(recursive: true);
+    for (final part in _results) {
+      final tmp = await _service.downloadConvertedFile(part.downloadUrl, part.fileName);
+      if (tmp != null) {
+        await tmp.copy(p.join(destination.path, part.fileName));
+      }
+    }
+    setState(() => _savedFolderPath = destination.path);
   }
 
   @override
@@ -80,13 +172,16 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPicker(),
+                _buildPickerCard(),
                 const SizedBox(height: 12),
-                _buildOptions(),
+                _buildOptionsCard(),
                 const SizedBox(height: 12),
-                _buildAction(),
+                _buildActionButtons(),
                 const SizedBox(height: 16),
-                _buildResults(),
+                _buildResultsCard(),
+                const SizedBox(height: 16),
+                if (_isBannerReady && _bannerAd != null)
+                  SizedBox(height: 50, child: AdWidget(ad: _bannerAd!)),
               ],
             ),
           ),
@@ -95,8 +190,8 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     );
   }
 
-  Widget _buildPicker() {
-    final name = _pdfFile != null ? p.basename(_pdfFile!.path) : 'No file selected';
+  Widget _buildPickerCard() {
+    final name = _selectedFile != null ? p.basename(_selectedFile!.path) : 'No file selected';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
@@ -104,7 +199,7 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
         children: [
           Expanded(child: Text(name, style: const TextStyle(color: AppColors.textPrimary))),
           ElevatedButton(
-            onPressed: _pickFile,
+            onPressed: _pickPdfFile,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
             child: const Text('Choose PDF'),
           ),
@@ -113,7 +208,7 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     );
   }
 
-  Widget _buildOptions() {
+  Widget _buildOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
@@ -152,34 +247,45 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     );
   }
 
-  Widget _buildAction() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _loading ? null : _split,
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-        child: _loading
-            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Text('Split PDF'),
-      ),
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isProcessing ? null : _splitPdf,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+            child: _isProcessing
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Split PDF'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _results.isEmpty ? null : _savePartsLocally,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
+            child: const Text('Save Parts'),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildResults() {
-    if (_results.isEmpty) {
-      return Container();
-    }
+  Widget _buildResultsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Results', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(_statusMessage, style: const TextStyle(color: AppColors.textSecondary)),
+          const SizedBox(height: 12),
+          if (_savedFolderPath != null)
+            Text('Saved to: $_savedFolderPath', style: const TextStyle(color: AppColors.textPrimary)),
           const SizedBox(height: 12),
           ..._results.map((r) => ListTile(
                 title: Text(r.fileName, style: const TextStyle(color: AppColors.textPrimary)),
-                subtitle: Text(r.pages.join(', '), style: const TextStyle(color: AppColors.textSecondary)),
+                subtitle: Text('Pages: ${r.pages.join(', ')}', style: const TextStyle(color: AppColors.textSecondary)),
                 trailing: ElevatedButton(
                   onPressed: () async {
                     final f = await _service.downloadConvertedFile(r.downloadUrl, r.fileName);
@@ -190,6 +296,12 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
                   child: const Text('Download'),
                 ),
+                onTap: () async {
+                  final f = await _service.downloadConvertedFile(r.downloadUrl, r.fileName);
+                  if (f != null) {
+                    await Share.shareXFiles([XFile(f.path)], text: 'Split part: ${r.fileName}');
+                  }
+                },
               )),
         ],
       ),

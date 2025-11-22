@@ -151,7 +151,7 @@ async def convert_pdf_to_csv(
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -205,7 +205,7 @@ async def convert_pdf_to_excel(
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -259,7 +259,7 @@ async def convert_html_to_pdf(
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -310,7 +310,7 @@ async def convert_word_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -354,7 +354,7 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -398,7 +398,7 @@ async def convert_oxps_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -622,7 +622,7 @@ async def convert_excel_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -666,7 +666,7 @@ async def convert_excel_to_xps(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -710,7 +710,7 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -757,7 +757,7 @@ async def convert_pdf_to_csv_extract(
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -811,7 +811,7 @@ async def convert_pdf_to_excel_extract(
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -862,7 +862,7 @@ async def convert_pdf_to_word_extract(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -1456,7 +1456,7 @@ async def split_pdf(
     final_filename = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
         ranges = None
@@ -1512,33 +1512,58 @@ async def split_pdf(
 @router.post("/compress", response_model=PDFConversionResponse)
 async def compress_pdf(
     file: UploadFile = File(...),
-    compression_level: str = Form("medium")
+    compression_level: str = Form("medium"),
+    output_filename: Optional[str] = Form(None),
+    target_reduction_pct: Optional[int] = Form(None),
+    max_image_dpi: Optional[int] = Form(None),
 ):
     """Compress PDF file."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
         # Get original file size
         original_size = os.path.getsize(input_path)
         
-        # Compress PDF
-        output_path = FileService.get_output_path(input_path, "_compressed.pdf")
-        result_path = PDFConversionService.compress_pdf(input_path, output_path, compression_level)
+        original_name = file.filename or "compressed"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_compressed").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+        result_path = PDFConversionService.compress_pdf(
+            input_path,
+            output_path,
+            compression_level,
+            target_reduction_pct,
+            max_image_dpi,
+        )
         
         # Get compressed file size
         compressed_size = os.path.getsize(result_path)
         
+        achieved_reduction = None
+        if original_size and original_size > 0:
+            achieved_reduction = round(((original_size - compressed_size) * 100.0) / original_size, 2)
+
         return PDFConversionResponse(
             success=True,
             message="PDF compressed successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}",
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}",
             file_size_before=original_size,
-            file_size_after=compressed_size
+            file_size_after=compressed_size,
+            extracted_data={
+                "compression": {
+                    "level": compression_level,
+                    "target_reduction_pct": target_reduction_pct,
+                    "achieved_reduction_pct": achieved_reduction,
+                }
+            }
         )
         
     except Exception as e:
@@ -1563,7 +1588,7 @@ async def remove_pages(
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
         # Parse pages to remove
@@ -1602,7 +1627,7 @@ async def extract_pages(
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
         # Parse pages to extract
@@ -1641,7 +1666,7 @@ async def rotate_pdf(
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
         # Rotate PDF
@@ -1894,8 +1919,8 @@ async def compare_pdfs(
     
     try:
         # Save uploaded files
-        FileService.validate_file(file1)
-        FileService.validate_file(file2)
+        FileService.validate_file(file1, "pdf")
+        FileService.validate_file(file2, "pdf")
         input_path1 = FileService.save_uploaded_file(file1)
         input_path2 = FileService.save_uploaded_file(file2)
         

@@ -44,6 +44,24 @@ class ImageToPdfResult {
   });
 }
 
+class CompressPdfResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+  final int? sizeBefore;
+  final int? sizeAfter;
+  final double? achievedReductionPct;
+
+  const CompressPdfResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+    this.sizeBefore,
+    this.sizeAfter,
+    this.achievedReductionPct,
+  });
+}
+
 class PdfToImagesResult {
   final List<File> files;
   final List<String> fileNames;
@@ -453,6 +471,88 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to merge PDFs: $e');
+    }
+  }
+
+  Future<CompressPdfResult?> compressPdfFile(
+    File pdfFile, {
+    String compressionLevel = 'medium',
+    int? targetReductionPct,
+    int? maxImageDpi,
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) {
+        throw Exception('PDF file does not exist');
+      }
+
+      final extension = p.extension(pdfFile.path).toLowerCase();
+      if (extension != '.pdf') {
+        throw Exception('Only .pdf files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: p.basename(pdfFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'compression_level': compressionLevel,
+        if (targetReductionPct != null) 'target_reduction_pct': targetReductionPct,
+        if (maxImageDpi != null) 'max_image_dpi': maxImageDpi,
+        if (outputFilename != null && outputFilename.trim().isNotEmpty)
+          'output_filename': outputFilename.trim(),
+      });
+
+      final originalConnectTimeout = _dio.options.connectTimeout;
+      final originalReceiveTimeout = _dio.options.receiveTimeout;
+      final originalSendTimeout = _dio.options.sendTimeout;
+
+      Response response;
+      try {
+        _dio.options
+          ..connectTimeout = _heavyConnectTimeout
+          ..receiveTimeout = _heavyReceiveTimeout
+          ..sendTimeout = _heavyReceiveTimeout;
+        response = await _dio.post(ApiConfig.compressPdfEndpoint, data: formData);
+      } finally {
+        _dio.options
+          ..connectTimeout = originalConnectTimeout
+          ..receiveTimeout = originalReceiveTimeout
+          ..sendTimeout = originalSendTimeout;
+      }
+
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final fileName = data['output_filename']?.toString() ?? 'compressed.pdf';
+      final downloadUrl = data[ApiConfig.downloadUrlKey]?.toString() ?? '/download/$fileName';
+      final sizeBefore = int.tryParse(data['file_size_before']?.toString() ?? '');
+      final sizeAfter = int.tryParse(data['file_size_after']?.toString() ?? '');
+      double? achieved;
+      if (data['extracted_data'] is Map && data['extracted_data']?['compression'] != null) {
+        final comp = data['extracted_data']['compression'] as Map;
+        achieved = double.tryParse(comp['achieved_reduction_pct']?.toString() ?? '');
+      }
+
+      final downloaded = await _tryDownloadFile(fileName, downloadUrl);
+      if (downloaded == null) {
+        return null;
+      }
+
+      return CompressPdfResult(
+        file: downloaded,
+        fileName: fileName,
+        downloadUrl: downloadUrl,
+        sizeBefore: sizeBefore,
+        sizeAfter: sizeAfter,
+        achievedReductionPct: achieved,
+      );
+    } catch (e) {
+      throw Exception('PDF compression failed: $e');
     }
   }
 
@@ -1331,7 +1431,6 @@ class ConversionService {
     String? type,
   }) async {
     try {
-      // Determine file type based on category or explicit type
       FileType fileType = FileType.any;
 
       // Check if video extensions are requested
@@ -1356,23 +1455,19 @@ class ConversionService {
       if (type == 'image') {
         fileType = FileType.image;
       } else if (type == 'video' || isVideo) {
-        // Use video type for better Android/iOS file picker support
         fileType = FileType.video;
       } else if (type == 'audio') {
-        fileType = FileType.media; // Media includes both audio and video
+        fileType = FileType.media;
       } else if (type == 'pdf' || allowedExtensions?.contains('pdf') == true) {
         fileType = FileType.custom;
+        allowedExtensions = const ['pdf'];
       } else if (allowedExtensions != null && allowedExtensions.isNotEmpty) {
         fileType = FileType.custom;
       }
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: fileType,
-        // Only set allowedExtensions for custom type, video/audio types handle their own filtering
-        allowedExtensions:
-            (fileType == FileType.custom || fileType == FileType.any)
-            ? allowedExtensions
-            : null,
+        allowedExtensions: (fileType == FileType.custom) ? allowedExtensions : null,
         allowMultiple: false,
         withData: false, // Don't load file data into memory
         withReadStream: false,
@@ -1386,6 +1481,12 @@ class ConversionService {
           final file = File(pickedFile.path!);
           // Verify file exists
           if (await file.exists()) {
+            final ext = p.extension(file.path).toLowerCase();
+            if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+              if (ext != '.pdf') {
+                throw Exception('Please select a PDF file (.pdf)');
+              }
+            }
             return file;
           } else {
             throw Exception('Selected file does not exist: ${pickedFile.path}');
@@ -1397,6 +1498,12 @@ class ConversionService {
           final tempDir = await Directory.systemTemp.createTemp();
           final file = File('${tempDir.path}/${pickedFile.name}');
           await file.writeAsBytes(pickedFile.bytes!);
+          final ext = p.extension(file.path).toLowerCase();
+          if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+            if (ext != '.pdf') {
+              throw Exception('Please select a PDF file (.pdf)');
+            }
+          }
           return file;
         } else {
           throw Exception(
@@ -1423,13 +1530,14 @@ class ConversionService {
         fileType = FileType.image;
       } else if (type == 'pdf' || allowedExtensions?.contains('pdf') == true) {
         fileType = FileType.custom;
+        allowedExtensions = const ['pdf'];
       } else if (allowedExtensions != null && allowedExtensions.isNotEmpty) {
         fileType = FileType.custom;
       }
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: fileType,
-        allowedExtensions: allowedExtensions,
+        allowedExtensions: (fileType == FileType.custom) ? allowedExtensions : null,
         allowMultiple: true,
         withData: false,
         withReadStream: false,
@@ -1441,6 +1549,12 @@ class ConversionService {
           if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
             final file = File(pickedFile.path!);
             if (await file.exists()) {
+              final ext = p.extension(file.path).toLowerCase();
+              if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+                if (ext != '.pdf') {
+                  continue;
+                }
+              }
               files.add(file);
             }
           } else if (pickedFile.bytes != null) {
@@ -1448,6 +1562,12 @@ class ConversionService {
             final tempDir = await Directory.systemTemp.createTemp();
             final file = File('${tempDir.path}/${pickedFile.name}');
             await file.writeAsBytes(pickedFile.bytes!);
+            final ext = p.extension(file.path).toLowerCase();
+            if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+              if (ext != '.pdf') {
+                continue;
+              }
+            }
             files.add(file);
           }
         }
@@ -2241,8 +2361,8 @@ async def download_file(filename: str):
   }
 
   Future<List<SplitFileResult>> _downloadSplitFiles(List<SplitFileResult> files, String folderName) async {
-    final dir = await FileManager.getSplitPdfDirectory();
-    final target = Directory('${dir.path}/$folderName');
+    final baseDir = await FileManager.getSplitPdfsDirectory();
+    final target = Directory('${baseDir.path}/$folderName');
     if (!await target.exists()) {
       await target.create(recursive: true);
     }

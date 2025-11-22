@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.100';
+  static const String networkIp = '10.27.239.35';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -62,7 +62,7 @@ class ApiConfig {
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';
   static const String imagesToPdfEndpoint = '/convert/images-to-pdf';
   static const String pdfToImagesEndpoint = '/convert/pdf-to-images';
-  static const String compressPdfEndpoint = '/convert/compress-pdf';
+  static const String compressPdfEndpoint = '/api/v1/pdfconversiontools/compress';
   static const String rotatePdfEndpoint = '/api/v1/pdf/rotate';
   static const String addPageNumbersEndpoint = '/api/v1/pdf/add-page-numbers';
   static const String mergePdfEndpoint = '/api/v1/pdfconversiontools/merge';

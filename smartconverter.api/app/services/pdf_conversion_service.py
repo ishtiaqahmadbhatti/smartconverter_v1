@@ -38,6 +38,8 @@ import re
 import zipfile
 from datetime import datetime
 from PyPDF2 import PdfReader, PdfWriter
+import shutil
+import subprocess
 from app.core.config import settings
 from app.core.exceptions import FileProcessingError
 from PyPDF2 import PdfMerger
@@ -1166,6 +1168,121 @@ class PDFConversionService:
                 os.remove(file_path)
         except Exception:
             pass  # Ignore cleanup errors
+
+    @staticmethod
+    def compress_pdf(
+        input_path: str,
+        output_path: str,
+        compression_level: str = "medium",
+        target_reduction_pct: Optional[int] = None,
+        max_image_dpi: Optional[int] = None,
+    ) -> str:
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+            level_key = (compression_level or "medium").lower()
+            gs_settings_order = {
+                "low": ["/printer", "/ebook"],
+                "medium": ["/ebook", "/screen"],
+                "high": ["/screen"],
+            }
+            original_size = os.path.getsize(input_path) if os.path.exists(input_path) else None
+            desired_size = None
+            if original_size and isinstance(target_reduction_pct, int):
+                if target_reduction_pct < 0:
+                    target_reduction_pct = 0
+                if target_reduction_pct > 100:
+                    target_reduction_pct = 100
+                desired_size = int(original_size * (1 - (target_reduction_pct / 100.0)))
+
+            gs_exe = shutil.which("gswin64c") or shutil.which("gswin32c") or shutil.which("gs")
+            used_method = None
+
+            def _run_gs(setting: str, dpi: Optional[int]) -> Optional[int]:
+                try:
+                    cmd = [
+                        gs_exe,
+                        "-sDEVICE=pdfwrite",
+                        "-dCompatibilityLevel=1.4",
+                        f"-dPDFSETTINGS={setting}",
+                        "-dNOPAUSE",
+                        "-dQUIET",
+                        "-dBATCH",
+                    ]
+                    if dpi:
+                        cmd += [
+                            "-dDownsampleColorImages=true",
+                            f"-dColorImageResolution={dpi}",
+                            "-dColorImageDownsampleType=/Average",
+                            "-dDownsampleGrayImages=true",
+                            f"-dGrayImageResolution={dpi}",
+                            "-dGrayImageDownsampleType=/Average",
+                            "-dDownsampleMonoImages=true",
+                            f"-dMonoImageResolution={dpi}",
+                            "-dMonoImageDownsampleType=/Subsample",
+                        ]
+                    cmd += [f"-sOutputFile={output_path}", input_path]
+                    subprocess.run(cmd, check=True)
+                    if os.path.exists(output_path):
+                        return os.path.getsize(output_path)
+                    return None
+                except Exception:
+                    return None
+
+            if gs_exe:
+                dpi_candidates = []
+                if isinstance(max_image_dpi, int) and max_image_dpi > 0:
+                    dpi_candidates = [max_image_dpi, max(max_image_dpi - 50, 50)]
+                else:
+                    if level_key == "low":
+                        dpi_candidates = [300, 200, 150]
+                    elif level_key == "medium":
+                        dpi_candidates = [150, 96, 72]
+                    else:
+                        dpi_candidates = [96, 72, 50]
+
+                satisfied = False
+                for setting in gs_settings_order.get(level_key, ["/ebook"]):
+                    for dpi in dpi_candidates:
+                        size_after = _run_gs(setting, dpi)
+                        if size_after:
+                            used_method = "ghostscript"
+                            if desired_size is None or size_after <= desired_size:
+                                satisfied = True
+                                break
+                    if satisfied:
+                        break
+
+            if not used_method:
+                levels = {
+                    "low": {"garbage": 4},
+                    "medium": {"garbage": 3},
+                    "high": {"garbage": 2},
+                }
+                level = levels.get(level_key, levels["medium"])
+                doc = fitz.open(input_path)
+                doc.save(output_path, deflate=True, garbage=level["garbage"], clean=True)
+                doc.close()
+                used_method = "pymupdf"
+
+            try:
+                if original_size is not None and os.path.exists(output_path):
+                    new_size = os.path.getsize(output_path)
+                    if desired_size and new_size > desired_size and gs_exe:
+                        size_after = _run_gs("/screen", 72)
+                        if size_after and size_after <= desired_size:
+                            used_method = "ghostscript"
+                    elif new_size >= original_size and used_method != "pymupdf":
+                        doc = fitz.open(input_path)
+                        doc.save(output_path, deflate=True, garbage=2, clean=True)
+                        doc.close()
+                        used_method = "pymupdf"
+            except Exception:
+                pass
+
+            return output_path
+        except Exception as e:
+            raise FileProcessingError(f"Error compressing PDF: {str(e)}")
 
     @staticmethod
     def split_pdf(

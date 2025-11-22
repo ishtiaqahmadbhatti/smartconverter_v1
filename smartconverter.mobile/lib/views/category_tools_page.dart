@@ -145,6 +145,7 @@ import 'conversions/pdf/oxps_to_pdf_page.dart';
 import 'conversions/pdf/excel_to_xps_page.dart';
 import 'conversions/pdf/ods_to_pdf_page.dart';
 import 'conversions/pdf/pdf_split_page.dart';
+import 'conversions/pdf/pdf_compress_page.dart';
 import 'conversions/image/ai_jpg_to_json_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
 import 'conversions/image/pdf_to_png_page.dart';
@@ -576,6 +577,8 @@ class CategoryToolsPage extends StatelessWidget {
           return const MergePdfPage();
         case 'Split PDF':
           return const PdfSplitPage();
+        case 'Compress PDF':
+          return const PdfCompressPage();
         case 'AI: Convert PDF to JSON':
           return const AiPdfToJsonPage();
         case 'AI: Convert PDF to Markdown':

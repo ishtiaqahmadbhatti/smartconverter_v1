@@ -35,6 +35,8 @@ class FileManager {
   static const String _pdfToPngImagesSubFolder = 'pdf_to_png';
   static const String _pdfToTiffImagesSubFolder = 'pdf_to_tiff';
   static const String _pdfToSvgImagesSubFolder = 'pdf_to_svg';
+  static const String _splitPdfsSubFolder = 'split_pdfs';
+  static const String _compressedPdfsSubFolder = 'compressed_pdfs';
   static const String _videoConversionsFolder = 'VideoConversions';
   static const String _audioConversionsFolder = 'AudioConversions';
   static const String _videoToAudioFolder = 'video-to-audio';
@@ -269,6 +271,29 @@ class FileManager {
       await pdfConversionsDir.create(recursive: true);
     }
     return pdfConversionsDir;
+  }
+
+  /// Get directory for Split PDF outputs (under PDFConversions)
+  static Future<Directory> getSplitPdfsDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final splitDir = Directory(
+      '${pdfConversionsDir.path}/$_splitPdfsSubFolder',
+    );
+    if (!await splitDir.exists()) {
+      await splitDir.create(recursive: true);
+    }
+    return splitDir;
+  }
+
+  static Future<Directory> getCompressedPdfsDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final compressedDir = Directory(
+      '${pdfConversionsDir.path}/$_compressedPdfsSubFolder',
+    );
+    if (!await compressedDir.exists()) {
+      await compressedDir.create(recursive: true);
+    }
+    return compressedDir;
   }
 
   /// Get directory for merged PDF outputs
