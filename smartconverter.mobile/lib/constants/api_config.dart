@@ -62,9 +62,11 @@ class ApiConfig {
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';
   static const String imagesToPdfEndpoint = '/convert/images-to-pdf';
   static const String pdfToImagesEndpoint = '/convert/pdf-to-images';
-  static const String compressPdfEndpoint = '/api/v1/pdfconversiontools/compress';
-  static const String rotatePdfEndpoint = '/api/v1/pdf/rotate';
-  static const String addPageNumbersEndpoint = '/api/v1/pdf/add-page-numbers';
+  static const String compressPdfEndpoint =
+      '/api/v1/pdfconversiontools/compress';
+  static const String rotatePdfEndpoint = '/api/v1/pdfconversiontools/rotate';
+  static const String addPageNumbersEndpoint =
+      '/api/v1/pdfconversiontools/add-page-numbers';
   static const String mergePdfEndpoint = '/api/v1/pdfconversiontools/merge';
   static const String markdownToPdfEndpoint =
       '/api/v1/pdfconversiontools/markdown-to-pdf';
@@ -97,12 +99,21 @@ class ApiConfig {
       '/api/v1/pdfconversiontools/pdf-to-tiff';
   static const String pdfToSvgEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-svg';
-  static const String protectPdfEndpoint = '/api/v1/pdf/protect';
-  static const String unlockPdfEndpoint = '/api/v1/pdf/unlock';
-  static const String watermarkPdfEndpoint = '/api/v1/pdf/add-watermark';
-  static const String removePagesEndpoint = '/api/v1/pdf/remove-pages';
-  static const String extractPagesEndpoint = '/api/v1/pdf/extract-pages';
-  static const String splitPdfEndpoint = '/api/v1/pdf/split';
+  static const String protectPdfEndpoint = '/api/v1/pdfconversiontools/protect';
+  static const String unlockPdfEndpoint = '/api/v1/pdfconversiontools/unlock';
+  static const String cropPdfEndpoint = '/api/v1/pdfconversiontools/crop';
+  static const String repairPdfEndpoint = '/api/v1/pdfconversiontools/repair';
+  static const String comparePdfsEndpoint =
+      '/api/v1/pdfconversiontools/compare';
+  static const String pdfMetadataEndpoint =
+      '/api/v1/pdfconversiontools/metadata';
+  static const String watermarkPdfEndpoint =
+      '/api/v1/pdfconversiontools/add-watermark';
+  static const String removePagesEndpoint =
+      '/api/v1/pdfconversiontools/remove-pages';
+  static const String extractPagesEndpoint =
+      '/api/v1/pdfconversiontools/extract-pages';
+  static const String splitPdfEndpoint = '/api/v1/pdfconversiontools/split';
   static const String splitPdfNewEndpoint = '/api/v1/pdfconversiontools/split';
   static const String downloadEndpoint = '/api/v1/convert/download';
   static const String videoToAudioEndpoint =

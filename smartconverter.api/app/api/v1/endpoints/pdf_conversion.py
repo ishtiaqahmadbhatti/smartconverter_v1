@@ -15,6 +15,7 @@ from app.core.exceptions import (
 )
 from app.api.v1.dependencies import get_current_active_user
 from app.models.user import User
+from PyPDF2 import PdfReader
 
 router = APIRouter()
 
@@ -1581,7 +1582,8 @@ async def compress_pdf(
 @router.post("/remove-pages", response_model=PDFConversionResponse)
 async def remove_pages(
     file: UploadFile = File(...),
-    pages_to_remove: str = Form(...)
+    pages_to_remove: str = Form(...),
+    output_filename: Optional[str] = Form(None),
 ):
     """Remove specific pages from PDF."""
     input_path = None
@@ -1591,20 +1593,53 @@ async def remove_pages(
         FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Parse pages to remove
-        pages = [int(p.strip()) for p in pages_to_remove.split(',')]
+        # Parse pages to remove (supports comma-separated numbers and ranges like 10-20)
+        tokens = [t.strip() for t in re.split(r'[\,\s]+', pages_to_remove) if t.strip()]
+        pages: List[int] = []
+        for token in tokens:
+            if '-' in token:
+                s, e = token.split('-', 1)
+                start = int(s)
+                end = int(e)
+                if start > end:
+                    start, end = end, start
+                pages.extend(list(range(start, end + 1)))
+            else:
+                pages.append(int(token))
+        seen = set()
+        pages = [x for x in pages if not (x in seen or seen.add(x))]
         
+        reader = PdfReader(input_path)
+        total_pages = len(reader.pages)
+        invalid_pages = [p for p in pages if p < 1 or p > total_pages]
+        if invalid_pages:
+            raise create_error_response(
+                error_type="PDFRemovePagesError",
+                message=f"Invalid page numbers: {sorted(invalid_pages)}. Valid page range is 1-{total_pages}",
+                details={"invalid_pages": sorted(invalid_pages), "total_pages": total_pages, "requested_pages": pages},
+                status_code=400,
+            )
+        # Determine desired output filename
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_pages_removed").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
         # Remove pages
-        output_path = FileService.get_output_path(input_path, "_pages_removed.pdf")
         result_path = PDFConversionService.remove_pages(input_path, output_path, pages)
         
         return PDFConversionResponse(
             success=True,
             message=f"Pages {pages} removed successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise create_error_response(
             error_type="PDFRemovePagesError",
@@ -1620,7 +1655,8 @@ async def remove_pages(
 @router.post("/extract-pages", response_model=PDFConversionResponse)
 async def extract_pages(
     file: UploadFile = File(...),
-    pages_to_extract: str = Form(...)
+    pages_to_extract: str = Form(...),
+    output_filename: Optional[str] = Form(None),
 ):
     """Extract specific pages from PDF."""
     input_path = None
@@ -1630,20 +1666,53 @@ async def extract_pages(
         FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Parse pages to extract
-        pages = [int(p.strip()) for p in pages_to_extract.split(',')]
+        # Parse pages to extract (supports comma-separated numbers and ranges like 10-20)
+        tokens = [t.strip() for t in re.split(r'[\,\s]+', pages_to_extract) if t.strip()]
+        pages: List[int] = []
+        for token in tokens:
+            if '-' in token:
+                s, e = token.split('-', 1)
+                start = int(s)
+                end = int(e)
+                if start > end:
+                    start, end = end, start
+                pages.extend(list(range(start, end + 1)))
+            else:
+                pages.append(int(token))
+        seen = set()
+        pages = [x for x in pages if not (x in seen or seen.add(x))]
         
+        reader = PdfReader(input_path)
+        total_pages = len(reader.pages)
+        invalid_pages = [p for p in pages if p < 1 or p > total_pages]
+        if invalid_pages:
+            raise create_error_response(
+                error_type="PDFExtractPagesError",
+                message=f"Invalid page numbers: {sorted(invalid_pages)}. Valid page range is 1-{total_pages}",
+                details={"invalid_pages": sorted(invalid_pages), "total_pages": total_pages, "requested_pages": pages},
+                status_code=400,
+            )
+        # Determine desired output filename
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_extracted").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
         # Extract pages
-        output_path = FileService.get_output_path(input_path, "_extracted.pdf")
         result_path = PDFConversionService.extract_pages(input_path, output_path, pages)
         
         return PDFConversionResponse(
             success=True,
             message=f"Pages {pages} extracted successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise create_error_response(
             error_type="PDFExtractPagesError",
@@ -1659,7 +1728,8 @@ async def extract_pages(
 @router.post("/rotate", response_model=PDFConversionResponse)
 async def rotate_pdf(
     file: UploadFile = File(...),
-    rotation: int = Form(90)
+    rotation: int = Form(90),
+    output_filename: Optional[str] = Form(None),
 ):
     """Rotate PDF pages."""
     input_path = None
@@ -1669,15 +1739,21 @@ async def rotate_pdf(
         FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Rotate PDF
-        output_path = FileService.get_output_path(input_path, f"_rotated_{rotation}.pdf")
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_rotated_{rotation}").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
         result_path = PDFConversionService.rotate_pdf(input_path, output_path, rotation)
         
         return PDFConversionResponse(
             success=True,
             message=f"PDF rotated {rotation} degrees successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1696,25 +1772,33 @@ async def rotate_pdf(
 async def add_watermark(
     file: UploadFile = File(...),
     watermark_text: str = Form(...),
-    position: str = Form("center")
+    position: str = Form("center"),
+    output_filename: Optional[str] = Form(None),
 ):
     """Add watermark to PDF."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
-        
-        # Add watermark
-        output_path = FileService.get_output_path(input_path, "_watermarked.pdf")
+
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        default_base = f"{base_name}_watermarked" if base_name else "watermarked"
+        desired_name = (output_filename or default_base).strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
         result_path = PDFConversionService.add_watermark(input_path, output_path, watermark_text, position)
         
         return PDFConversionResponse(
             success=True,
             message="Watermark added successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1730,24 +1814,44 @@ async def add_watermark(
 
 # Add Page Numbers
 @router.post("/add-page-numbers", response_model=PDFConversionResponse)
-async def add_page_numbers(file: UploadFile = File(...)):
+async def add_page_numbers(
+    file: UploadFile = File(...),
+    position: str = Form("bottom-center"),
+    start_page: int = Form(1),
+    format: str = Form("{page}"),
+    font_size: float = Form(12.0),
+    output_filename: Optional[str] = Form(None),
+):
     """Add page numbers to PDF."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Add page numbers
-        output_path = FileService.get_output_path(input_path, "_numbered.pdf")
-        result_path = PDFConversionService.add_page_numbers(input_path, output_path)
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_numbered").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
+        result_path = PDFConversionService.add_page_numbers(
+            input_path,
+            output_path,
+            position,
+            start_page,
+            format,
+            font_size,
+        )
         
         return PDFConversionResponse(
             success=True,
             message="Page numbers added successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1768,26 +1872,33 @@ async def crop_pdf(
     x: int = Form(0),
     y: int = Form(0),
     width: int = Form(100),
-    height: int = Form(100)
+    height: int = Form(100),
+    output_filename: Optional[str] = Form(None),
 ):
     """Crop PDF pages."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Crop PDF
         crop_box = {"x": x, "y": y, "width": width, "height": height}
-        output_path = FileService.get_output_path(input_path, "_cropped.pdf")
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_cropped").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
+
         result_path = PDFConversionService.crop_pdf(input_path, output_path, crop_box)
         
         return PDFConversionResponse(
             success=True,
             message="PDF cropped successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1805,25 +1916,31 @@ async def crop_pdf(
 @router.post("/protect", response_model=PDFConversionResponse)
 async def protect_pdf(
     file: UploadFile = File(...),
-    password: str = Form(...)
+    password: str = Form(...),
+    output_filename: Optional[str] = Form(None),
 ):
     """Protect PDF with password."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Protect PDF
-        output_path = FileService.get_output_path(input_path, "_protected.pdf")
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_protected").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
         result_path = PDFConversionService.protect_pdf(input_path, output_path, password)
         
         return PDFConversionResponse(
             success=True,
             message="PDF protected successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1841,25 +1958,31 @@ async def protect_pdf(
 @router.post("/unlock", response_model=PDFConversionResponse)
 async def unlock_pdf(
     file: UploadFile = File(...),
-    password: str = Form(...)
+    password: str = Form(...),
+    output_filename: Optional[str] = Form(None),
 ):
     """Remove password protection from PDF."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Unlock PDF
-        output_path = FileService.get_output_path(input_path, "_unlocked.pdf")
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_unlocked").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
         result_path = PDFConversionService.unlock_pdf(input_path, output_path, password)
         
         return PDFConversionResponse(
             success=True,
             message="PDF unlocked successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1875,24 +1998,32 @@ async def unlock_pdf(
 
 # Repair PDF
 @router.post("/repair", response_model=PDFConversionResponse)
-async def repair_pdf(file: UploadFile = File(...)):
+async def repair_pdf(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
+):
     """Repair corrupted PDF."""
     input_path = None
     output_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Repair PDF
-        output_path = FileService.get_output_path(input_path, "_repaired.pdf")
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_repaired").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
         result_path = PDFConversionService.repair_pdf(input_path, output_path)
         
         return PDFConversionResponse(
             success=True,
             message="PDF repaired successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except Exception as e:
@@ -1910,7 +2041,8 @@ async def repair_pdf(file: UploadFile = File(...)):
 @router.post("/compare", response_model=PDFConversionResponse)
 async def compare_pdfs(
     file1: UploadFile = File(...),
-    file2: UploadFile = File(...)
+    file2: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
 ):
     """Compare two PDFs."""
     input_path1 = None
@@ -1924,15 +2056,22 @@ async def compare_pdfs(
         input_path1 = FileService.save_uploaded_file(file1)
         input_path2 = FileService.save_uploaded_file(file2)
         
-        # Compare PDFs
-        output_path = FileService.get_output_path(input_path1, "_comparison.txt")
+        original1 = file1.filename or "pdf1"
+        original2 = file2.filename or "pdf2"
+        base1, _ = os.path.splitext(original1)
+        base2, _ = os.path.splitext(original2)
+        desired_name = (output_filename or f"{base1}_vs_{base2}_comparison").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".txt",
+        )
         comparison_result = PDFConversionService.compare_pdfs(input_path1, input_path2, output_path)
         
         return PDFConversionResponse(
             success=True,
             message=f"PDFs compared successfully. Found {comparison_result['differences_count']} differences",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}",
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}",
             extracted_data=comparison_result
         )
         
@@ -1951,21 +2090,39 @@ async def compare_pdfs(
 
 # Get PDF Metadata
 @router.post("/metadata")
-async def get_pdf_metadata(file: UploadFile = File(...)):
+async def get_pdf_metadata(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
+):
     """Get PDF metadata."""
     input_path = None
     
     try:
-        FileService.validate_file(file, "document")
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Get metadata
         metadata = PDFConversionService.get_pdf_metadata(input_path)
+        original_name = file.filename or "pdf"
+        base_name, _ = os.path.splitext(original_name)
+        desired_name = (output_filename or f"{base_name}_metadata").strip()
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".json",
+        )
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                import json as _json
+                _json.dump(metadata, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
         
         return {
             "success": True,
             "message": "PDF metadata extracted successfully",
-            "metadata": metadata
+            "metadata": metadata,
+            "output_filename": final_filename,
+            "download_url": f"/download/{final_filename}",
         }
         
     except Exception as e:

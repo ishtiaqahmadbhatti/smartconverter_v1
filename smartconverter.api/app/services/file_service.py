@@ -59,6 +59,10 @@ class FileService:
                 ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", 
                 ".odt", ".ods", ".odp"
             ]
+        elif file_type == "subtitle":
+            allowed_types = [
+                ".srt", ".vtt"
+            ]
         else:  # general/default
             allowed_types = [
                 ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", 

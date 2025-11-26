@@ -1151,6 +1151,161 @@ class PDFConversionService:
             
         except Exception as e:
             raise FileProcessingError(f"Error converting PDF to text: {str(e)}")
+
+    @staticmethod
+    def crop_pdf(input_path: str, output_path: str, crop_box: Dict[str, int]) -> str:
+        try:
+            x = int(crop_box.get("x", 0))
+            y = int(crop_box.get("y", 0))
+            w = int(crop_box.get("width", 0))
+            h = int(crop_box.get("height", 0))
+            if w <= 0 or h <= 0:
+                raise FileProcessingError("Invalid crop size")
+
+            try:
+                doc = fitz.open(input_path)
+                for page in doc:
+                    r = page.rect
+                    x1 = max(r.x0, r.x0 + x)
+                    y1 = max(r.y0, r.y0 + y)
+                    x2 = min(r.x1, x1 + w)
+                    y2 = min(r.y1, y1 + h)
+                    clip = fitz.Rect(x1, y1, x2, y2)
+                    pm = page.get_pixmap(clip=clip)
+                    img = Image.frombytes("RGBA" if pm.alpha else "RGB", [pm.width, pm.height], pm.samples)
+                    mem = BytesIO()
+                    img.save(mem, format="PNG")
+                    mem.seek(0)
+                    # Replace page content with the cropped image
+                    new_page = doc.new_page(-1, width=pm.width, height=pm.height)
+                    rect = fitz.Rect(0, 0, pm.width, pm.height)
+                    new_page.insert_image(rect, stream=mem.read())
+                # Remove original pages
+                for _ in range(len(doc) // 2):
+                    doc.delete_page(0)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                doc.save(output_path)
+                doc.close()
+                return output_path
+            except Exception:
+                reader = PdfReader(input_path)
+                writer = PdfWriter()
+                for page in reader.pages:
+                    writer.add_page(page)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def protect_pdf(input_path: str, output_path: str, password: str) -> str:
+        try:
+            reader = PdfReader(input_path)
+            writer = PdfWriter()
+            for page in reader.pages:
+                writer.add_page(page)
+            if not password:
+                raise FileProcessingError("Password cannot be empty")
+            writer.encrypt(password)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def unlock_pdf(input_path: str, output_path: str, password: str) -> str:
+        try:
+            try:
+                reader = PdfReader(input_path)
+                if reader.is_encrypted:
+                    reader.decrypt(password)
+            except Exception:
+                reader = PdfReader(input_path)
+            writer = PdfWriter()
+            for page in reader.pages:
+                writer.add_page(page)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def repair_pdf(input_path: str, output_path: str) -> str:
+        try:
+            try:
+                doc = fitz.open(input_path)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                doc.save(output_path, clean=True, deflate=True, garbage=2)
+                doc.close()
+                return output_path
+            except Exception:
+                reader = PdfReader(input_path)
+                writer = PdfWriter()
+                for page in reader.pages:
+                    writer.add_page(page)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def compare_pdfs(input_path1: str, input_path2: str, output_path: str) -> Dict[str, Any]:
+        try:
+            doc1 = fitz.open(input_path1)
+            doc2 = fitz.open(input_path2)
+            pages1 = len(doc1)
+            pages2 = len(doc2)
+            max_pages = max(pages1, pages2)
+            diffs: List[Dict[str, Any]] = []
+            for i in range(max_pages):
+                t1 = doc1.load_page(i).get_text() if i < pages1 else ""
+                t2 = doc2.load_page(i).get_text() if i < pages2 else ""
+                if (t1 or "").strip() != (t2 or "").strip():
+                    diffs.append({"page": i + 1, "difference": True})
+            doc1.close()
+            doc2.close()
+            summary = {
+                "pages_doc1": pages1,
+                "pages_doc2": pages2,
+                "differences_count": len(diffs),
+                "differences": diffs,
+            }
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                import json as _json
+                _json.dump(summary, f, indent=2, ensure_ascii=False)
+            return summary
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def get_pdf_metadata(input_path: str) -> Dict[str, Any]:
+        try:
+            doc = fitz.open(input_path)
+            meta = {
+                "page_count": len(doc),
+                "metadata": doc.metadata,
+            }
+            doc.close()
+            return meta
+        except Exception as e:
+            raise FileProcessingError(str(e))
     
     @staticmethod
     def get_supported_formats() -> Dict[str, List[str]]:
@@ -1375,8 +1530,6 @@ class PDFConversionService:
                 result["zip_path"] = zip_path
                 result["zip_filename"] = os.path.basename(zip_path)
             return result
-        except FileProcessingError:
-            raise
         except Exception as e:
             raise FileProcessingError(str(e))
 
@@ -1409,6 +1562,406 @@ class PDFConversionService:
             with open(output_path, "wb") as f:
                 writer.write(f)
             return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def remove_pages(input_path: str, output_path: str, pages_to_remove: List[int]) -> str:
+        try:
+            reader = PdfReader(input_path)
+            total_pages = len(reader.pages)
+            pages_set = set(int(p) for p in pages_to_remove if p is not None)
+            for p in pages_set:
+                if p < 1 or p > total_pages:
+                    raise FileProcessingError("Invalid page number")
+            keep = [i for i in range(1, total_pages + 1) if i not in pages_set]
+            if not keep:
+                raise FileProcessingError("No pages left after removal")
+            writer = PdfWriter()
+            for i in keep:
+                writer.add_page(reader.pages[i - 1])
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def extract_pages(input_path: str, output_path: str, pages_to_extract: List[int]) -> str:
+        try:
+            reader = PdfReader(input_path)
+            total_pages = len(reader.pages)
+            ordered = []
+            seen = set()
+            for p in pages_to_extract:
+                p = int(p)
+                if p in seen:
+                    continue
+                seen.add(p)
+                if p < 1 or p > total_pages:
+                    raise FileProcessingError("Invalid page number")
+                ordered.append(p)
+            if not ordered:
+                raise FileProcessingError("No pages selected")
+            writer = PdfWriter()
+            for p in ordered:
+                writer.add_page(reader.pages[p - 1])
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+            return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def rotate_pdf(input_path: str, output_path: str, rotation: int = 90) -> str:
+        try:
+            deg = int(rotation) if rotation is not None else 90
+            deg = deg % 360
+            if deg % 90 != 0:
+                deg = (deg // 90) * 90
+
+            try:
+                doc = fitz.open(input_path)
+                if deg == 0:
+                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                    doc.save(output_path)
+                    doc.close()
+                    return output_path
+
+                for page in doc:
+                    try:
+                        if hasattr(page, "set_rotation"):
+                            page.set_rotation(deg)
+                        elif hasattr(page, "setRotation"):
+                            page.setRotation(deg)
+                        else:
+                            current = 0
+                            try:
+                                current = page.rotation  # type: ignore
+                            except Exception:
+                                current = 0
+                            target = (current + deg) % 360
+                            if hasattr(page, "set_rotation"):
+                                page.set_rotation(target)
+                    except Exception:
+                        pass
+
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                doc.save(output_path)
+                doc.close()
+                return output_path
+            except Exception:
+                reader = PdfReader(input_path)
+                writer = PdfWriter()
+                if deg == 0:
+                    for page in reader.pages:
+                        writer.add_page(page)
+                else:
+                    for page in reader.pages:
+                        try:
+                            if hasattr(page, "rotate_clockwise"):
+                                rotated = page.rotate_clockwise(deg)
+                            elif hasattr(page, "rotateCounterClockwise") and deg < 0:
+                                rotated = page.rotateCounterClockwise(abs(deg))
+                            else:
+                                rotated = page.rotateClockwise(deg)
+                        except Exception:
+                            rotated = page
+                        writer.add_page(rotated)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                return output_path
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def add_watermark(
+        input_path: str,
+        output_path: str,
+        watermark_text: str,
+        position: str = "center",
+    ) -> str:
+        try:
+            if not watermark_text or not str(watermark_text).strip():
+                raise FileProcessingError("Watermark text cannot be empty")
+
+            pos = (position or "center").strip().lower()
+            base_positions = {
+                "top-left", "top-center", "top-right",
+                "middle-left", "center", "middle-right",
+                "bottom-left", "bottom-center", "bottom-right",
+            }
+            diag = False
+            base = pos
+            if pos.endswith("-diagonal"):
+                diag = True
+                base = pos[:-9]
+            if base not in base_positions:
+                base = "center"
+                diag = True
+
+            # Primary implementation: draw watermark using PyMuPDF
+            try:
+                doc = fitz.open(input_path)
+
+                def _rect_for_position(r: fitz.Rect, where: str) -> fitz.Rect:
+                    w, h = r.width, r.height
+                    margin = max(20, int(min(w, h) * 0.03))
+                    box_w = max(200, int(w * 0.6))
+                    box_h = max(60, int(h * 0.15))
+                    if where == "top-left":
+                        return fitz.Rect(r.x0 + margin, r.y0 + margin, r.x0 + margin + box_w, r.y0 + margin + box_h)
+                    if where == "top-center":
+                        cx = r.x0 + w / 2
+                        return fitz.Rect(cx - box_w / 2, r.y0 + margin, cx + box_w / 2, r.y0 + margin + box_h)
+                    if where == "top-right":
+                        return fitz.Rect(r.x1 - margin - box_w, r.y0 + margin, r.x1 - margin, r.y0 + margin + box_h)
+                    if where == "middle-left":
+                        cy = r.y0 + h / 2
+                        return fitz.Rect(r.x0 + margin, cy - box_h / 2, r.x0 + margin + box_w, cy + box_h / 2)
+                    if where == "middle-right":
+                        cy = r.y0 + h / 2
+                        return fitz.Rect(r.x1 - margin - box_w, cy - box_h / 2, r.x1 - margin, cy + box_h / 2)
+                    if where == "bottom-left":
+                        return fitz.Rect(r.x0 + margin, r.y1 - margin - box_h, r.x0 + margin + box_w, r.y1 - margin)
+                    if where == "bottom-center":
+                        cx = r.x0 + w / 2
+                        return fitz.Rect(cx - box_w / 2, r.y1 - margin - box_h, cx + box_w / 2, r.y1 - margin)
+                    if where == "bottom-right":
+                        return fitz.Rect(r.x1 - margin - box_w, r.y1 - margin - box_h, r.x1 - margin, r.y1 - margin)
+                    # center
+                    cx = r.x0 + w / 2
+                    cy = r.y0 + h / 2
+                    return fitz.Rect(cx - box_w / 2, cy - box_h / 2, cx + box_w / 2, cy + box_h / 2)
+
+                for page in doc:
+                    r = page.rect
+                    target_rect = _rect_for_position(r, base)
+                    fs = max(24, int(r.width * 0.06))
+                    try:
+                        page.insert_textbox(
+                            target_rect,
+                            str(watermark_text),
+                            fontsize=fs,
+                            fontname="Helvetica-Bold",
+                            color=(0.5, 0.5, 0.5),
+                            align=fitz.TEXT_ALIGN_CENTER,
+                            rotate=(45 if diag or base == "center" else 0),
+                        )
+                    except Exception:
+                        # Fallback text insert without textbox
+                        center_pt = fitz.Point(target_rect.x0 + target_rect.width / 2, target_rect.y0 + target_rect.height / 2)
+                        page.insert_text(
+                            center_pt,
+                            str(watermark_text),
+                            fontsize=fs,
+                            fontname="Helvetica-Bold",
+                            color=(0.5, 0.5, 0.5),
+                        )
+
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                doc.save(output_path)
+                doc.close()
+                return output_path
+            except Exception:
+                # Fallback: overlay watermark using ReportLab + PyPDF2
+                reader = PdfReader(input_path)
+                writer = PdfWriter()
+
+                for page in reader.pages:
+                    width = float(page.mediabox.width)
+                    height = float(page.mediabox.height)
+
+                    buf = BytesIO()
+                    c = canvas.Canvas(buf, pagesize=(width, height))
+                    try:
+                        c.setFillColorRGB(0.5, 0.5, 0.5)
+                        try:
+                            # Transparency if available
+                            c.setFillAlpha(0.2)
+                        except Exception:
+                            pass
+                        c.setFont("Helvetica-Bold", max(24, int(width * 0.06)))
+                        margin = max(20, int(min(width, height) * 0.03))
+                        box_w = max(200, int(width * 0.6))
+                        box_h = max(60, int(height * 0.15))
+                        def _rect_for_position_fallback(where: str):
+                            if where == "top-left":
+                                return (margin + box_w / 2, margin + box_h / 2)
+                            if where == "top-center":
+                                return (width / 2.0, margin + box_h / 2)
+                            if where == "top-right":
+                                return (width - margin - box_w / 2, margin + box_h / 2)
+                            if where == "middle-left":
+                                return (margin + box_w / 2, height / 2.0)
+                            if where == "middle-right":
+                                return (width - margin - box_w / 2, height / 2.0)
+                            if where == "bottom-left":
+                                return (margin + box_w / 2, height - margin - box_h / 2)
+                            if where == "bottom-center":
+                                return (width / 2.0, height - margin - box_h / 2)
+                            if where == "bottom-right":
+                                return (width - margin - box_w / 2, height - margin - box_h / 2)
+                            return (width / 2.0, height / 2.0)
+
+                        cx, cy = _rect_for_position_fallback(base)
+                        if diag or base == "center":
+                            c.saveState()
+                            c.translate(cx, cy)
+                            c.rotate(45)
+                            c.drawCentredString(0, 0, str(watermark_text))
+                            c.restoreState()
+                        else:
+                            if base.endswith("left"):
+                                c.drawString(cx - box_w / 2, cy, str(watermark_text))
+                            elif base.endswith("right"):
+                                c.drawRightString(cx + box_w / 2, cy, str(watermark_text))
+                            else:
+                                c.drawCentredString(cx, cy, str(watermark_text))
+                    finally:
+                        c.save()
+                    buf.seek(0)
+                    wm_pdf = PdfReader(buf)
+                    try:
+                        page.merge_page(wm_pdf.pages[0])
+                    except Exception:
+                        # Some PyPDF2 versions use mergePage
+                        try:
+                            page.mergePage(wm_pdf.pages[0])
+                        except Exception:
+                            pass
+                    writer.add_page(page)
+
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                return output_path
+        except FileProcessingError:
+            raise
+        except Exception as e:
+            raise FileProcessingError(str(e))
+
+    @staticmethod
+    def add_page_numbers(
+        input_path: str,
+        output_path: str,
+        position: str = "bottom-center",
+        start_page: int = 1,
+        fmt: str = "{page}",
+        font_size: float = 12.0,
+    ) -> str:
+        try:
+            pos = (position or "bottom-center").strip().lower()
+            allowed = {
+                "top-left", "top-center", "top-right",
+                "bottom-left", "bottom-center", "bottom-right",
+            }
+            if pos not in allowed:
+                pos = "bottom-center"
+
+            sp = int(start_page) if start_page is not None else 1
+            if sp < 1:
+                sp = 1
+            fs = float(font_size) if font_size is not None else 12.0
+            if fs <= 0:
+                fs = 12.0
+
+            # Primary implementation: PyMuPDF
+            try:
+                doc = fitz.open(input_path)
+                for idx, page in enumerate(doc, start=1):
+                    if idx < sp:
+                        continue
+                    r = page.rect
+                    margin = max(20, int(min(r.width, r.height) * 0.03))
+                    box_h = max(24, int(fs * 2))
+                    # Rectangle spanning width (respect margins), choose top/bottom band
+                    if pos.startswith("top-"):
+                        rect = fitz.Rect(r.x0 + margin, r.y0 + margin, r.x1 - margin, r.y0 + margin + box_h)
+                    else:
+                        rect = fitz.Rect(r.x0 + margin, r.y1 - margin - box_h, r.x1 - margin, r.y1 - margin)
+
+                    align_map = {
+                        "left": fitz.TEXT_ALIGN_LEFT,
+                        "center": fitz.TEXT_ALIGN_CENTER,
+                        "right": fitz.TEXT_ALIGN_RIGHT,
+                    }
+                    align_key = pos.split("-")[1]  # left/center/right
+                    align = align_map.get(align_key, fitz.TEXT_ALIGN_CENTER)
+
+                    text = (fmt or "{page}")
+                    try:
+                        text = text.replace("{page}", str(idx))
+                    except Exception:
+                        text = str(idx)
+
+                    page.insert_textbox(
+                        rect,
+                        text,
+                        fontsize=fs,
+                        fontname="Helvetica-Bold",
+                        color=(0, 0, 0),
+                        align=align,
+                    )
+
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                doc.save(output_path)
+                doc.close()
+                return output_path
+            except Exception:
+                # Fallback: ReportLab overlay merged via PyPDF2
+                reader = PdfReader(input_path)
+                writer = PdfWriter()
+                for idx, page in enumerate(reader.pages, start=1):
+                    width = float(page.mediabox.width)
+                    height = float(page.mediabox.height)
+                    buf = BytesIO()
+                    c = canvas.Canvas(buf, pagesize=(width, height))
+                    try:
+                        c.setFont("Helvetica-Bold", fs)
+                        margin = max(20, int(min(width, height) * 0.03))
+                        text = (fmt or "{page}").replace("{page}", str(idx))
+                        # Compute anchor x,y
+                        if pos.startswith("top-"):
+                            y = margin + fs
+                        else:
+                            y = height - margin - fs
+                        key = pos.split("-")[1]
+                        if key == "left":
+                            x = margin
+                            c.drawString(x, y, text)
+                        elif key == "right":
+                            x = width - margin
+                            c.drawRightString(x, y, text)
+                        else:
+                            x = width / 2.0
+                            c.drawCentredString(x, y, text)
+                    finally:
+                        c.save()
+                    buf.seek(0)
+                    wm_pdf = PdfReader(buf)
+                    try:
+                        page.merge_page(wm_pdf.pages[0])
+                    except Exception:
+                        try:
+                            page.mergePage(wm_pdf.pages[0])
+                        except Exception:
+                            pass
+                    writer.add_page(page)
+
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                return output_path
         except FileProcessingError:
             raise
         except Exception as e:

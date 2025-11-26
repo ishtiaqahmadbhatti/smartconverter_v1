@@ -1,13 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as p;
-import '../../../constants/app_colors.dart';
-import '../../../services/conversion_service.dart';
-import '../../../models/conversion_tool.dart';
-
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share_plus/share_plus.dart';
@@ -15,6 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../models/conversion_tool.dart';
 
 class PdfSplitPage extends StatefulWidget {
   const PdfSplitPage({super.key});
@@ -36,12 +29,14 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
   List<SplitFileResult> _results = [];
   String? _savedFolderPath;
   String _statusMessage = 'Select a PDF file to begin.';
+  String? _targetDirectoryPath;
 
   @override
   void initState() {
     super.initState();
     _admobService.preloadAd();
     _loadBannerAd();
+    _loadTargetDirectoryPath();
   }
 
   @override
@@ -81,14 +76,22 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     ad.load();
   }
 
+  Future<void> _loadTargetDirectoryPath() async {
+    try {
+      final dir = await FileManager.getSplitPdfsDirectory();
+      if (mounted) {
+        setState(() => _targetDirectoryPath = dir.path);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _pickPdfFile() async {
-    final file = await _service.pickFile(allowedExtensions: const ['pdf'], type: 'custom');
+    final file = await _service.pickFile(
+      allowedExtensions: const ['pdf'],
+      type: 'pdf',
+    );
     if (file == null) {
       setState(() => _statusMessage = 'No file selected.');
-      return;
-    }
-    if (p.extension(file.path).toLowerCase() != '.pdf') {
-      setState(() => _statusMessage = 'Please select a PDF file (.pdf extension).');
       return;
     }
     setState(() {
@@ -110,7 +113,9 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       final prefix = _prefixCtrl.text.trim().isEmpty
           ? p.basenameWithoutExtension(_selectedFile!.path)
           : _prefixCtrl.text.trim();
-      final ranges = _splitType == 'page_ranges' ? _rangesCtrl.text.trim() : null;
+      final ranges = _splitType == 'page_ranges'
+          ? _rangesCtrl.text.trim()
+          : null;
       final result = await _service.splitPdf(
         _selectedFile!,
         splitType: _splitType,
@@ -133,7 +138,9 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     if (_results.isEmpty) return;
     final baseDir = await FileManager.getSplitPdfsDirectory();
     String targetFolder = _prefixCtrl.text.trim().isEmpty
-        ? (_selectedFile != null ? p.basenameWithoutExtension(_selectedFile!.path) : 'split')
+        ? (_selectedFile != null
+              ? p.basenameWithoutExtension(_selectedFile!.path)
+              : 'split')
         : _prefixCtrl.text.trim();
     Directory destination = Directory(p.join(baseDir.path, targetFolder));
     int counter = 1;
@@ -143,7 +150,10 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     }
     await destination.create(recursive: true);
     for (final part in _results) {
-      final tmp = await _service.downloadConvertedFile(part.downloadUrl, part.fileName);
+      final tmp = await _service.downloadConvertedFile(
+        part.downloadUrl,
+        part.fileName,
+      );
       if (tmp != null) {
         await tmp.copy(p.join(destination.path, part.fileName));
       }
@@ -158,7 +168,10 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Split PDF', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text(
+          'Split PDF',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
@@ -176,32 +189,84 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
                 const SizedBox(height: 12),
                 _buildOptionsCard(),
                 const SizedBox(height: 12),
-                _buildActionButtons(),
-                const SizedBox(height: 16),
+                _buildActionsCard(),
+                const SizedBox(height: 12),
                 _buildResultsCard(),
-                const SizedBox(height: 16),
-                if (_isBannerReady && _bannerAd != null)
-                  SizedBox(height: 50, child: AdWidget(ad: _bannerAd!)),
               ],
             ),
           ),
         ),
       ),
+      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
+          ? SafeArea(
+              bottom: true,
+              child: Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            )
+          : null,
     );
   }
 
   Widget _buildPickerCard() {
-    final name = _selectedFile != null ? p.basename(_selectedFile!.path) : 'No file selected';
+    final name = _selectedFile != null
+        ? p.basename(_selectedFile!.path)
+        : 'No file selected';
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
-      child: Row(
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(name, style: const TextStyle(color: AppColors.textPrimary))),
-          ElevatedButton(
-            onPressed: _pickPdfFile,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            child: const Text('Choose PDF'),
+          const Text(
+            'Select PDF',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isProcessing ? null : _pickPdfFile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                ),
+                child: const Text(
+                  'Choose',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _targetDirectoryPath != null
+                ? 'Will save under: $_targetDirectoryPath'
+                : 'Will save under: Documents/SmartConverter/PDFConversions/split_pdfs',
+            style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
           ),
         ],
       ),
@@ -211,98 +276,211 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
   Widget _buildOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'Options',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Radio<String>(value: 'every_page', groupValue: _splitType, onChanged: (v) => setState(() => _splitType = v!)),
-              const Text('Every page', style: TextStyle(color: AppColors.textPrimary)),
+              Radio<String>(
+                value: 'every_page',
+                groupValue: _splitType,
+                onChanged: (v) => setState(() => _splitType = v!),
+              ),
+              const Text(
+                'Every page',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               const SizedBox(width: 16),
-              Radio<String>(value: 'page_ranges', groupValue: _splitType, onChanged: (v) => setState(() => _splitType = v!)),
-              const Text('Page ranges', style: TextStyle(color: AppColors.textPrimary)),
+              Radio<String>(
+                value: 'page_ranges',
+                groupValue: _splitType,
+                onChanged: (v) => setState(() => _splitType = v!),
+              ),
+              const Text(
+                'Page ranges',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _rangesCtrl,
             enabled: _splitType == 'page_ranges',
-            decoration: const InputDecoration(hintText: 'e.g., 1-4,5,30,45-50', hintStyle: TextStyle(color: AppColors.textSecondary)),
+            decoration: const InputDecoration(
+              labelText: 'Page ranges',
+              hintText: 'e.g., 1-4,5,30,45-50',
+              labelStyle: TextStyle(color: AppColors.textSecondary),
+              hintStyle: TextStyle(color: AppColors.textTertiary),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.textTertiary),
+              ),
+            ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _prefixCtrl,
-            decoration: const InputDecoration(hintText: 'Output prefix', hintStyle: TextStyle(color: AppColors.textSecondary)),
+            decoration: const InputDecoration(
+              labelText: 'Output prefix',
+              hintText: 'Auto from file name',
+              labelStyle: TextStyle(color: AppColors.textSecondary),
+              hintStyle: TextStyle(color: AppColors.textTertiary),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppColors.textTertiary),
+              ),
+            ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           SwitchListTile(
             value: _zip,
             onChanged: (v) => setState(() => _zip = v),
-            title: const Text('Return zip also', style: TextStyle(color: AppColors.textPrimary)),
+            title: const Text(
+              'Return zip also',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _isProcessing ? null : _splitPdf,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            child: _isProcessing
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Split PDF'),
-          ),
+  Widget _buildActionsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.25),
+          width: 1,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _results.isEmpty ? null : _savePartsLocally,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-            child: const Text('Save Parts'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isProcessing ? null : _splitPdf,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                  ),
+                  child: Text(
+                    _isProcessing ? 'Splitting…' : 'Split PDF',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _results.isEmpty ? null : _savePartsLocally,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                  ),
+                  child: const Text(
+                    'Save Parts',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            _statusMessage,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildResultsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.backgroundSurface, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_statusMessage, style: const TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 12),
           if (_savedFolderPath != null)
-            Text('Saved to: $_savedFolderPath', style: const TextStyle(color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
-          ..._results.map((r) => ListTile(
-                title: Text(r.fileName, style: const TextStyle(color: AppColors.textPrimary)),
-                subtitle: Text('Pages: ${r.pages.join(', ')}', style: const TextStyle(color: AppColors.textSecondary)),
-                trailing: ElevatedButton(
-                  onPressed: () async {
-                    final f = await _service.downloadConvertedFile(r.downloadUrl, r.fileName);
-                    if (f != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Downloaded ${r.fileName}')));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                  child: const Text('Download'),
-                ),
-                onTap: () async {
-                  final f = await _service.downloadConvertedFile(r.downloadUrl, r.fileName);
+            Text(
+              'Saved to: $_savedFolderPath',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          const SizedBox(height: 8),
+          ..._results.map(
+            (r) => ListTile(
+              title: Text(
+                r.fileName,
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Pages: ${r.pages.join(', ')}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              trailing: ElevatedButton(
+                onPressed: () async {
+                  final f = await _service.downloadConvertedFile(
+                    r.downloadUrl,
+                    r.fileName,
+                  );
                   if (f != null) {
-                    await Share.shareXFiles([XFile(f.path)], text: 'Split part: ${r.fileName}');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Downloaded ${r.fileName}')),
+                    );
                   }
                 },
-              )),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                ),
+                child: const Text(
+                  'Download',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              onTap: () async {
+                final f = await _service.downloadConvertedFile(
+                  r.downloadUrl,
+                  r.fileName,
+                );
+                if (f != null) {
+                  await Share.shareXFiles([
+                    XFile(f.path),
+                  ], text: 'Split part: ${r.fileName}');
+                }
+              },
+            ),
+          ),
         ],
       ),
     );

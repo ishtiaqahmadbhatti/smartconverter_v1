@@ -146,6 +146,17 @@ import 'conversions/pdf/excel_to_xps_page.dart';
 import 'conversions/pdf/ods_to_pdf_page.dart';
 import 'conversions/pdf/pdf_split_page.dart';
 import 'conversions/pdf/pdf_compress_page.dart';
+import 'conversions/pdf/remove_pages_page.dart';
+import 'conversions/pdf/extract_pages_page.dart';
+import 'conversions/pdf/rotate_pdf_page.dart';
+import 'conversions/pdf/watermark_pdf_page.dart';
+import 'conversions/pdf/add_page_numbers_page.dart';
+import 'conversions/pdf/crop_pdf_page.dart';
+import 'conversions/pdf/protect_pdf_page.dart';
+import 'conversions/pdf/unlock_pdf_page.dart';
+import 'conversions/pdf/repair_pdf_page.dart';
+import 'conversions/pdf/compare_pdfs_page.dart';
+import 'conversions/pdf/pdf_metadata_page.dart';
 import 'conversions/image/ai_jpg_to_json_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
 import 'conversions/image/pdf_to_png_page.dart';
@@ -571,14 +582,36 @@ class CategoryToolsPage extends StatelessWidget {
       }
     }
 
-    if (categoryId == 'pdf_conversion') {
-      switch (toolName) {
+      if (categoryId == 'pdf_conversion') {
+        switch (toolName) {
         case 'Merge PDF':
           return const MergePdfPage();
         case 'Split PDF':
           return const PdfSplitPage();
         case 'Compress PDF':
           return const PdfCompressPage();
+        case 'Remove Pages':
+          return const RemovePagesPage();
+        case 'Extract Pages':
+          return const ExtractPagesPage();
+        case 'Rotate PDF':
+          return const RotatePdfPage();
+        case 'Add Page Numbers':
+          return const WatermarkPdfPage();
+        case 'Crop PDF':
+          return const CropPdfPage();
+        case 'Protect PDF':
+          return const ProtectPdfPage();
+        case 'Unlock PDF':
+          return const UnlockPdfPage();
+        case 'Repair PDF':
+          return const RepairPdfPage();
+        case 'Compare PDFs':
+          return const ComparePdfsPage();
+        case 'Get PDF Metadata':
+          return const PdfMetadataPage();
+        case 'Add Watermark':
+          return const WatermarkPdfPage();
         case 'AI: Convert PDF to JSON':
           return const AiPdfToJsonPage();
         case 'AI: Convert PDF to Markdown':

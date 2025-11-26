@@ -17,9 +17,14 @@ class FileManager {
   static const String _protectPdfFolder = 'ProtectPDF';
   static const String _unlockPdfFolder = 'UnlockPDF';
   static const String _watermarkPdfFolder = 'WatermarkPDF';
+  static const String _pageNumberPdfFolder = 'PageNumberPDF';
   static const String _removePagesFolder = 'RemovePages';
   static const String _extractPagesFolder = 'ExtractPages';
   static const String _pdfConversionsFolder = 'PDFConversions';
+  static const String _cropPdfFolder = 'CropPDF';
+  static const String _repairPdfFolder = 'RepairPDF';
+  static const String _comparePdfFolder = 'ComparePDF';
+  static const String _metadataPdfFolder = 'MetadataPDF';
   static const String _mergedPdfsSubFolder = 'merged_pdfs';
   static const String _markdownToPdfSubFolder = 'markdown_to_pdf';
   static const String _htmlToPdfSubFolder = 'html_to_pdf';
@@ -88,7 +93,22 @@ class FileManager {
 
   /// Get directory for Add Page Numbers tool
   static Future<Directory> getAddPageNumbersDirectory() async {
-    return await getToolDirectory(_addPageNumbersFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pageNumberPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Page Number PDF tool
+  static Future<Directory> getPageNumberPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pageNumberPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Merge PDF tool
@@ -128,32 +148,102 @@ class FileManager {
 
   /// Get directory for Rotate PDF tool
   static Future<Directory> getRotatePdfDirectory() async {
-    return await getToolDirectory(_rotatePdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_rotatePdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Protect PDF tool
   static Future<Directory> getProtectPdfDirectory() async {
-    return await getToolDirectory(_protectPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_protectPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Unlock PDF tool
   static Future<Directory> getUnlockPdfDirectory() async {
-    return await getToolDirectory(_unlockPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_unlockPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Watermark PDF tool
   static Future<Directory> getWatermarkPdfDirectory() async {
-    return await getToolDirectory(_watermarkPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_watermarkPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Remove Pages tool
   static Future<Directory> getRemovePagesDirectory() async {
-    return await getToolDirectory(_removePagesFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_removePagesFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Extract Pages tool
   static Future<Directory> getExtractPagesDirectory() async {
-    return await getToolDirectory(_extractPagesFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_extractPagesFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Crop PDF tool
+  static Future<Directory> getCropPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_cropPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Repair PDF tool
+  static Future<Directory> getRepairPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_repairPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Compare PDFs tool
+  static Future<Directory> getComparePdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_comparePdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Metadata reports
+  static Future<Directory> getMetadataPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_metadataPdfFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Video Conversions folder

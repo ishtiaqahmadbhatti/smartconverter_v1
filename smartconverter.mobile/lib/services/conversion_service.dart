@@ -369,9 +369,10 @@ class ConversionService {
     int startPage = 1,
     String format = '{page}',
     double fontSize = 12.0,
+    String? outputFilename,
   }) async {
     try {
-      FormData formData = FormData.fromMap({
+      final map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
@@ -380,7 +381,12 @@ class ConversionService {
         'start_page': startPage,
         'format': format,
         'font_size': fontSize,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       Response response = await _dio.post(
         ApiConfig.addPageNumbersEndpoint,
@@ -499,7 +505,8 @@ class ConversionService {
       final formData = FormData.fromMap({
         'file': file,
         'compression_level': compressionLevel,
-        if (targetReductionPct != null) 'target_reduction_pct': targetReductionPct,
+        if (targetReductionPct != null)
+          'target_reduction_pct': targetReductionPct,
         if (maxImageDpi != null) 'max_image_dpi': maxImageDpi,
         if (outputFilename != null && outputFilename.trim().isNotEmpty)
           'output_filename': outputFilename.trim(),
@@ -515,7 +522,10 @@ class ConversionService {
           ..connectTimeout = _heavyConnectTimeout
           ..receiveTimeout = _heavyReceiveTimeout
           ..sendTimeout = _heavyReceiveTimeout;
-        response = await _dio.post(ApiConfig.compressPdfEndpoint, data: formData);
+        response = await _dio.post(
+          ApiConfig.compressPdfEndpoint,
+          data: formData,
+        );
       } finally {
         _dio.options
           ..connectTimeout = originalConnectTimeout
@@ -529,13 +539,19 @@ class ConversionService {
 
       final data = response.data as Map<String, dynamic>;
       final fileName = data['output_filename']?.toString() ?? 'compressed.pdf';
-      final downloadUrl = data[ApiConfig.downloadUrlKey]?.toString() ?? '/download/$fileName';
-      final sizeBefore = int.tryParse(data['file_size_before']?.toString() ?? '');
+      final downloadUrl =
+          data[ApiConfig.downloadUrlKey]?.toString() ?? '/download/$fileName';
+      final sizeBefore = int.tryParse(
+        data['file_size_before']?.toString() ?? '',
+      );
       final sizeAfter = int.tryParse(data['file_size_after']?.toString() ?? '');
       double? achieved;
-      if (data['extracted_data'] is Map && data['extracted_data']?['compression'] != null) {
+      if (data['extracted_data'] is Map &&
+          data['extracted_data']?['compression'] != null) {
         final comp = data['extracted_data']['compression'] as Map;
-        achieved = double.tryParse(comp['achieved_reduction_pct']?.toString() ?? '');
+        achieved = double.tryParse(
+          comp['achieved_reduction_pct']?.toString() ?? '',
+        );
       }
 
       final downloaded = await _tryDownloadFile(fileName, downloadUrl);
@@ -1161,20 +1177,28 @@ class ConversionService {
   }
 
   // Protect PDF with password
-  Future<File?> protectPdf(File pdfFile, String password) async {
+  Future<File?> protectPdf(
+    File pdfFile,
+    String password, {
+    String? outputFilename,
+  }) async {
     try {
       if (password.isEmpty) {
         throw Exception('Password cannot be empty');
       }
 
-      // Create FormData with file and password
-      FormData formData = FormData.fromMap({
+      final Map<String, dynamic> map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'password': password,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for password protection...');
       _debugLog('🔐 Password length: ${password.length} characters');
@@ -1203,20 +1227,28 @@ class ConversionService {
   }
 
   // Unlock PDF (remove password protection)
-  Future<File?> unlockPdf(File pdfFile, String password) async {
+  Future<File?> unlockPdf(
+    File pdfFile,
+    String password, {
+    String? outputFilename,
+  }) async {
     try {
       if (password.isEmpty) {
         throw Exception('Password cannot be empty');
       }
 
-      // Create FormData with file and password
-      FormData formData = FormData.fromMap({
+      final Map<String, dynamic> map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'password': password,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for unlocking...');
       _debugLog('🔓 Attempting to remove password protection...');
@@ -1248,22 +1280,28 @@ class ConversionService {
   Future<File?> watermarkPdf(
     File pdfFile,
     String watermarkText,
-    String position,
-  ) async {
+    String position, {
+    String? outputFilename,
+  }) async {
     try {
       if (watermarkText.isEmpty) {
         throw Exception('Watermark text cannot be empty');
       }
 
-      // Create FormData with file, text, and position
-      FormData formData = FormData.fromMap({
+      // Create FormData with file, text, position, and optional output filename
+      final map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'watermark_text': watermarkText,
         'position': position,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for watermarking...');
       _debugLog('💧 Watermark text: "$watermarkText"');
@@ -1293,7 +1331,11 @@ class ConversionService {
   }
 
   // Remove pages from PDF
-  Future<File?> removePages(File pdfFile, List<int> pagesToRemove) async {
+  Future<File?> removePages(
+    File pdfFile,
+    List<int> pagesToRemove, {
+    String? outputFilename,
+  }) async {
     try {
       if (pagesToRemove.isEmpty) {
         throw Exception('No pages specified for removal');
@@ -1303,16 +1345,24 @@ class ConversionService {
       String pagesString = pagesToRemove.join(',');
 
       // Create FormData with file and pages to remove
-      FormData formData = FormData.fromMap({
+      final map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'pages_to_remove': pagesString,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for page removal...');
       _debugLog('🗑️ Pages to remove: $pagesString');
+      if (name != null && name.isNotEmpty) {
+        _debugLog('📝 Output filename: $name');
+      }
 
       Response response = await _dio.post(
         ApiConfig.removePagesEndpoint,
@@ -1338,7 +1388,11 @@ class ConversionService {
   }
 
   // Extract pages from PDF
-  Future<File?> extractPages(File pdfFile, List<int> pagesToExtract) async {
+  Future<File?> extractPages(
+    File pdfFile,
+    List<int> pagesToExtract, {
+    String? outputFilename,
+  }) async {
     try {
       if (pagesToExtract.isEmpty) {
         throw Exception('No pages specified for extraction');
@@ -1348,16 +1402,24 @@ class ConversionService {
       String pagesString = pagesToExtract.join(',');
 
       // Create FormData with file and pages to extract
-      FormData formData = FormData.fromMap({
+      final map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'pages_to_extract': pagesString,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for page extraction...');
       _debugLog('📄 Pages to extract: $pagesString');
+      if (name != null && name.isNotEmpty) {
+        _debugLog('📝 Output filename: $name');
+      }
 
       Response response = await _dio.post(
         ApiConfig.extractPagesEndpoint,
@@ -1382,22 +1444,30 @@ class ConversionService {
     }
   }
 
-
   // Rotate PDF
-  Future<File?> rotatePdf(File pdfFile, int rotation) async {
+  Future<File?> rotatePdf(
+    File pdfFile,
+    int rotation, {
+    String? outputFilename,
+  }) async {
     try {
       if (rotation != 90 && rotation != 180 && rotation != 270) {
         throw Exception('Rotation must be 90, 180, or 270 degrees');
       }
 
       // Create FormData with file and rotation
-      FormData formData = FormData.fromMap({
+      final map = {
         'file': await MultipartFile.fromFile(
           pdfFile.path,
           filename: pdfFile.path.split('/').last,
         ),
         'rotation': rotation,
-      });
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
 
       _debugLog('📤 Uploading PDF for rotation...');
       _debugLog('🔄 Rotation angle: $rotation degrees');
@@ -1422,6 +1492,152 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to rotate PDF: $e');
+    }
+  }
+
+  // Crop, Repair, Compare, Metadata helpers
+  Future<File?> cropPdf(
+    File pdfFile,
+    int x,
+    int y,
+    int width,
+    int height, {
+    String? outputFilename,
+  }) async {
+    try {
+      final Map<String, dynamic> map = {
+        'file': await MultipartFile.fromFile(
+          pdfFile.path,
+          filename: pdfFile.path.split('/').last,
+        ),
+        'x': x,
+        'y': y,
+        'width': width,
+        'height': height,
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
+
+      Response response = await _dio.post(
+        ApiConfig.cropPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'cropped_document.pdf';
+        return await _tryDownloadFile(fileName, downloadUrl);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to crop PDF: $e');
+    }
+  }
+
+  Future<File?> repairPdf(File pdfFile, {String? outputFilename}) async {
+    try {
+      final Map<String, dynamic> map = {
+        'file': await MultipartFile.fromFile(
+          pdfFile.path,
+          filename: pdfFile.path.split('/').last,
+        ),
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
+
+      Response response = await _dio.post(
+        ApiConfig.repairPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'repaired_document.pdf';
+        return await _tryDownloadFile(fileName, downloadUrl);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to repair PDF: $e');
+    }
+  }
+
+  Future<File?> comparePdfs(
+    File file1,
+    File file2, {
+    String? outputFilename,
+  }) async {
+    try {
+      final up1 = await MultipartFile.fromFile(
+        file1.path,
+        filename: file1.path.split('/').last,
+      );
+      final up2 = await MultipartFile.fromFile(
+        file2.path,
+        filename: file2.path.split('/').last,
+      );
+      final Map<String, dynamic> map = {'file1': up1, 'file2': up2};
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
+
+      Response response = await _dio.post(
+        ApiConfig.comparePdfsEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ?? 'comparison.txt';
+        return await _tryDownloadFile(fileName, downloadUrl);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to compare PDFs: $e');
+    }
+  }
+
+  Future<File?> getPdfMetadataFile(
+    File pdfFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      final Map<String, dynamic> map = {
+        'file': await MultipartFile.fromFile(
+          pdfFile.path,
+          filename: pdfFile.path.split('/').last,
+        ),
+      };
+      final name = outputFilename?.trim();
+      if (name != null && name.isNotEmpty) {
+        map['output_filename'] = name;
+      }
+      FormData formData = FormData.fromMap(map);
+
+      Response response = await _dio.post(
+        ApiConfig.pdfMetadataEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 'metadata.json';
+        if (downloadUrl != null) {
+          return await _tryDownloadFile(fileName, downloadUrl);
+        }
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get PDF metadata: $e');
     }
   }
 
@@ -1467,7 +1683,9 @@ class ConversionService {
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: fileType,
-        allowedExtensions: (fileType == FileType.custom) ? allowedExtensions : null,
+        allowedExtensions: (fileType == FileType.custom)
+            ? allowedExtensions
+            : null,
         allowMultiple: false,
         withData: false, // Don't load file data into memory
         withReadStream: false,
@@ -1482,7 +1700,8 @@ class ConversionService {
           // Verify file exists
           if (await file.exists()) {
             final ext = p.extension(file.path).toLowerCase();
-            if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+            if (fileType == FileType.custom &&
+                (allowedExtensions?.contains('pdf') ?? false)) {
               if (ext != '.pdf') {
                 throw Exception('Please select a PDF file (.pdf)');
               }
@@ -1499,7 +1718,8 @@ class ConversionService {
           final file = File('${tempDir.path}/${pickedFile.name}');
           await file.writeAsBytes(pickedFile.bytes!);
           final ext = p.extension(file.path).toLowerCase();
-          if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+          if (fileType == FileType.custom &&
+              (allowedExtensions?.contains('pdf') ?? false)) {
             if (ext != '.pdf') {
               throw Exception('Please select a PDF file (.pdf)');
             }
@@ -1537,7 +1757,9 @@ class ConversionService {
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: fileType,
-        allowedExtensions: (fileType == FileType.custom) ? allowedExtensions : null,
+        allowedExtensions: (fileType == FileType.custom)
+            ? allowedExtensions
+            : null,
         allowMultiple: true,
         withData: false,
         withReadStream: false,
@@ -1550,7 +1772,8 @@ class ConversionService {
             final file = File(pickedFile.path!);
             if (await file.exists()) {
               final ext = p.extension(file.path).toLowerCase();
-              if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+              if (fileType == FileType.custom &&
+                  (allowedExtensions?.contains('pdf') ?? false)) {
                 if (ext != '.pdf') {
                   continue;
                 }
@@ -1563,7 +1786,8 @@ class ConversionService {
             final file = File('${tempDir.path}/${pickedFile.name}');
             await file.writeAsBytes(pickedFile.bytes!);
             final ext = p.extension(file.path).toLowerCase();
-            if (fileType == FileType.custom && (allowedExtensions?.contains('pdf') ?? false)) {
+            if (fileType == FileType.custom &&
+                (allowedExtensions?.contains('pdf') ?? false)) {
               if (ext != '.pdf') {
                 continue;
               }
@@ -2276,6 +2500,7 @@ async def download_file(filename: str):
       ),
     ];
   }
+
   Future<SplitResult?> splitPdf(
     File pdfFile, {
     required String splitType,
@@ -2314,7 +2539,10 @@ async def download_file(filename: str):
           ..connectTimeout = _heavyConnectTimeout
           ..receiveTimeout = _heavyReceiveTimeout
           ..sendTimeout = _heavyReceiveTimeout;
-        response = await _dio.post(ApiConfig.splitPdfNewEndpoint, data: formData);
+        response = await _dio.post(
+          ApiConfig.splitPdfNewEndpoint,
+          data: formData,
+        );
       } finally {
         _dio.options
           ..connectTimeout = originalConnectTimeout
@@ -2334,7 +2562,11 @@ async def download_file(filename: str):
         final fname = m['filename']?.toString() ?? '';
         final dl = m['download_url']?.toString() ?? '';
         final pages = (m['pages'] is List)
-            ? List<int>.from((m['pages'] as List).map((e) => int.tryParse('$e') ?? 0).where((e) => e > 0))
+            ? List<int>.from(
+                (m['pages'] as List)
+                    .map((e) => int.tryParse('$e') ?? 0)
+                    .where((e) => e > 0),
+              )
             : <int>[];
         String url;
         if (dl.startsWith('http://') || dl.startsWith('https://')) {
@@ -2343,24 +2575,38 @@ async def download_file(filename: str):
           final hasLeading = dl.startsWith('/');
           url = hasLeading ? '$baseUrl$dl' : '$baseUrl/$dl';
         }
-        results.add(SplitFileResult(fileName: fname, downloadUrl: url, pages: pages));
+        results.add(
+          SplitFileResult(fileName: fname, downloadUrl: url, pages: pages),
+        );
       }
       final zipFileName = data['output_filename']?.toString();
       final zipUrlRaw = data[ApiConfig.downloadUrlKey]?.toString();
       String? zipUrl;
       if (zipUrlRaw != null && zipUrlRaw.isNotEmpty) {
-        zipUrl = zipUrlRaw.startsWith('http') ? zipUrlRaw : '${baseUrl}${zipUrlRaw.startsWith('/') ? '' : '/'}$zipUrlRaw';
+        zipUrl = zipUrlRaw.startsWith('http')
+            ? zipUrlRaw
+            : '${baseUrl}${zipUrlRaw.startsWith('/') ? '' : '/'}$zipUrlRaw';
       }
-      final count = int.tryParse('${data['count'] ?? results.length}') ?? results.length;
+      final count =
+          int.tryParse('${data['count'] ?? results.length}') ?? results.length;
       final folderName = outputPrefix;
       final downloaded = await _downloadSplitFiles(results, folderName);
-      return SplitResult(files: downloaded, zipFileName: zipFileName, zipDownloadUrl: zipUrl, count: count, folderName: folderName);
+      return SplitResult(
+        files: downloaded,
+        zipFileName: zipFileName,
+        zipDownloadUrl: zipUrl,
+        count: count,
+        folderName: folderName,
+      );
     } catch (e) {
       throw Exception('Split PDF failed: $e');
     }
   }
 
-  Future<List<SplitFileResult>> _downloadSplitFiles(List<SplitFileResult> files, String folderName) async {
+  Future<List<SplitFileResult>> _downloadSplitFiles(
+    List<SplitFileResult> files,
+    String folderName,
+  ) async {
     final baseDir = await FileManager.getSplitPdfsDirectory();
     final target = Directory('${baseDir.path}/$folderName');
     if (!await target.exists()) {
@@ -2371,7 +2617,13 @@ async def download_file(filename: str):
       final tmp = await _downloadFile(f.downloadUrl, f.fileName);
       final destPath = '${target.path}/${f.fileName}';
       final dest = await File(tmp.path).copy(destPath);
-      saved.add(SplitFileResult(fileName: f.fileName, downloadUrl: f.downloadUrl, pages: f.pages));
+      saved.add(
+        SplitFileResult(
+          fileName: f.fileName,
+          downloadUrl: f.downloadUrl,
+          pages: f.pages,
+        ),
+      );
     }
     return saved;
   }

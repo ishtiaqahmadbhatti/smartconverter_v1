@@ -23,7 +23,7 @@ async def convert_word_to_text(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -149,7 +149,7 @@ async def convert_srt_to_text(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -191,7 +191,7 @@ async def convert_vtt_to_text(file: UploadFile = File(...)):
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
