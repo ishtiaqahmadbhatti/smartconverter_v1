@@ -289,16 +289,57 @@ class ConversionService {
     }
   }
 
-  // Placeholder method for Word to Text conversion
-  Future<File?> convertWordToText(File wordFile) async {
+  // Convert Word (DOC/DOCX) to Text
+  Future<ImageToPdfResult?> convertWordToText(
+    File wordFile, {
+    String? outputFilename,
+  }) async {
     try {
-      // Simulated processing until backend endpoint is available
-      await Future.delayed(const Duration(seconds: 2));
+      if (!wordFile.existsSync()) {
+        throw Exception('Word file does not exist');
+      }
 
-      // For now, return null as placeholder
+      final extension = p.extension(wordFile.path).toLowerCase();
+      if (extension != '.doc' && extension != '.docx') {
+        throw Exception('Only .doc or .docx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        wordFile.path,
+        filename: p.basename(wordFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading Word file for Text conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.textWordToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(wordFile.path)}.txt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
       return null;
     } catch (e) {
-      throw Exception('Word to Text conversion failed: $e');
+      throw Exception('Failed to convert Word to Text: $e');
     }
   }
 
@@ -1173,6 +1214,166 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to convert PDF to Text: $e');
+    }
+  }
+
+
+  // Convert PowerPoint (PPT/PPTX) to Text
+  Future<ImageToPdfResult?> convertPowerpointToText(
+    File pptFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pptFile.existsSync()) {
+        throw Exception('PowerPoint file does not exist');
+      }
+      final extension = p.extension(pptFile.path).toLowerCase();
+      if (extension != '.ppt' && extension != '.pptx') {
+        throw Exception('Only .ppt or .pptx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pptFile.path,
+        filename: p.basename(pptFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PowerPoint file for Text conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.textPowerpointToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pptFile.path)}.txt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PowerPoint to Text: $e');
+    }
+  }
+
+  // Convert SRT to Text
+  Future<ImageToPdfResult?> convertSrtToText(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final extension = p.extension(srtFile.path).toLowerCase();
+      if (extension != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: p.basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for Text conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.textSrtToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(srtFile.path)}.txt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to Text: $e');
+    }
+  }
+
+  // Convert VTT to Text
+  Future<ImageToPdfResult?> convertVttToText(
+    File vttFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!vttFile.existsSync()) {
+        throw Exception('VTT file does not exist');
+      }
+      final extension = p.extension(vttFile.path).toLowerCase();
+      if (extension != '.vtt') {
+        throw Exception('Only .vtt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        vttFile.path,
+        filename: p.basename(vttFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading VTT file for Text conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.textVttToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(vttFile.path)}.txt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert VTT to Text: $e');
     }
   }
 

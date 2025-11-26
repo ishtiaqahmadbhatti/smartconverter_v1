@@ -19,7 +19,7 @@ class TextConversionService:
     }
     
     @staticmethod
-    def word_to_text(input_path: str) -> str:
+    def word_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Extract text from Word document."""
         try:
             if not os.path.exists(input_path):
@@ -48,7 +48,12 @@ class TextConversionService:
             extracted_text = "\n".join(text_content)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Save text file
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -60,7 +65,7 @@ class TextConversionService:
             raise FileProcessingError(f"Word to text conversion failed: {str(e)}")
     
     @staticmethod
-    def powerpoint_to_text(input_path: str) -> str:
+    def powerpoint_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Extract text from PowerPoint presentation."""
         try:
             if not os.path.exists(input_path):
@@ -99,7 +104,12 @@ class TextConversionService:
             extracted_text = "\n".join(text_content)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Save text file
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -111,7 +121,7 @@ class TextConversionService:
             raise FileProcessingError(f"PowerPoint to text conversion failed: {str(e)}")
     
     @staticmethod
-    def pdf_to_text(input_path: str) -> str:
+    def pdf_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Extract text from PDF document."""
         try:
             if not os.path.exists(input_path):
@@ -138,7 +148,12 @@ class TextConversionService:
             extracted_text = "\n".join(text_content)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Save text file
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -150,7 +165,7 @@ class TextConversionService:
             raise FileProcessingError(f"PDF to text conversion failed: {str(e)}")
     
     @staticmethod
-    def srt_to_text(input_path: str) -> str:
+    def srt_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Extract text from SRT subtitle file."""
         try:
             if not os.path.exists(input_path):
@@ -169,7 +184,12 @@ class TextConversionService:
             extracted_text = "\n".join(text_content)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Save text file
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -181,7 +201,7 @@ class TextConversionService:
             raise FileProcessingError(f"SRT to text conversion failed: {str(e)}")
     
     @staticmethod
-    def vtt_to_text(input_path: str) -> str:
+    def vtt_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Extract text from VTT subtitle file."""
         try:
             if not os.path.exists(input_path):
@@ -200,7 +220,12 @@ class TextConversionService:
             extracted_text = "\n".join(text_content)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Save text file
             with open(output_path, 'w', encoding='utf-8') as f:

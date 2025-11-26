@@ -345,12 +345,7 @@ class CategoryToolsPage extends StatelessWidget {
           itemBuilder: (context, index) {
             final toolName = tools[index];
             void handleTap() {
-              final page = _resolveToolPage(
-                context,
-                id,
-                toolName,
-                icon,
-              );
+              final page = _resolveToolPage(context, id, toolName, icon);
               Navigator.of(context).push(
                 PageRouteBuilder(
                   pageBuilder: (_, __, ___) => page,
@@ -582,8 +577,8 @@ class CategoryToolsPage extends StatelessWidget {
       }
     }
 
-      if (categoryId == 'pdf_conversion') {
-        switch (toolName) {
+    if (categoryId == 'pdf_conversion') {
+      switch (toolName) {
         case 'Merge PDF':
           return const MergePdfPage();
         case 'Split PDF':
@@ -597,7 +592,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Rotate PDF':
           return const RotatePdfPage();
         case 'Add Page Numbers':
-          return const WatermarkPdfPage();
+          return const AddPageNumbersPage();
         case 'Crop PDF':
           return const CropPdfPage();
         case 'Protect PDF':

@@ -90,6 +90,15 @@ class ApiConfig {
   // PDF to Text conversion endpoint
   static const String pdfToTextEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-text';
+  // Text Conversion endpoints
+  static const String textWordToTextEndpoint =
+      '/api/v1/textconversiontools/word-to-text';
+  static const String textPowerpointToTextEndpoint =
+      '/api/v1/textconversiontools/powerpoint-to-text';
+  static const String textSrtToTextEndpoint =
+      '/api/v1/textconversiontools/srt-to-text';
+  static const String textVttToTextEndpoint =
+      '/api/v1/textconversiontools/vtt-to-text';
   // PDF to image conversion endpoints
   static const String pdfToJpgEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-jpg';

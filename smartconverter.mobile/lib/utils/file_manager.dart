@@ -50,6 +50,12 @@ class FileManager {
   static const String _imagePdfToPngSubFolder = 'pdf_to_png';
   static const String _imagePdfToTiffSubFolder = 'pdf_to_tiff';
   static const String _imagePdfToSvgSubFolder = 'pdf_to_svg';
+  static const String _textConversionsFolder = 'TextConversion';
+  static const String _wordToTextSubFolder = 'word-to-text';
+  static const String _powerpointToTextSubFolder = 'powerpoint-to-text';
+  static const String _pdfToTextTextSubFolder = 'pdf-to-text';
+  static const String _srtToTextSubFolder = 'srt-to-text';
+  static const String _vttToTextSubFolder = 'vtt-to-text';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -361,6 +367,68 @@ class FileManager {
       await pdfConversionsDir.create(recursive: true);
     }
     return pdfConversionsDir;
+  }
+
+  /// Get or create the Text conversions directory
+  static Future<Directory> getTextConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final textConversionsDir = Directory(
+      '${smartConverterDir.path}/$_textConversionsFolder',
+    );
+    if (!await textConversionsDir.exists()) {
+      await textConversionsDir.create(recursive: true);
+    }
+    return textConversionsDir;
+  }
+
+  /// Get directory for Word to Text outputs (under TextConversion)
+  static Future<Directory> getWordToTextDirectory() async {
+    final textConversionsDir = await getTextConversionsDirectory();
+    final dir = Directory('${textConversionsDir.path}/$_wordToTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for PowerPoint to Text outputs (under TextConversion)
+  static Future<Directory> getPowerpointToTextDirectory() async {
+    final textConversionsDir = await getTextConversionsDirectory();
+    final dir = Directory('${textConversionsDir.path}/$_powerpointToTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for PDF to Text outputs (under TextConversion)
+  static Future<Directory> getPdfToTextTextDirectory() async {
+    final textConversionsDir = await getTextConversionsDirectory();
+    final dir = Directory('${textConversionsDir.path}/$_pdfToTextTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for SRT to Text outputs (under TextConversion)
+  static Future<Directory> getSrtToTextDirectory() async {
+    final textConversionsDir = await getTextConversionsDirectory();
+    final dir = Directory('${textConversionsDir.path}/$_srtToTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for VTT to Text outputs (under TextConversion)
+  static Future<Directory> getVttToTextDirectory() async {
+    final textConversionsDir = await getTextConversionsDirectory();
+    final dir = Directory('${textConversionsDir.path}/$_vttToTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Split PDF outputs (under PDFConversions)

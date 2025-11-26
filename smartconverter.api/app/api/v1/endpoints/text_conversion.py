@@ -16,20 +16,23 @@ router = APIRouter()
 
 
 @router.post("/word-to-text", response_model=ConversionResponse)
-async def convert_word_to_text(file: UploadFile = File(...)):
+async def convert_word_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert Word document to text."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file, file_type="subtitle")
+        FileService.validate_file(file, file_type="document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert Word to text
-        output_path = TextConversionService.word_to_text(input_path)
+        output_path = TextConversionService.word_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -58,7 +61,10 @@ async def convert_word_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/powerpoint-to-text", response_model=ConversionResponse)
-async def convert_powerpoint_to_text(file: UploadFile = File(...)):
+async def convert_powerpoint_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert PowerPoint presentation to text."""
     input_path = None
     output_path = None
@@ -71,7 +77,7 @@ async def convert_powerpoint_to_text(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert PowerPoint to text
-        output_path = TextConversionService.powerpoint_to_text(input_path)
+        output_path = TextConversionService.powerpoint_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -100,7 +106,10 @@ async def convert_powerpoint_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/pdf-to-text", response_model=ConversionResponse)
-async def convert_pdf_to_text(file: UploadFile = File(...)):
+async def convert_pdf_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert PDF document to text."""
     input_path = None
     output_path = None
@@ -113,7 +122,7 @@ async def convert_pdf_to_text(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert PDF to text
-        output_path = TextConversionService.pdf_to_text(input_path)
+        output_path = TextConversionService.pdf_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -142,7 +151,10 @@ async def convert_pdf_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/srt-to-text", response_model=ConversionResponse)
-async def convert_srt_to_text(file: UploadFile = File(...)):
+async def convert_srt_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert SRT subtitle file to text."""
     input_path = None
     output_path = None
@@ -155,7 +167,7 @@ async def convert_srt_to_text(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert SRT to text
-        output_path = TextConversionService.srt_to_text(input_path)
+        output_path = TextConversionService.srt_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -184,7 +196,10 @@ async def convert_srt_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/vtt-to-text", response_model=ConversionResponse)
-async def convert_vtt_to_text(file: UploadFile = File(...)):
+async def convert_vtt_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert VTT subtitle file to text."""
     input_path = None
     output_path = None
@@ -197,7 +212,7 @@ async def convert_vtt_to_text(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert VTT to text
-        output_path = TextConversionService.vtt_to_text(input_path)
+        output_path = TextConversionService.vtt_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
