@@ -99,6 +99,19 @@ class ApiConfig {
       '/api/v1/textconversiontools/srt-to-text';
   static const String textVttToTextEndpoint =
       '/api/v1/textconversiontools/vtt-to-text';
+  // Subtitle Conversion endpoints
+  static const String subtitlesSrtToCsvEndpoint =
+      '/api/v1/subtitlesconversiontools/srt-to-csv';
+  static const String subtitlesSrtToExcelEndpoint =
+      '/api/v1/subtitlesconversiontools/srt-to-excel';
+  static const String subtitlesSrtToVttEndpoint =
+      '/api/v1/subtitlesconversiontools/srt-to-vtt';
+  static const String subtitlesVttToSrtEndpoint =
+      '/api/v1/subtitlesconversiontools/vtt-to-srt';
+  static const String subtitlesCsvToSrtEndpoint =
+      '/api/v1/subtitlesconversiontools/csv-to-srt';
+  static const String subtitlesExcelToSrtEndpoint =
+      '/api/v1/subtitlesconversiontools/excel-to-srt';
   // PDF to image conversion endpoints
   static const String pdfToJpgEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-jpg';

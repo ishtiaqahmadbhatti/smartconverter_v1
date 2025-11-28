@@ -19,7 +19,8 @@ router = APIRouter()
 async def translate_srt(
     file: UploadFile = File(...),
     target_language: str = Form("en"),
-    source_language: str = Form("auto")
+    source_language: str = Form("auto"),
+    output_filename: Optional[str] = Form(None)
 ):
     """Translate SRT subtitle file using AI translation."""
     input_path = None
@@ -27,13 +28,13 @@ async def translate_srt(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Translate SRT file
-        output_path = SubtitleConversionService.translate_srt(input_path, target_language, source_language)
+        output_path = SubtitleConversionService.translate_srt(input_path, target_language, source_language, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -62,20 +63,23 @@ async def translate_srt(
 
 
 @router.post("/srt-to-csv", response_model=ConversionResponse)
-async def convert_srt_to_csv(file: UploadFile = File(...)):
+async def convert_srt_to_csv(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert SRT subtitle file to CSV format."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert SRT to CSV
-        output_path = SubtitleConversionService.srt_to_csv(input_path)
+        output_path = SubtitleConversionService.srt_to_csv(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -106,7 +110,8 @@ async def convert_srt_to_csv(file: UploadFile = File(...)):
 @router.post("/srt-to-excel", response_model=ConversionResponse)
 async def convert_srt_to_excel(
     file: UploadFile = File(...),
-    format_type: str = Form("xlsx")
+    format_type: str = Form("xlsx"),
+    output_filename: Optional[str] = Form(None)
 ):
     """Convert SRT subtitle file to Excel format."""
     input_path = None
@@ -114,13 +119,13 @@ async def convert_srt_to_excel(
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert SRT to Excel
-        output_path = SubtitleConversionService.srt_to_excel(input_path, format_type)
+        output_path = SubtitleConversionService.srt_to_excel(input_path, format_type, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -149,20 +154,23 @@ async def convert_srt_to_excel(
 
 
 @router.post("/srt-to-text", response_model=ConversionResponse)
-async def convert_srt_to_text(file: UploadFile = File(...)):
+async def convert_srt_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert SRT subtitle file to plain text."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert SRT to text
-        output_path = SubtitleConversionService.srt_to_text(input_path)
+        output_path = SubtitleConversionService.srt_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -191,20 +199,23 @@ async def convert_srt_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/srt-to-vtt", response_model=ConversionResponse)
-async def convert_srt_to_vtt(file: UploadFile = File(...)):
+async def convert_srt_to_vtt(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert SRT subtitle file to VTT format."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert SRT to VTT
-        output_path = SubtitleConversionService.srt_to_vtt(input_path)
+        output_path = SubtitleConversionService.srt_to_vtt(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -233,20 +244,23 @@ async def convert_srt_to_vtt(file: UploadFile = File(...)):
 
 
 @router.post("/vtt-to-text", response_model=ConversionResponse)
-async def convert_vtt_to_text(file: UploadFile = File(...)):
+async def convert_vtt_to_text(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert VTT subtitle file to plain text."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert VTT to text
-        output_path = SubtitleConversionService.vtt_to_text(input_path)
+        output_path = SubtitleConversionService.vtt_to_text(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -275,20 +289,23 @@ async def convert_vtt_to_text(file: UploadFile = File(...)):
 
 
 @router.post("/vtt-to-srt", response_model=ConversionResponse)
-async def convert_vtt_to_srt(file: UploadFile = File(...)):
+async def convert_vtt_to_srt(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert VTT subtitle file to SRT format."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file)
+        FileService.validate_file(file, file_type="subtitle")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert VTT to SRT
-        output_path = SubtitleConversionService.vtt_to_srt(input_path)
+        output_path = SubtitleConversionService.vtt_to_srt(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -317,7 +334,10 @@ async def convert_vtt_to_srt(file: UploadFile = File(...)):
 
 
 @router.post("/csv-to-srt", response_model=ConversionResponse)
-async def convert_csv_to_srt(file: UploadFile = File(...)):
+async def convert_csv_to_srt(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert CSV subtitle file to SRT format."""
     input_path = None
     output_path = None
@@ -330,7 +350,7 @@ async def convert_csv_to_srt(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert CSV to SRT
-        output_path = SubtitleConversionService.csv_to_srt(input_path)
+        output_path = SubtitleConversionService.csv_to_srt(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,
@@ -359,7 +379,10 @@ async def convert_csv_to_srt(file: UploadFile = File(...)):
 
 
 @router.post("/excel-to-srt", response_model=ConversionResponse)
-async def convert_excel_to_srt(file: UploadFile = File(...)):
+async def convert_excel_to_srt(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert Excel subtitle file to SRT format."""
     input_path = None
     output_path = None
@@ -372,7 +395,7 @@ async def convert_excel_to_srt(file: UploadFile = File(...)):
         input_path = FileService.save_uploaded_file(file)
         
         # Convert Excel to SRT
-        output_path = SubtitleConversionService.excel_to_srt(input_path)
+        output_path = SubtitleConversionService.excel_to_srt(input_path, output_filename=output_filename)
         
         return ConversionResponse(
             success=True,

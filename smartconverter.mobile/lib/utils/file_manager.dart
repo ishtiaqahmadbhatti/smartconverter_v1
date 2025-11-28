@@ -56,6 +56,15 @@ class FileManager {
   static const String _pdfToTextTextSubFolder = 'pdf-to-text';
   static const String _srtToTextSubFolder = 'srt-to-text';
   static const String _vttToTextSubFolder = 'vtt-to-text';
+  static const String _subtitleConversionsFolder = 'SubtitleConversion';
+  static const String _srtToCsvSubtitleSubFolder = 'srt-to-csv';
+  static const String _srtToExcelSubtitleSubFolder = 'srt-to-excel';
+  static const String _srtToTextSubtitleSubFolder = 'srt-to-text';
+  static const String _srtToVttSubtitleSubFolder = 'srt-to-vtt';
+  static const String _vttToTextSubtitleSubFolder = 'vtt-to-text';
+  static const String _vttToSrtSubtitleSubFolder = 'vtt-to-srt';
+  static const String _csvToSrtSubtitleSubFolder = 'csv-to-srt';
+  static const String _excelToSrtSubtitleSubFolder = 'excel-to-srt';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -381,6 +390,18 @@ class FileManager {
     return textConversionsDir;
   }
 
+  /// Get or create the Subtitle conversions directory
+  static Future<Directory> getSubtitleConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final subtitleConversionsDir = Directory(
+      '${smartConverterDir.path}/$_subtitleConversionsFolder',
+    );
+    if (!await subtitleConversionsDir.exists()) {
+      await subtitleConversionsDir.create(recursive: true);
+    }
+    return subtitleConversionsDir;
+  }
+
   /// Get directory for Word to Text outputs (under TextConversion)
   static Future<Directory> getWordToTextDirectory() async {
     final textConversionsDir = await getTextConversionsDirectory();
@@ -425,6 +446,80 @@ class FileManager {
   static Future<Directory> getVttToTextDirectory() async {
     final textConversionsDir = await getTextConversionsDirectory();
     final dir = Directory('${textConversionsDir.path}/$_vttToTextSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for SRT to CSV outputs (under SubtitleConversion)
+  static Future<Directory> getSrtToCsvSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_srtToCsvSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for SRT to Excel outputs (under SubtitleConversion)
+  static Future<Directory> getSrtToExcelSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_srtToExcelSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getSrtToTextSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_srtToTextSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getSrtToVttSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_srtToVttSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getVttToTextSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_vttToTextSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getVttToSrtSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_vttToSrtSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getCsvToSrtSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_csvToSrtSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getExcelToSrtSubtitleDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_excelToSrtSubtitleSubFolder');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

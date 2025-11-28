@@ -26,7 +26,7 @@ class SubtitleConversionService:
     }
     
     @staticmethod
-    def translate_srt(input_path: str, target_language: str = 'en', source_language: str = 'auto') -> str:
+    def translate_srt(input_path: str, target_language: str = 'en', source_language: str = 'auto', output_filename: Optional[str] = None) -> str:
         """Translate SRT subtitle file using AI translation."""
         try:
             if not os.path.exists(input_path):
@@ -48,7 +48,12 @@ class SubtitleConversionService:
                     continue
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, f"_translated_{target_language}.srt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".srt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, f"_translated_{target_language}.srt")
             
             # Save translated SRT
             subs.save(output_path, encoding='utf-8')
@@ -59,7 +64,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"SRT translation failed: {str(e)}")
     
     @staticmethod
-    def srt_to_csv(input_path: str) -> str:
+    def srt_to_csv(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert SRT subtitle file to CSV format."""
         try:
             if not os.path.exists(input_path):
@@ -69,7 +74,12 @@ class SubtitleConversionService:
             subs = pysrt.open(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".csv")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".csv"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".csv")
             
             # Convert to CSV
             with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
@@ -95,7 +105,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"SRT to CSV conversion failed: {str(e)}")
     
     @staticmethod
-    def srt_to_excel(input_path: str, format_type: str = 'xlsx') -> str:
+    def srt_to_excel(input_path: str, format_type: str = 'xlsx', output_filename: Optional[str] = None) -> str:
         """Convert SRT subtitle file to Excel format."""
         try:
             if not os.path.exists(input_path):
@@ -119,7 +129,12 @@ class SubtitleConversionService:
             df = pd.DataFrame(data)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, f".{format_type}")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=f".{format_type}"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, f".{format_type}")
             
             # Save to Excel
             if format_type.lower() == 'xlsx':
@@ -135,7 +150,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"SRT to Excel conversion failed: {str(e)}")
     
     @staticmethod
-    def srt_to_text(input_path: str) -> str:
+    def srt_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert SRT subtitle file to plain text."""
         try:
             if not os.path.exists(input_path):
@@ -145,7 +160,12 @@ class SubtitleConversionService:
             subs = pysrt.open(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Extract text
             text_content = []
@@ -162,7 +182,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"SRT to text conversion failed: {str(e)}")
     
     @staticmethod
-    def srt_to_vtt(input_path: str) -> str:
+    def srt_to_vtt(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert SRT subtitle file to VTT format."""
         try:
             if not os.path.exists(input_path):
@@ -172,7 +192,12 @@ class SubtitleConversionService:
             subs = pysrt.open(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".vtt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".vtt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".vtt")
             
             # Convert to VTT
             vtt_content = ["WEBVTT", ""]
@@ -195,7 +220,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"SRT to VTT conversion failed: {str(e)}")
     
     @staticmethod
-    def vtt_to_text(input_path: str) -> str:
+    def vtt_to_text(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert VTT subtitle file to plain text."""
         try:
             if not os.path.exists(input_path):
@@ -205,7 +230,12 @@ class SubtitleConversionService:
             vtt = webvtt.read(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".txt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".txt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".txt")
             
             # Extract text
             text_content = []
@@ -222,7 +252,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"VTT to text conversion failed: {str(e)}")
     
     @staticmethod
-    def vtt_to_srt(input_path: str) -> str:
+    def vtt_to_srt(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert VTT subtitle file to SRT format."""
         try:
             if not os.path.exists(input_path):
@@ -232,7 +262,12 @@ class SubtitleConversionService:
             vtt = webvtt.read(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".srt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".srt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".srt")
             
             # Convert to SRT
             srt_content = []
@@ -256,7 +291,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"VTT to SRT conversion failed: {str(e)}")
     
     @staticmethod
-    def csv_to_srt(input_path: str) -> str:
+    def csv_to_srt(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert CSV subtitle file to SRT format."""
         try:
             if not os.path.exists(input_path):
@@ -266,7 +301,12 @@ class SubtitleConversionService:
             df = pd.read_csv(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".srt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".srt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".srt")
             
             # Convert to SRT
             srt_content = []
@@ -292,7 +332,7 @@ class SubtitleConversionService:
             raise FileProcessingError(f"CSV to SRT conversion failed: {str(e)}")
     
     @staticmethod
-    def excel_to_srt(input_path: str) -> str:
+    def excel_to_srt(input_path: str, output_filename: Optional[str] = None) -> str:
         """Convert Excel subtitle file to SRT format."""
         try:
             if not os.path.exists(input_path):
@@ -302,7 +342,12 @@ class SubtitleConversionService:
             df = pd.read_excel(input_path)
             
             # Generate output path
-            output_path = FileService.get_output_path(input_path, ".srt")
+            if output_filename and output_filename.strip():
+                output_path, _ = FileService.generate_output_path_with_filename(
+                    output_filename.strip(), default_extension=".srt"
+                )
+            else:
+                output_path = FileService.get_output_path(input_path, ".srt")
             
             # Convert to SRT
             srt_content = []
@@ -328,15 +373,39 @@ class SubtitleConversionService:
             raise FileProcessingError(f"Excel to SRT conversion failed: {str(e)}")
     
     @staticmethod
-    def _format_time(timedelta_obj) -> str:
-        """Format timedelta object to HH:MM:SS,mmm format."""
-        total_seconds = int(timedelta_obj.total_seconds())
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-        milliseconds = int(timedelta_obj.microseconds / 1000)
-        
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+    def _format_time(time_obj) -> str:
+        """Format time to HH:MM:SS,mmm."""
+        try:
+            # Handle pysrt.SubRipTime
+            if hasattr(time_obj, "hours") and hasattr(time_obj, "minutes") and hasattr(time_obj, "seconds") and hasattr(time_obj, "milliseconds"):
+                hours = int(getattr(time_obj, "hours", 0))
+                minutes = int(getattr(time_obj, "minutes", 0))
+                seconds = int(getattr(time_obj, "seconds", 0))
+                milliseconds = int(getattr(time_obj, "milliseconds", 0))
+                return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+            # Handle datetime.timedelta
+            if hasattr(time_obj, "total_seconds"):
+                total_seconds_float = float(time_obj.total_seconds())
+                total_seconds = int(total_seconds_float)
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                # Prefer microseconds when available, else derive remainder
+                if hasattr(time_obj, "microseconds"):
+                    milliseconds = int(time_obj.microseconds / 1000)
+                else:
+                    milliseconds = int(round((total_seconds_float - total_seconds) * 1000))
+                return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+            # Fallback: use string and normalize
+            s = str(time_obj)
+            # Convert possible VTT-style to SRT-style comma separator
+            s = s.replace(".", ",")
+            return s
+        except Exception:
+            # Last-resort fallback
+            return str(time_obj)
     
     @staticmethod
     def _srt_time_to_vtt(srt_time) -> str:

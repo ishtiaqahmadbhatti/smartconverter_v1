@@ -343,6 +343,112 @@ class ConversionService {
     }
   }
 
+  // Convert SRT to CSV (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertSrtToCsv(
+    File srtFile, {
+      String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final extension = p.extension(srtFile.path).toLowerCase();
+      if (extension != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: p.basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.subtitlesSrtToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(srtFile.path)}.csv';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to CSV: $e');
+    }
+  }
+
+  // Convert SRT to Excel (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertSrtToExcel(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final extension = p.extension(srtFile.path).toLowerCase();
+      if (extension != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: p.basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.subtitlesSrtToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(srtFile.path)}.xlsx';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to Excel: $e');
+    }
+  }
+
   // Convert HTML to PDF
   Future<ImageToPdfResult?> convertHtmlToPdf(
     File htmlFile, {
@@ -1374,6 +1480,214 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to convert VTT to Text: $e');
+    }
+  }
+
+  // Convert SRT to VTT (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertSrtToVtt(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final extension = p.extension(srtFile.path).toLowerCase();
+      if (extension != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: p.basename(srtFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for VTT conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.subtitlesSrtToVttEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(srtFile.path)}.vtt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to VTT: $e');
+    }
+  }
+
+  // Convert VTT to SRT (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertVttToSrt(
+    File vttFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!vttFile.existsSync()) {
+        throw Exception('VTT file does not exist');
+      }
+      final extension = p.extension(vttFile.path).toLowerCase();
+      if (extension != '.vtt') {
+        throw Exception('Only .vtt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        vttFile.path,
+        filename: p.basename(vttFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading VTT file for SRT conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.subtitlesVttToSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(vttFile.path)}.srt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert VTT to SRT: $e');
+    }
+  }
+
+  // Convert CSV to SRT (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertCsvToSrt(
+    File csvFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!csvFile.existsSync()) {
+        throw Exception('CSV file does not exist');
+      }
+      final extension = p.extension(csvFile.path).toLowerCase();
+      if (extension != '.csv') {
+        throw Exception('Only .csv files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        csvFile.path,
+        filename: p.basename(csvFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading CSV file for SRT conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.subtitlesCsvToSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(csvFile.path)}.srt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert CSV to SRT: $e');
+    }
+  }
+
+  // Convert Excel (XLS/XLSX) to SRT (Subtitle Conversion)
+  Future<ImageToPdfResult?> convertExcelToSrt(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!excelFile.existsSync()) {
+        throw Exception('Excel file does not exist');
+      }
+      final extension = p.extension(excelFile.path).toLowerCase();
+      if (extension != '.xls' && extension != '.xlsx') {
+        throw Exception('Only .xls or .xlsx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        excelFile.path,
+        filename: p.basename(excelFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading Excel file for SRT conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.subtitlesExcelToSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(excelFile.path)}.srt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Excel to SRT: $e');
     }
   }
 
