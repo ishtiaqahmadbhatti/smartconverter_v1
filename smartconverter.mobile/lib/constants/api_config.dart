@@ -112,6 +112,10 @@ class ApiConfig {
       '/api/v1/subtitlesconversiontools/csv-to-srt';
   static const String subtitlesExcelToSrtEndpoint =
       '/api/v1/subtitlesconversiontools/excel-to-srt';
+  static const String translateSrtEndpoint =
+      '/api/v1/subtitlesconversiontools/translate-srt';
+  static const String supportedLanguagesEndpoint =
+      '/api/v1/subtitlesconversiontools/supported-languages';
   // PDF to image conversion endpoints
   static const String pdfToJpgEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-jpg';

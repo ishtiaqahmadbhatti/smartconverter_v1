@@ -65,6 +65,7 @@ class FileManager {
   static const String _vttToSrtSubtitleSubFolder = 'vtt-to-srt';
   static const String _csvToSrtSubtitleSubFolder = 'csv-to-srt';
   static const String _excelToSrtSubtitleSubFolder = 'excel-to-srt';
+  static const String _srtTranslateSubFolder = 'srt-translate';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -520,6 +521,15 @@ class FileManager {
   static Future<Directory> getExcelToSrtSubtitleDirectory() async {
     final subtitleDir = await getSubtitleConversionsDirectory();
     final dir = Directory('${subtitleDir.path}/$_excelToSrtSubtitleSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static Future<Directory> getSrtTranslateDirectory() async {
+    final subtitleDir = await getSubtitleConversionsDirectory();
+    final dir = Directory('${subtitleDir.path}/$_srtTranslateSubFolder');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

@@ -3143,4 +3143,75 @@ async def download_file(filename: str):
     return saved;
   }
 
+  // Get supported languages for SRT translation
+  Future<List<String>> getSupportedLanguages() async {
+    try {
+      Response response = await _dio.get(ApiConfig.supportedLanguagesEndpoint);
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return List<String>.from(response.data['languages']);
+      }
+      return [];
+    } catch (e) {
+      _debugLog('Failed to get supported languages: $e');
+      return [];
+    }
+  }
+
+  // Translate SRT file
+  Future<ImageToPdfResult?> translateSrt(
+    File srtFile, {
+    required String targetLanguage,
+    String sourceLanguage = 'auto',
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final extension = p.extension(srtFile.path).toLowerCase();
+      if (extension != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: p.basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        'target_language': targetLanguage,
+        'source_language': sourceLanguage,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for translation to $targetLanguage...');
+
+      Response response = await _dio.post(
+        ApiConfig.translateSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(srtFile.path)}_$targetLanguage.srt';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to translate SRT: $e');
+    }
+  }
+
 }
