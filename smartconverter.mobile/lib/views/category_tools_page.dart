@@ -82,16 +82,12 @@ import 'conversions/audio/wav_to_flac_page.dart';
 import 'conversions/subtitle/ai_translate_srt_page.dart';
 import 'conversions/subtitle/srt_to_csv_from_subtitle_page.dart';
 import 'conversions/subtitle/srt_to_excel_page.dart';
-import 'conversions/subtitle/srt_to_xlsx_page.dart';
-import 'conversions/subtitle/srt_to_xls_page.dart';
 import 'conversions/subtitle/srt_to_text_page.dart';
 import 'conversions/subtitle/srt_to_vtt_page.dart';
 import 'conversions/subtitle/vtt_to_text_page.dart';
 import 'conversions/subtitle/vtt_to_srt_page.dart';
 import 'conversions/subtitle/csv_to_srt_from_subtitle_page.dart';
 import 'conversions/subtitle/excel_to_srt_page.dart';
-import 'conversions/subtitle/xlsx_to_srt_page.dart';
-import 'conversions/subtitle/xls_to_srt_page.dart';
 // Text pages
 import 'conversions/text/word_to_text_page.dart';
 import 'conversions/text/powerpoint_to_text_page.dart';
@@ -564,16 +560,8 @@ class CategoryToolsPage extends StatelessWidget {
           return const BsonToExcelPage();
         case 'Convert SRT to Excel':
           return const SrtToExcelPage();
-        case 'Convert SRT to XLSX':
-          return const SrtToXlsxPage();
-        case 'Convert SRT to XLS':
-          return const SrtToXlsPage();
         case 'Convert Excel to SRT':
           return const ExcelToSrtPage();
-        case 'Convert XLSX to SRT':
-          return const XlsxToSrtPage();
-        case 'Convert XLS to SRT':
-          return const XlsToSrtPage();
       }
     }
 
@@ -721,10 +709,6 @@ class CategoryToolsPage extends StatelessWidget {
           return const SrtToCsvFromSubtitlePage();
         case 'Convert SRT to Excel':
           return const SrtToExcelPage();
-        case 'Convert SRT to XLSX':
-          return const SrtToXlsxPage();
-        case 'Convert SRT to XLS':
-          return const SrtToXlsPage();
         case 'Convert SRT to Text':
           return const SrtToTextPage();
         case 'Convert SRT to VTT':
@@ -737,10 +721,6 @@ class CategoryToolsPage extends StatelessWidget {
           return const CsvToSrtFromSubtitlePage();
         case 'Convert Excel to SRT':
           return const ExcelToSrtPage();
-        case 'Convert XLSX to SRT':
-          return const XlsxToSrtPage();
-        case 'Convert XLS to SRT':
-          return const XlsToSrtPage();
       }
     }
 
