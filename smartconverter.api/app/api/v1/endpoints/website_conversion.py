@@ -6,7 +6,7 @@ This module provides API endpoints for various website and HTML conversion opera
 
 import json
 import logging
-from typing import Optional
+from typing import Optional, Union
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 
@@ -22,12 +22,46 @@ router = APIRouter()
 # HTML to PDF
 @router.post("/html-to-pdf", response_model=ConversionResponse)
 async def convert_html_to_pdf(
-    html_content: str = Form(...),
-    css_content: Optional[str] = Form(None)
+    html_content: Optional[str] = Form(None),
+    css_content: Optional[str] = Form(None),
+    url: Optional[str] = Form(None),
+    filename: Optional[str] = Form(None),
+    file: Union[UploadFile, str, None] = File(None)
 ):
-    """Convert HTML content to PDF."""
+    """Convert HTML content, file, or URL to PDF."""
     try:
-        result = WebsiteConversionService.html_to_pdf(html_content, css_content)
+        # Handle case where file is sent as empty string
+        if isinstance(file, str):
+            file = None
+
+        if url:
+            # Handle URL conversion
+            result = WebsiteConversionService.website_to_pdf(url, filename)
+        elif file:
+            # Handle file upload
+            import tempfile
+            import os
+            
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as temp_file:
+                content = await file.read()
+                temp_file.write(content)
+                temp_file_path = temp_file.name
+                
+            try:
+                result = WebsiteConversionService.convert_html_file_to_pdf(temp_file_path, filename)
+            finally:
+                # Cleanup temp file
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.unlink(temp_file_path)
+                    except:
+                        pass
+        elif html_content:
+            # Handle string content
+            result = WebsiteConversionService.html_to_pdf(html_content, css_content, filename)
+        else:
+            raise HTTPException(status_code=400, detail="Either html_content, file, or url must be provided")
         
         # Create download URL
         import os
@@ -35,9 +69,15 @@ async def convert_html_to_pdf(
         download_url = f"/api/v1/websiteconversiontools/download/{filename}"
         
         # Log conversion
+        input_data = "HTML Content"
+        if url:
+            input_data = f"URL: {url}"
+        elif file:
+            input_data = f"File: {file.filename}"
+            
         WebsiteConversionService.log_conversion(
             "html-to-pdf",
-            html_content,
+            input_data,
             result,
             True,
             user_id=None
@@ -50,10 +90,18 @@ async def convert_html_to_pdf(
             download_url=download_url
         )
         
+    except HTTPException as he:
+        raise he
     except Exception as e:
+        input_data = "HTML Content"
+        if url:
+            input_data = f"URL: {url}"
+        elif file:
+            input_data = f"File: {file.filename}" if file else "Unknown File"
+            
         WebsiteConversionService.log_conversion(
             "html-to-pdf",
-            html_content,
+            input_data,
             "",
             False,
             str(e),

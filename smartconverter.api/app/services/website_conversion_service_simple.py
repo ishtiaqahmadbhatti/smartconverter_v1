@@ -12,12 +12,20 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 import base64
 import io
+import uuid
 
 # Basic HTML/Web conversion libraries
 from markdown import markdown
 from bs4 import BeautifulSoup
 import requests
 from PIL import Image
+
+# Selenium for professional rendering
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.print_page_options import PrintOptions
 
 # Document processing libraries
 import docx
@@ -35,55 +43,156 @@ class WebsiteConversionService:
     """Service for website and HTML conversion operations."""
     
     @staticmethod
-    def html_to_pdf(html_content: str, css_content: str = None) -> str:
-        """Convert HTML content to PDF using reportlab (fallback method)."""
+    def _get_chrome_options():
+        """Get Chrome options for headless execution."""
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        return chrome_options
+
+    @staticmethod
+    def convert_html_file_to_pdf(file_path: str, output_filename: str = None) -> str:
+        """Convert HTML file to PDF using Selenium (Professional)."""
+        driver = None
         try:
-            from reportlab.lib.pagesizes import letter, A4
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-            from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.lib.units import inch
-            import uuid
+            # Create unique filename if not provided
+            if output_filename:
+                if not output_filename.lower().endswith('.pdf'):
+                    output_filename += '.pdf'
+                filename = output_filename
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"html_to_pdf_{unique_id}.pdf"
             
-            # Parse HTML and extract text
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Remove script and style elements
-            for script in soup(["script", "style"]):
-                script.decompose()
-            
-            # Get text content
-            text = soup.get_text()
-            
-            # Create unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"html_to_pdf_{unique_id}.pdf"
             output_path = os.path.join("outputs", filename)
-            
-            # Ensure outputs directory exists
             os.makedirs("outputs", exist_ok=True)
+
+            # Initialize WebDriver
+            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=WebsiteConversionService._get_chrome_options())
             
-            # Create PDF using reportlab
-            doc = SimpleDocTemplate(output_path, pagesize=A4)
-            styles = getSampleStyleSheet()
-            story = []
+            # Load HTML file
+            abs_path = os.path.abspath(file_path)
+            driver.get(f"file:///{abs_path}")
             
-            # Split text into paragraphs and add to PDF
-            paragraphs = text.split('\n\n')
-            for para_text in paragraphs:
-                if para_text.strip():
-                    para = Paragraph(para_text.strip(), styles['Normal'])
-                    story.append(para)
-                    story.append(Spacer(1, 12))
+            # Print to PDF
+            print_options = PrintOptions()
+            print_options.background = True
+            pdf_data = driver.print_page(print_options)
             
-            doc.build(story)
-            
-            # Return the file path for download
+            # Save PDF
+            with open(output_path, 'wb') as f:
+                f.write(base64.b64decode(pdf_data))
+                
             return output_path
+
+        except Exception as e:
+            logger.error(f"Error converting HTML file to PDF: {str(e)}")
+            raise Exception(f"Failed to convert HTML file to PDF: {str(e)}")
+        finally:
+            if driver:
+                driver.quit()
+
+    @staticmethod
+    def html_to_pdf(html_content: str, css_content: str = None, output_filename: str = None) -> str:
+        """Convert HTML content to PDF using Selenium (Professional)."""
+        driver = None
+        html_file_path = None
+        try:
+            # Create unique filename if not provided
+            if output_filename:
+                if not output_filename.lower().endswith('.pdf'):
+                    output_filename += '.pdf'
+                filename = output_filename
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"html_to_pdf_{unique_id}.pdf"
             
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
+            # Create temporary HTML file
+            # Inject CSS if provided
+            if css_content:
+                html_content = f"<style>{css_content}</style>\n{html_content}"
+                
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as html_file:
+                html_file.write(html_content)
+                html_file_path = html_file.name
+
+            # Initialize WebDriver
+            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=WebsiteConversionService._get_chrome_options())
+            
+            # Load HTML file
+            # Use absolute path with file protocol
+            abs_path = os.path.abspath(html_file_path)
+            driver.get(f"file:///{abs_path}")
+            
+            # Print to PDF
+            print_options = PrintOptions()
+            print_options.background = True
+            pdf_data = driver.print_page(print_options)
+            
+            # Save PDF
+            with open(output_path, 'wb') as f:
+                f.write(base64.b64decode(pdf_data))
+                
+            return output_path
+
         except Exception as e:
             logger.error(f"Error converting HTML to PDF: {str(e)}")
             raise Exception(f"Failed to convert HTML to PDF: {str(e)}")
-    
+        finally:
+            if driver:
+                driver.quit()
+            if html_file_path and os.path.exists(html_file_path):
+                try:
+                    os.unlink(html_file_path)
+                except:
+                    pass
+
+    @staticmethod
+    def website_to_pdf(url: str, output_filename: str = None) -> str:
+        """Convert Website URL to PDF using Selenium (Professional)."""
+        driver = None
+        try:
+            # Create unique filename if not provided
+            if output_filename:
+                if not output_filename.lower().endswith('.pdf'):
+                    output_filename += '.pdf'
+                filename = output_filename
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"website_to_pdf_{unique_id}.pdf"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
+            # Initialize WebDriver
+            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=WebsiteConversionService._get_chrome_options())
+            
+            # Load URL
+            driver.get(url)
+            
+            # Print to PDF
+            print_options = PrintOptions()
+            print_options.background = True
+            pdf_data = driver.print_page(print_options)
+            
+            # Save PDF
+            with open(output_path, 'wb') as f:
+                f.write(base64.b64decode(pdf_data))
+            
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Error converting Website to PDF: {str(e)}")
+            raise Exception(f"Failed to convert Website to PDF: {str(e)}")
+        finally:
+            if driver:
+                driver.quit()
+
     @staticmethod
     def word_to_html(file_content: bytes) -> str:
         """Convert Word document to HTML."""
@@ -200,7 +309,7 @@ class WebsiteConversionService:
     
     @staticmethod
     def website_to_jpg(url: str, width: int = 1920, height: int = 1080) -> str:
-        """Convert website to JPG image (simplified version)."""
+        """Convert website to JPG image."""
         try:
             # For now, return a placeholder message
             # In production, you would need to install Chrome/Chromium and selenium
@@ -212,7 +321,7 @@ class WebsiteConversionService:
     
     @staticmethod
     def html_to_jpg(html_content: str, width: int = 1920, height: int = 1080) -> str:
-        """Convert HTML content to JPG image (simplified version)."""
+        """Convert HTML content to JPG image."""
         try:
             # For now, return a placeholder message
             # In production, you would need to install Chrome/Chromium and selenium
@@ -224,7 +333,7 @@ class WebsiteConversionService:
     
     @staticmethod
     def website_to_png(url: str, width: int = 1920, height: int = 1080) -> str:
-        """Convert website to PNG image (simplified version)."""
+        """Convert website to PNG image."""
         try:
             # For now, return a placeholder message
             # In production, you would need to install Chrome/Chromium and selenium
@@ -236,7 +345,7 @@ class WebsiteConversionService:
     
     @staticmethod
     def html_to_png(html_content: str, width: int = 1920, height: int = 1080) -> str:
-        """Convert HTML content to PNG image (simplified version)."""
+        """Convert HTML content to PNG image."""
         try:
             # For now, return a placeholder message
             # In production, you would need to install Chrome/Chromium and selenium
