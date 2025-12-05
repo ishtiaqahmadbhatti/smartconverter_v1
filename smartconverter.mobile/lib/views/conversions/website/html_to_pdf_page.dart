@@ -169,7 +169,7 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
           : null;
 
       final result = await _service.convertHtmlToPdf(
-        _selectedFile!,
+        htmlFile: _selectedFile!,
         outputFilename: customFilename,
       );
 

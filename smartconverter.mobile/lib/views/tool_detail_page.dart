@@ -139,7 +139,7 @@ class _ToolDetailPageState extends State<ToolDetailPage>
           break;
         case 'html_pdf':
           final htmlResult = await _conversionService.convertHtmlToPdf(
-            _selectedFile!,
+            htmlFile: _selectedFile!,
           );
           result = htmlResult?.file;
           break;

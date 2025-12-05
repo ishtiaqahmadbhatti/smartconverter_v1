@@ -449,33 +449,49 @@ class ConversionService {
     }
   }
 
-  // Convert HTML to PDF
-  Future<ImageToPdfResult?> convertHtmlToPdf(
-    File htmlFile, {
+  // Convert HTML/URL/File to PDF
+  Future<ImageToPdfResult?> convertHtmlToPdf({
+    File? htmlFile,
+    String? url,
+    String? htmlContent,
+    String? cssContent,
     String? outputFilename,
   }) async {
     try {
-      if (!htmlFile.existsSync()) {
-        throw Exception('HTML file does not exist');
+      if (htmlFile == null && url == null && htmlContent == null) {
+        throw Exception('Either htmlFile, url, or htmlContent must be provided');
       }
 
-      final extension = p.extension(htmlFile.path).toLowerCase();
-      if (extension != '.html' && extension != '.htm') {
-        throw Exception('Only .html or .htm files are supported');
+      final Map<String, dynamic> map = {};
+      if (outputFilename != null && outputFilename.isNotEmpty) {
+        map['output_filename'] = outputFilename;
       }
 
-      final file = await MultipartFile.fromFile(
-        htmlFile.path,
-        filename: p.basename(htmlFile.path),
-      );
+      if (cssContent != null && cssContent.isNotEmpty) {
+        map['css_content'] = cssContent;
+      }
 
-      FormData formData = FormData.fromMap({
-        'file': file,
-        if (outputFilename != null && outputFilename.isNotEmpty)
-          'output_filename': outputFilename,
-      });
+      if (url != null) {
+        map['url'] = url;
+      } else if (htmlContent != null) {
+        map['html_content'] = htmlContent;
+      } else if (htmlFile != null) {
+        if (!htmlFile.existsSync()) {
+          throw Exception('HTML file does not exist');
+        }
+        final extension = p.extension(htmlFile.path).toLowerCase();
+        if (extension != '.html' && extension != '.htm') {
+          throw Exception('Only .html or .htm files are supported');
+        }
+        map['file'] = await MultipartFile.fromFile(
+          htmlFile.path,
+          filename: p.basename(htmlFile.path),
+        );
+      }
 
-      _debugLog('📤 Uploading HTML file for PDF conversion...');
+      final formData = FormData.fromMap(map);
+
+      _debugLog('📤 Uploading data for HTML to PDF conversion...');
 
       Response response = await _dio.post(
         ApiConfig.htmlToPdfEndpoint,
@@ -485,10 +501,9 @@ class ConversionService {
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
-            response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(htmlFile.path)}.pdf';
+            response.data['output_filename'] ?? 'converted_document.pdf';
 
-        _debugLog('✅ HTML converted to PDF successfully!');
+        _debugLog('✅ HTML/URL converted to PDF successfully!');
         _debugLog('📥 Downloading PDF: $fileName');
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);

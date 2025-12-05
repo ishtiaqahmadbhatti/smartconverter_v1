@@ -66,6 +66,8 @@ class FileManager {
   static const String _csvToSrtSubtitleSubFolder = 'csv-to-srt';
   static const String _excelToSrtSubtitleSubFolder = 'excel-to-srt';
   static const String _srtTranslateSubFolder = 'srt-translate';
+  static const String _websiteConversionsFolder = 'WebsiteConversion';
+  static const String _websiteToPdfSubFolder = 'website-to-pdf';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -530,6 +532,28 @@ class FileManager {
   static Future<Directory> getSrtTranslateDirectory() async {
     final subtitleDir = await getSubtitleConversionsDirectory();
     final dir = Directory('${subtitleDir.path}/$_srtTranslateSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Website conversions directory
+  static Future<Directory> getWebsiteConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final websiteConversionsDir = Directory(
+      '${smartConverterDir.path}/$_websiteConversionsFolder',
+    );
+    if (!await websiteConversionsDir.exists()) {
+      await websiteConversionsDir.create(recursive: true);
+    }
+    return websiteConversionsDir;
+  }
+
+  /// Get directory for Website to PDF outputs (under WebsiteConversion)
+  static Future<Directory> getWebsiteToPdfDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_websiteToPdfSubFolder');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
