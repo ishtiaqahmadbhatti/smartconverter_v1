@@ -195,23 +195,19 @@ class WebsiteConversionService:
 
     @staticmethod
     def word_to_html(file_content: bytes, original_filename: str, output_filename: str = None) -> str:
-        """Convert Word document to HTML."""
+        """Convert Word document to HTML with comprehensive formatting."""
         try:
             # Determine title
-            # Default to original filename (without extension)
             title = os.path.splitext(original_filename)[0] if original_filename else "Converted Document"
-            
-            # If output_filename is provided and not "string", use it as title
             if output_filename and output_filename.strip() and output_filename.lower() != "string":
                 title = os.path.splitext(output_filename)[0]
 
-            # Create unique filename if not provided
+            # Determine filename
             if output_filename and output_filename.strip() and output_filename.lower() != "string":
                 if not output_filename.lower().endswith('.html'):
                     output_filename += '.html'
                 filename = output_filename
             else:
-                # Use original filename as base if available
                 if original_filename:
                     base_name = os.path.splitext(original_filename)[0]
                     filename = f"{base_name}.html"
@@ -222,7 +218,7 @@ class WebsiteConversionService:
             output_path = os.path.join("outputs", filename)
             os.makedirs("outputs", exist_ok=True)
 
-            # Create temporary file for Word document
+            # Create temporary file
             with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as word_file:
                 word_file.write(file_content)
                 word_file_path = word_file.name
@@ -230,28 +226,158 @@ class WebsiteConversionService:
             # Read Word document
             doc = docx.Document(word_file_path)
             
-            # Convert to HTML
-            html_content = f"<html><head><title>{title}</title></head><body>"
+            # CSS for better styling
+            css = """
+            <style>
+                body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #fff; color: #000; }
+                table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+                td, th { border: 1px solid #a0a0a0; padding: 8px; vertical-align: top; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+                th { background-color: #f2f2f2; font-weight: bold; text-align: left; }
+                p { margin-bottom: 10px; margin-top: 0; }
+                ul, ol { margin-bottom: 10px; padding-left: 40px; }
+                li { margin-bottom: 5px; }
+                a { color: #0563c1; text-decoration: underline; }
+                .highlight { background-color: yellow; }
+            </style>
+            """
             
-            for paragraph in doc.paragraphs:
-                if paragraph.text.strip():
-                    # Basic formatting
-                    if paragraph.style.name.startswith('Heading'):
-                        level = paragraph.style.name.split()[-1] if paragraph.style.name.split()[-1].isdigit() else '1'
-                        html_content += f"<h{level}>{paragraph.text}</h{level}>"
-                    else:
-                        html_content += f"<p>{paragraph.text}</p>"
+            html_content = f"<html><head><title>{title}</title>{css}</head><body>"
             
-            # Add tables
-            for table in doc.tables:
-                html_content += "<table border='1'>"
-                for row in table.rows:
-                    html_content += "<tr>"
-                    for cell in row.cells:
-                        html_content += f"<td>{cell.text}</td>"
-                    html_content += "</tr>"
-                html_content += "</table>"
-            
+            # Helper to process runs
+            def process_run(run):
+                styles = []
+                if run.bold: styles.append("font-weight: bold")
+                if run.italic: styles.append("font-style: italic")
+                if run.underline: styles.append("text-decoration: underline")
+                if run.font.strike: styles.append("text-decoration: line-through")
+                if run.font.subscript: styles.append("vertical-align: sub; font-size: smaller")
+                if run.font.superscript: styles.append("vertical-align: super; font-size: smaller")
+                
+                if run.font.color and run.font.color.rgb:
+                    styles.append(f"color: #{run.font.color.rgb}")
+                
+                if run.font.highlight_color:
+                    styles.append("background-color: yellow") # Simplified highlight
+                
+                if run.font.size:
+                    size = run.font.size.pt
+                    styles.append(f"font-size: {size}pt")
+                
+                text = run.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                
+                # Handle images (basic support)
+                if 'graphic' in run._element.xml:
+                    # This is complex in python-docx, skipping for stability unless requested specifically
+                    # Ideally we would extract blip relationships
+                    pass
+
+                if styles:
+                    return f"<span style='{'; '.join(styles)}'>{text}</span>"
+                else:
+                    return text
+
+            # Helper to process paragraph content (including hyperlinks)
+            def get_paragraph_content(paragraph):
+                content = ""
+                # We need to iterate over the XML children to handle hyperlinks correctly
+                from docx.oxml.text.run import CT_R
+                from docx.oxml.text.hyperlink import CT_Hyperlink
+                
+                for child in paragraph._element:
+                    if isinstance(child, CT_R):
+                        # It's a Run
+                        from docx.text.run import Run
+                        run = Run(child, paragraph)
+                        content += process_run(run)
+                    elif isinstance(child, CT_Hyperlink):
+                        # It's a Hyperlink
+                        # Get the relationship ID
+                        try:
+                            rId = child.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                            if rId:
+                                url = paragraph.part.rels[rId].target_ref
+                                link_text = ""
+                                for sub_child in child:
+                                    if isinstance(sub_child, CT_R):
+                                        run = Run(sub_child, paragraph)
+                                        link_text += process_run(run)
+                                content += f"<a href='{url}'>{link_text}</a>"
+                        except:
+                            pass # Skip broken links
+                return content
+
+            # Helper to process paragraph
+            def process_paragraph(paragraph):
+                align_map = { 0: 'left', 1: 'center', 2: 'right', 3: 'justify' }
+                align = align_map.get(paragraph.alignment, 'left')
+                style = f"text-align: {align};"
+                
+                content = get_paragraph_content(paragraph)
+                
+                if not content.strip():
+                    return ""
+
+                # Handle Lists
+                # This is a simple heuristic. For robust lists, we need to track numbering state.
+                # Here we just check if it has numbering properties.
+                is_list = False
+                if paragraph._element.pPr is not None and paragraph._element.pPr.numPr is not None:
+                    is_list = True
+                
+                tag = "p"
+                if paragraph.style.name.startswith('Heading'):
+                    level = paragraph.style.name.split()[-1] if paragraph.style.name.split()[-1].isdigit() else '1'
+                    tag = f"h{level}"
+                
+                if is_list:
+                    # For now, render as list item, but we need wrapping ul/ol.
+                    # Since we are processing linearly, we can't easily wrap. 
+                    # We'll use a div with display: list-item or just a bullet char for simplicity in this pass.
+                    # Or better: return a special marker tuple?
+                    # Let's stick to simple HTML: use <li> but we might miss the <ul> wrapper.
+                    # Browsers often handle orphan <li> but it's invalid.
+                    # Let's use a styled div to simulate list item if we can't wrap.
+                    return f"<div style='display: list-item; margin-left: 20px; {style}'>{content}</div>"
+                
+                return f"<{tag} style='{style}'>{content}</{tag}>"
+
+            # Main processing loop
+            for child in doc.element.body:
+                if child.tag.endswith('p'):
+                    from docx.text.paragraph import Paragraph
+                    para = Paragraph(child, doc)
+                    html_content += process_paragraph(para)
+                elif child.tag.endswith('tbl'):
+                    from docx.table import Table
+                    table = Table(child, doc)
+                    html_content += "<table>"
+                    for row in table.rows:
+                        html_content += "<tr>"
+                        for cell in row.cells:
+                            # Handle colspan (grid_span)
+                            # python-docx doesn't expose grid_span easily on _Cell, need xml
+                            tcPr = cell._element.tcPr
+                            colspan = 1
+                            if tcPr is not None:
+                                grid_span = tcPr.find(f"{{http://schemas.openxmlformats.org/wordprocessingml/2006/main}}gridSpan")
+                                if grid_span is not None:
+                                    try:
+                                        val = grid_span.get(f"{{http://schemas.openxmlformats.org/wordprocessingml/2006/main}}val")
+                                        # Handle potential float strings or invalid values
+                                        colspan = int(float(val)) if val else 1
+                                    except Exception:
+                                        colspan = 1
+                            
+                            attr = f" colspan='{colspan}'" if colspan > 1 else ""
+                            
+                            html_content += f"<td{attr}>"
+                            for para in cell.paragraphs:
+                                html_content += process_paragraph(para)
+                            html_content += "</td>"
+                        html_content += "</tr>"
+                    html_content += "</table>"
+
             html_content += "</body></html>"
             
             # Save HTML to file
