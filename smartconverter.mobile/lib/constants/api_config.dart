@@ -79,6 +79,10 @@ class ApiConfig {
       '/api/v1/pdfconversiontools/pdf-to-html';
   static const String htmlToPdfEndpoint =
       '/api/v1/websiteconversiontools/html-to-pdf';
+  static const String websiteWordToHtmlEndpoint =
+      '/api/v1/websiteconversiontools/word-to-html';
+  static const String websitePowerPointToHtmlEndpoint =
+      '/api/v1/websiteconversiontools/powerpoint-to-html';
   static const String pdfToMarkdownEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-markdown';
   static const String pdfToJsonEndpoint =

@@ -524,6 +524,108 @@ class ConversionService {
     }
   }
 
+  Future<ImageToPdfResult?> convertWordToHtml(
+    File wordFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!wordFile.existsSync()) {
+        throw Exception('Word file does not exist');
+      }
+      final extension = p.extension(wordFile.path).toLowerCase();
+      if (extension != '.docx' && extension != '.doc') {
+        throw Exception('Only .docx and .doc files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        wordFile.path,
+        filename: p.basename(wordFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading Word file for HTML conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.websiteWordToHtmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(wordFile.path)}.html';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Word to HTML: $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertPowerPointToHtml(
+    File pptFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!pptFile.existsSync()) {
+        throw Exception('PowerPoint file does not exist');
+      }
+      final extension = p.extension(pptFile.path).toLowerCase();
+      if (extension != '.pptx' && extension != '.ppt') {
+        throw Exception('Only .pptx and .ppt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        pptFile.path,
+        filename: p.basename(pptFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PowerPoint file for HTML conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.websitePowerPointToHtmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(pptFile.path)}.html';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PowerPoint to HTML: $e');
+    }
+  }
+
   // Add page numbers to PDF
   Future<File?> addPageNumbersToPdf(
     File pdfFile, {

@@ -68,6 +68,8 @@ class FileManager {
   static const String _srtTranslateSubFolder = 'srt-translate';
   static const String _websiteConversionsFolder = 'WebsiteConversion';
   static const String _websiteToPdfSubFolder = 'website-to-pdf';
+  static const String _wordToHtmlSubFolder = 'word-to-html';
+  static const String _powerPointToHtmlSubFolder = 'powerpoint-to-html';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -548,6 +550,26 @@ class FileManager {
       await websiteConversionsDir.create(recursive: true);
     }
     return websiteConversionsDir;
+  }
+
+  /// Get directory for Word to HTML outputs (under WebsiteConversion)
+  static Future<Directory> getWordToHtmlDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_wordToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for PowerPoint to HTML outputs (under WebsiteConversion)
+  static Future<Directory> getPowerPointToHtmlDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_powerPointToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get directory for Website to PDF outputs (under WebsiteConversion)

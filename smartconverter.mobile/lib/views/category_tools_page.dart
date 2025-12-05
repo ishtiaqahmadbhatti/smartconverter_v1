@@ -507,11 +507,11 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Word to PDF':
           return const WordToPdfPage();
         case 'Convert Word to HTML':
-          return const WordToHtmlWebPage();
+          return const WordToHtmlPage();
         case 'Convert PowerPoint to PDF':
           return const PowerPointToPdfPage();
         case 'Convert PowerPoint to HTML':
-          return const PowerPointToHtmlWebPage();
+          return const PowerPointToHtmlPage();
         case 'Convert OXPS to PDF':
           return const OxpsToPdfPage();
         case 'Convert Word to Text':
@@ -649,9 +649,9 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert HTML to PDF':
           return const WebsiteToPdfPage();
         case 'Convert Word to HTML':
-          return const WordToHtmlWebPage();
+          return const WordToHtmlPage();
         case 'Convert PowerPoint to HTML':
-          return const PowerPointToHtmlWebPage();
+          return const PowerPointToHtmlPage();
         case 'Convert Markdown to HTML':
           return const MarkdownToHtmlWebPage();
         case 'Convert Website to JPG':

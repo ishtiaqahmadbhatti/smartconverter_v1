@@ -169,6 +169,7 @@ async def convert_word_to_html(
 # PowerPoint to HTML
 @router.post("/powerpoint-to-html", response_model=ConversionResponse)
 async def convert_powerpoint_to_html(
+    filename: Optional[str] = Form(None),
     file: UploadFile = File(...)
 ):
     """Convert PowerPoint presentation to HTML."""
@@ -176,7 +177,12 @@ async def convert_powerpoint_to_html(
         # Read file content
         file_content = await file.read()
         
-        result = WebsiteConversionService.powerpoint_to_html(file_content)
+        result = WebsiteConversionService.powerpoint_to_html(file_content, file.filename, filename)
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
@@ -190,7 +196,8 @@ async def convert_powerpoint_to_html(
         return ConversionResponse(
             success=True,
             message="PowerPoint presentation converted to HTML successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:

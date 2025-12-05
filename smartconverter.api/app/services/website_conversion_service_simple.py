@@ -394,9 +394,30 @@ class WebsiteConversionService:
             raise Exception(f"Failed to convert Word to HTML: {str(e)}")
     
     @staticmethod
-    def powerpoint_to_html(file_content: bytes) -> str:
+    def powerpoint_to_html(file_content: bytes, original_filename: str, output_filename: str = None) -> str:
         """Convert PowerPoint presentation to HTML."""
         try:
+            # Determine title
+            title = os.path.splitext(original_filename)[0] if original_filename else "Converted Presentation"
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                title = os.path.splitext(output_filename)[0]
+
+            # Determine filename
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.html'):
+                    output_filename += '.html'
+                filename = output_filename
+            else:
+                if original_filename:
+                    base_name = os.path.splitext(original_filename)[0]
+                    filename = f"{base_name}.html"
+                else:
+                    unique_id = str(uuid.uuid4())
+                    filename = f"ppt_to_html_{unique_id}.html"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
             # Create temporary file for PowerPoint
             with tempfile.NamedTemporaryFile(suffix='.pptx', delete=False) as ppt_file:
                 ppt_file.write(file_content)
@@ -405,24 +426,67 @@ class WebsiteConversionService:
             # Read PowerPoint presentation
             prs = Presentation(ppt_file_path)
             
-            # Convert to HTML
-            html_content = "<html><head><title>Converted Presentation</title></head><body>"
+            # CSS for better styling
+            css = """
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; max-width: 1000px; margin: 0 auto; background-color: #f0f0f0; color: #333; }
+                .slide { background-color: white; padding: 40px; margin-bottom: 40px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; aspect-ratio: 16/9; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+                .slide-number { position: absolute; bottom: 20px; right: 20px; color: #888; font-size: 12px; }
+                h1, h2, h3 { color: #2c3e50; margin-top: 0; }
+                ul { padding-left: 20px; }
+                li { margin-bottom: 8px; }
+                p { margin-bottom: 10px; }
+                .notes { background-color: #fff9c4; padding: 10px; border-left: 4px solid #fbc02d; margin-top: 20px; font-size: 0.9em; }
+            </style>
+            """
+            
+            html_content = f"<html><head><title>{title}</title>{css}</head><body>"
             
             for i, slide in enumerate(prs.slides, 1):
-                html_content += f"<div class='slide'><h2>Slide {i}</h2>"
+                html_content += f"<div class='slide'><div class='slide-number'>Slide {i}</div>"
                 
+                # Extract title
+                if slide.shapes.title:
+                    html_content += f"<h2>{slide.shapes.title.text}</h2>"
+                
+                # Extract text content
                 for shape in slide.shapes:
-                    if hasattr(shape, "text") and shape.text.strip():
-                        html_content += f"<p>{shape.text}</p>"
+                    if not shape.has_text_frame:
+                        continue
+                    
+                    # Skip title as we already handled it
+                    if shape == slide.shapes.title:
+                        continue
+                        
+                    for paragraph in shape.text_frame.paragraphs:
+                        text = paragraph.text.strip()
+                        if text:
+                            # Basic bullet detection
+                            if paragraph.level > 0:
+                                html_content += f"<ul style='margin-left: {paragraph.level * 20}px'><li>{text}</li></ul>"
+                            else:
+                                html_content += f"<p>{text}</p>"
                 
-                html_content += "</div><hr>"
+                html_content += "</div>"
+                
+                # Extract notes if any
+                if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+                    notes = slide.notes_slide.notes_text_frame.text.strip()
+                    if notes:
+                        html_content += f"<div class='notes'><strong>Notes:</strong><br>{notes}</div>"
+                
+                html_content += "<hr style='border: 0; clear: both; margin-bottom: 40px;'>"
             
             html_content += "</body></html>"
+            
+            # Save HTML to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
             
             # Cleanup
             WebsiteConversionService.cleanup_temp_files([ppt_file_path])
             
-            return html_content
+            return output_path
             
         except Exception as e:
             logger.error(f"Error converting PowerPoint to HTML: {str(e)}")
