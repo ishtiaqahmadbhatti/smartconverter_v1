@@ -70,6 +70,7 @@ class FileManager {
   static const String _websiteToPdfSubFolder = 'website-to-pdf';
   static const String _wordToHtmlSubFolder = 'word-to-html';
   static const String _powerPointToHtmlSubFolder = 'powerpoint-to-html';
+  static const String _markdownToHtmlSubFolder = 'markdown-to-html';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -566,6 +567,16 @@ class FileManager {
   static Future<Directory> getPowerPointToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
     final dir = Directory('${websiteConversionsDir.path}/$_powerPointToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Markdown to HTML outputs (under WebsiteConversion)
+  static Future<Directory> getMarkdownToHtmlDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_markdownToHtmlSubFolder');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

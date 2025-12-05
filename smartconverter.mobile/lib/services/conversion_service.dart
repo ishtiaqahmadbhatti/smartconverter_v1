@@ -626,6 +626,57 @@ class ConversionService {
     }
   }
 
+  Future<ImageToPdfResult?> convertMarkdownToHtml(
+    File mdFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!mdFile.existsSync()) {
+        throw Exception('Markdown file does not exist');
+      }
+      final extension = p.extension(mdFile.path).toLowerCase();
+      if (extension != '.md' && extension != '.markdown') {
+        throw Exception('Only .md and .markdown files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        mdFile.path,
+        filename: p.basename(mdFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading Markdown file for HTML conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.websiteMarkdownToHtmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(mdFile.path)}.html';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Markdown to HTML: $e');
+    }
+  }
+
   // Add page numbers to PDF
   Future<File?> addPageNumbersToPdf(
     File pdfFile, {

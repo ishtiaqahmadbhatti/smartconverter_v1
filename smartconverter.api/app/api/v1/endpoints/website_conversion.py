@@ -220,16 +220,35 @@ async def convert_powerpoint_to_html(
 # Markdown to HTML
 @router.post("/markdown-to-html", response_model=ConversionResponse)
 async def convert_markdown_to_html(
-    markdown_content: str = Form(...)
+    filename: Optional[str] = Form(None),
+    markdown_content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None)
 ):
-    """Convert Markdown content to HTML."""
+    """Convert Markdown content or file to HTML."""
     try:
-        result = WebsiteConversionService.markdown_to_html(markdown_content)
+        content = ""
+        input_name = "Markdown Content"
+        
+        if file:
+            content_bytes = await file.read()
+            content = content_bytes.decode('utf-8')
+            input_name = file.filename
+        elif markdown_content:
+            content = markdown_content
+        else:
+            raise HTTPException(status_code=400, detail="Either markdown_content or file must be provided")
+
+        result = WebsiteConversionService.markdown_to_html(content, input_name if file else None, filename)
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
             "markdown-to-html",
-            markdown_content,
+            f"Input: {input_name}",
             result,
             True,
             user_id=None
@@ -238,13 +257,14 @@ async def convert_markdown_to_html(
         return ConversionResponse(
             success=True,
             message="Markdown converted to HTML successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:
         WebsiteConversionService.log_conversion(
             "markdown-to-html",
-            markdown_content,
+            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
             "",
             False,
             str(e),

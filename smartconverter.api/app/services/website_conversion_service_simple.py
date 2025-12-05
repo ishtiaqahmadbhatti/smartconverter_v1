@@ -493,9 +493,30 @@ class WebsiteConversionService:
             raise Exception(f"Failed to convert PowerPoint to HTML: {str(e)}")
     
     @staticmethod
-    def markdown_to_html(markdown_content: str) -> str:
+    def markdown_to_html(markdown_content: str, original_filename: str = None, output_filename: str = None) -> str:
         """Convert Markdown content to HTML."""
         try:
+            # Determine title
+            title = os.path.splitext(original_filename)[0] if original_filename else "Converted Markdown"
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                title = os.path.splitext(output_filename)[0]
+
+            # Determine filename
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.html'):
+                    output_filename += '.html'
+                filename = output_filename
+            else:
+                if original_filename:
+                    base_name = os.path.splitext(original_filename)[0]
+                    filename = f"{base_name}.html"
+                else:
+                    unique_id = str(uuid.uuid4())
+                    filename = f"markdown_to_html_{unique_id}.html"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
             html_content = markdown(markdown_content, extensions=['tables', 'fenced_code', 'codehilite'])
             
             # Wrap in proper HTML structure
@@ -504,14 +525,25 @@ class WebsiteConversionService:
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Converted Markdown</title>
+                <title>{title}</title>
                 <style>
-                    body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }}
-                    code {{ background-color: #f4f4f4; padding: 2px 4px; border-radius: 3px; }}
-                    pre {{ background-color: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }}
-                    table {{ border-collapse: collapse; width: 100%; }}
-                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                    th {{ background-color: #f2f2f2; }}
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0 auto; padding: 40px; max-width: 900px; color: #333; background-color: #fff; }}
+                    h1, h2, h3, h4, h5, h6 {{ color: #2c3e50; margin-top: 24px; margin-bottom: 16px; }}
+                    h1 {{ border-bottom: 1px solid #eee; padding-bottom: 0.3em; }}
+                    h2 {{ border-bottom: 1px solid #eee; padding-bottom: 0.3em; }}
+                    p {{ margin-bottom: 16px; }}
+                    a {{ color: #0366d6; text-decoration: none; }}
+                    a:hover {{ text-decoration: underline; }}
+                    code {{ background-color: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; font-size: 85%; }}
+                    pre {{ background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; line-height: 1.45; }}
+                    pre code {{ background-color: transparent; padding: 0; font-size: 100%; }}
+                    blockquote {{ border-left: 4px solid #dfe2e5; padding: 0 1em; color: #6a737d; margin: 0 0 16px 0; }}
+                    table {{ border-collapse: collapse; width: 100%; margin-bottom: 16px; }}
+                    th, td {{ border: 1px solid #dfe2e5; padding: 6px 13px; }}
+                    th {{ background-color: #f6f8fa; font-weight: 600; }}
+                    tr:nth-child(2n) {{ background-color: #f8f8f8; }}
+                    img {{ max-width: 100%; box-sizing: content-box; background-color: #fff; }}
+                    hr {{ height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }}
                 </style>
             </head>
             <body>
@@ -520,7 +552,11 @@ class WebsiteConversionService:
             </html>
             """
             
-            return full_html
+            # Save HTML to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(full_html)
+            
+            return output_path
             
         except Exception as e:
             logger.error(f"Error converting Markdown to HTML: {str(e)}")
