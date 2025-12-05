@@ -194,9 +194,34 @@ class WebsiteConversionService:
                 driver.quit()
 
     @staticmethod
-    def word_to_html(file_content: bytes) -> str:
+    def word_to_html(file_content: bytes, original_filename: str, output_filename: str = None) -> str:
         """Convert Word document to HTML."""
         try:
+            # Determine title
+            # Default to original filename (without extension)
+            title = os.path.splitext(original_filename)[0] if original_filename else "Converted Document"
+            
+            # If output_filename is provided and not "string", use it as title
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                title = os.path.splitext(output_filename)[0]
+
+            # Create unique filename if not provided
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.html'):
+                    output_filename += '.html'
+                filename = output_filename
+            else:
+                # Use original filename as base if available
+                if original_filename:
+                    base_name = os.path.splitext(original_filename)[0]
+                    filename = f"{base_name}.html"
+                else:
+                    unique_id = str(uuid.uuid4())
+                    filename = f"word_to_html_{unique_id}.html"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
             # Create temporary file for Word document
             with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as word_file:
                 word_file.write(file_content)
@@ -206,7 +231,7 @@ class WebsiteConversionService:
             doc = docx.Document(word_file_path)
             
             # Convert to HTML
-            html_content = "<html><head><title>Converted Document</title></head><body>"
+            html_content = f"<html><head><title>{title}</title></head><body>"
             
             for paragraph in doc.paragraphs:
                 if paragraph.text.strip():
@@ -229,10 +254,14 @@ class WebsiteConversionService:
             
             html_content += "</body></html>"
             
+            # Save HTML to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
             # Cleanup
             WebsiteConversionService.cleanup_temp_files([word_file_path])
             
-            return html_content
+            return output_path
             
         except Exception as e:
             logger.error(f"Error converting Word to HTML: {str(e)}")
