@@ -5,31 +5,36 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
-class HtmlToPdfWebPage extends StatefulWidget {
-  const HtmlToPdfWebPage({super.key});
+class HtmlToPdfPage extends StatefulWidget {
+  final String? categoryId;
+  const HtmlToPdfPage({super.key, this.categoryId});
 
   @override
-  State<HtmlToPdfWebPage> createState() => _HtmlToPdfWebPageState();
+  State<HtmlToPdfPage> createState() => _HtmlToPdfPageState();
 }
 
-class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
+class _HtmlToPdfPageState extends State<HtmlToPdfPage>
+    with SingleTickerProviderStateMixin {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
+  final TextEditingController _htmlContentController = TextEditingController();
+  final TextEditingController _cssContentController = TextEditingController();
   final TextEditingController _fileNameController = TextEditingController();
+  late TabController _tabController;
 
   File? _selectedFile;
   ImageToPdfResult? _conversionResult;
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  bool _isProgrammaticNameUpdate = false;
-  String _statusMessage = 'Select an HTML file to begin.';
+  String _statusMessage = 'Select a file or paste HTML content.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -38,6 +43,8 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabSelection);
     _fileNameController.addListener(_handleFileNameChange);
     _admobService.preloadAd();
     _loadBannerAd();
@@ -45,6 +52,10 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
+    _tabController.dispose();
+    _htmlContentController.dispose();
+    _cssContentController.dispose();
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
@@ -53,10 +64,17 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     super.dispose();
   }
 
-  void _handleFileNameChange() {
-    if (_isProgrammaticNameUpdate) {
-      return;
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging) {
+      setState(() {
+        _statusMessage = 'Select a file or paste HTML content.';
+        _conversionResult = null;
+        _savedFilePath = null;
+      });
     }
+  }
+
+  void _handleFileNameChange() {
     final trimmed = _fileNameController.text.trim();
     final edited = trimmed.isNotEmpty;
     if (_fileNameEdited != edited) {
@@ -97,117 +115,88 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
 
   Future<void> _pickHtmlFile() async {
     try {
-      final file = await _service.pickFile(
-        allowedExtensions: const ['html', 'htm'],
-        type: 'document',
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['html', 'htm'],
       );
 
-      if (file == null) {
-        if (mounted) {
-          setState(() => _statusMessage = 'No file selected.');
-        }
-        return;
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        setState(() {
+          _selectedFile = file;
+          _statusMessage = 'File selected: ${p.basename(file.path)}';
+          
+          if (!_fileNameEdited) {
+            _fileNameController.text = _sanitizeBaseName(
+              p.basenameWithoutExtension(file.path),
+            );
+          }
+        });
       }
-
-      final extension = p.extension(file.path).toLowerCase();
-      if (extension != '.html' && extension != '.htm') {
-        if (mounted) {
-          setState(
-            () => _statusMessage =
-                'Please select an HTML file (.html or .htm extension).',
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Only .html or .htm files are supported.'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-        return;
-      }
-
-      setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
-        _savedFilePath = null;
-        _statusMessage = 'HTML file selected: ${p.basename(file.path)}';
-      });
-
-      _updateSuggestedFileName();
     } catch (e) {
-      final message = 'Failed to select HTML file: $e';
-      if (mounted) {
-        setState(() => _statusMessage = message);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
-        );
-      }
+      _showSnackBar('Failed to pick file: $e', isError: true);
     }
   }
 
-  Future<void> _convertHtmlToPdf() async {
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an HTML file first.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
+  Future<void> _convert() async {
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting HTML to PDF...';
+      _statusMessage = 'Converting...';
       _conversionResult = null;
       _savedFilePath = null;
     });
 
     try {
-      final customFilename = _fileNameController.text.trim().isNotEmpty
-          ? _sanitizeBaseName(_fileNameController.text.trim())
-          : null;
+      final customFilename =
+          _fileNameController.text.trim().isNotEmpty
+              ? _sanitizeBaseName(_fileNameController.text.trim())
+              : null;
 
-      final result = await _service.convertHtmlToPdf(
-        htmlFile: _selectedFile!,
-        outputFilename: customFilename,
-      );
+      ImageToPdfResult? result;
+
+      switch (_tabController.index) {
+        case 0: // File
+          if (_selectedFile == null) {
+            throw Exception('Please select an HTML file');
+          }
+          result = await _service.convertHtmlToPdf(
+            htmlFile: _selectedFile,
+            outputFilename: customFilename,
+          );
+          break;
+        case 1: // HTML Content
+          final content = _htmlContentController.text;
+          if (content.isEmpty) {
+            throw Exception('Please enter HTML content');
+          }
+          result = await _service.convertHtmlToPdf(
+            htmlContent: content,
+            cssContent: _cssContentController.text.trim().isNotEmpty
+                ? _cssContentController.text
+                : null,
+            outputFilename: customFilename,
+          );
+          break;
+      }
 
       if (!mounted) return;
 
       if (result == null) {
-        setState(() {
-          _statusMessage =
-              'Conversion completed but no file returned. Please try again.';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Conversion completed, but unable to download the file.',
-            ),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-        return;
+        throw Exception('Conversion returned no result');
       }
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'PDF generated successfully!';
+        _statusMessage = 'PDF generated successfully! Saving...';
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF ready: ${result.fileName}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      // Auto-save the file
+      await _savePdfFile(autoSave: true);
+      
     } catch (e) {
       if (!mounted) return;
       setState(() => _statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
+      _showSnackBar('Error: $e', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isConverting = false);
@@ -215,54 +204,57 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     }
   }
 
-  Future<void> _savePdfFile() async {
+  Future<void> _savePdfFile({bool autoSave = false}) async {
     final result = _conversionResult;
     if (result == null) return;
 
     setState(() => _isSaving = true);
 
     try {
-      final directory = await FileManager.getHtmlToPdfDirectory();
+      final directory = widget.categoryId == 'website_conversion'
+          ? await FileManager.getWebsiteHtmlToPdfDirectory()
+          : await FileManager.getHtmlToPdfDirectory();
 
       String targetFileName;
+      File destinationFile;
+      
+      // If user provided a custom name, use it and allow overwrite (don't check exists)
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
         targetFileName = _ensurePdfExtension(customName);
-      } else {
-        targetFileName = result.fileName;
-      }
-
-      File destinationFile = File(p.join(directory.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          'pdf',
-        );
-        targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
+      } else {
+        // If auto-generated, avoid overwriting by checking existence
+        targetFileName = result.fileName;
+        destinationFile = File(p.join(directory.path, targetFileName));
+        
+        if (await destinationFile.exists()) {
+          final fallbackName = FileManager.generateTimestampFilename(
+            p.basenameWithoutExtension(targetFileName),
+            'pdf',
+          );
+          targetFileName = fallbackName;
+          destinationFile = File(p.join(directory.path, targetFileName));
+        }
       }
 
       final savedFile = await result.file.copy(destinationFile.path);
 
       if (!mounted) return;
 
-      setState(() => _savedFilePath = savedFile.path);
+      setState(() {
+        _savedFilePath = savedFile.path;
+        _statusMessage = 'Saved to: ${p.basename(savedFile.path)}';
+      });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      if (autoSave) {
+        _showSnackBar('Converted & Saved: ${p.basename(savedFile.path)}', isError: false);
+      } else {
+        _showSnackBar('Saved to: ${savedFile.path}', isError: false);
+      }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Save failed: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showSnackBar('Save failed: $e', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -278,14 +270,7 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     final fileToShare = File(pathToShare);
 
     if (!await fileToShare.exists()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF file is not available on disk.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      _showSnackBar('File not found on disk', isError: true);
       return;
     }
 
@@ -294,28 +279,13 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     ], text: 'Converted PDF: ${result.fileName}');
   }
 
-  void _updateSuggestedFileName() {
-    if (_selectedFile == null) {
-      setState(() {
-        _suggestedBaseName = null;
-        if (!_fileNameEdited) {
-          _fileNameController.clear();
-        }
-      });
-      return;
-    }
-
-    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
-    final sanitized = _sanitizeBaseName(baseName);
-
-    setState(() {
-      _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
-        _isProgrammaticNameUpdate = true;
-        _fileNameController.text = sanitized;
-        _isProgrammaticNameUpdate = false;
-      }
-    });
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+      ),
+    );
   }
 
   String _sanitizeBaseName(String input) {
@@ -323,42 +293,13 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     if (base.toLowerCase().endsWith('.pdf')) {
       base = base.substring(0, base.length - 4);
     }
-    base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    base = base.replaceAll(RegExp(r'_+'), '_');
-    base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) {
-      base = 'converted_document';
-    }
+    base = base.replaceAll(RegExp(r'[^A-Za-z0-9._ -]+'), '_');
     return base.substring(0, min(base.length, 80));
   }
 
   String _ensurePdfExtension(String base) {
     final trimmed = base.trim();
     return trimmed.toLowerCase().endsWith('.pdf') ? trimmed : '$trimmed.pdf';
-  }
-
-  void _resetForNewConversion() {
-    setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
-      _statusMessage = 'Select an HTML file to begin.';
-      _fileNameController.clear();
-    });
-    _admobService.preloadAd();
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
 
   @override
@@ -379,6 +320,16 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.primaryBlue,
+          labelColor: AppColors.primaryBlue,
+          unselectedLabelColor: AppColors.textSecondary,
+          tabs: const [
+            Tab(text: 'File'),
+            Tab(text: 'HTML Content'),
+          ],
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -390,9 +341,19 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
               children: [
                 _buildHeaderCard(),
                 const SizedBox(height: 20),
-                _buildActionButtons(),
-                const SizedBox(height: 16),
-                _buildSelectedFileCard(),
+                AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) {
+                    switch (_tabController.index) {
+                       case 0:
+                        return _buildFileInput();
+                      case 1:
+                        return _buildHtmlInput();
+                      default:
+                        return const SizedBox.shrink();
+                    }
+                  },
+                ),
                 const SizedBox(height: 16),
                 _buildFileNameField(),
                 const SizedBox(height: 20),
@@ -403,8 +364,6 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
                   const SizedBox(height: 20),
                   _buildResultCard(),
                 ],
-                const SizedBox(height: 24),
-                _buildInstructions(),
               ],
             ),
           ),
@@ -444,16 +403,16 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.public_outlined,
+              Icons.code,
               color: AppColors.textPrimary,
               size: 32,
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Convert HTML to PDF',
                   style: TextStyle(
@@ -464,7 +423,7 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Save webpages, privacy policies or HTML templates as polished PDF documents ready for download or printing.',
+                  'Convert HTML files or raw content to PDF documents',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -477,6 +436,10 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildFileInput() {
+    return _buildActionButtons();
   }
 
   Widget _buildActionButtons() {
@@ -504,7 +467,22 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
           SizedBox(
             width: 56,
             child: ElevatedButton(
-              onPressed: _isConverting ? null : _resetForNewConversion,
+              onPressed: _isConverting
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedFile = null;
+                        _conversionResult = null;
+                        _isConverting = false;
+                        _isSaving = false;
+                        _fileNameEdited = false;
+                        _suggestedBaseName = null;
+                        _savedFilePath = null;
+                        _statusMessage = 'Select an HTML file to begin.';
+                        _fileNameController.clear();
+                      });
+                      _admobService.preloadAd();
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.textPrimary,
@@ -521,85 +499,50 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
     );
   }
 
-  Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final file = _selectedFile!;
-    final fileName = p.basename(file.path);
-    final fileSize = _formatBytes(file.lengthSync());
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.description,
-              color: AppColors.primaryBlue,
-              size: 24,
-            ),
+  Widget _buildHtmlInput() {
+    return Column(
+      children: [
+        TextField(
+          controller: _htmlContentController,
+          maxLines: 5,
+          decoration: InputDecoration(
+            labelText: 'HTML Content',
+            hintText: 'Paste your HTML code here...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: AppColors.backgroundSurface,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  fileSize,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _cssContentController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: 'CSS Content (Optional)',
+            hintText: 'body { color: red; }',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: AppColors.backgroundSurface,
           ),
-        ],
-      ),
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+      ],
     );
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final hintText = _suggestedBaseName ?? 'converted_document';
-
+    final hintText = _suggestedBaseName ?? 'html_to_pdf';
     return TextField(
       controller: _fileNameController,
-      textInputAction: TextInputAction.done,
       decoration: InputDecoration(
-        labelText: 'Output file name',
+        labelText: 'Output Filename (Optional)',
         hintText: hintText,
-        prefixIcon: const Icon(Icons.edit_outlined),
+        prefixIcon: const Icon(Icons.edit),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.pdf extension is added automatically',
+        helperText: '.pdf will be added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -607,12 +550,13 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
   }
 
   Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
-
+    final canConvert = !_isConverting && 
+        (_tabController.index == 1 || _selectedFile != null);
+        
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertHtmlToPdf : null,
+        onPressed: canConvert ? _convert : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -654,13 +598,13 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
             _isConverting
                 ? Icons.hourglass_empty
                 : _conversionResult != null
-                ? Icons.check_circle
-                : Icons.info_outline,
+                    ? Icons.check_circle
+                    : Icons.info_outline,
             color: _isConverting
                 ? AppColors.warning
                 : _conversionResult != null
-                ? AppColors.success
-                : AppColors.textSecondary,
+                    ? AppColors.success
+                    : AppColors.textSecondary,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -671,8 +615,8 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
                 color: _isConverting
                     ? AppColors.warning
                     : _conversionResult != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -685,7 +629,6 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
   Widget _buildResultCard() {
     final result = _conversionResult!;
     final isSaved = _savedFilePath != null;
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -763,10 +706,10 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
                           ),
                         )
                       : const Icon(Icons.save_outlined, size: 18),
-                  label: FittedBox(
+                  label: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: const Text(
-                      'Save Document',
+                    child: Text(
+                      'Save PDF',
                       style: TextStyle(fontSize: 14),
                     ),
                   ),
@@ -811,86 +754,6 @@ class _HtmlToPdfWebPageState extends State<HtmlToPdfWebPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInstructions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'How to use',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select an HTML file (.html or .htm)'),
-          const SizedBox(height: 8),
-          _buildInstructionStep('2', 'Optionally set a custom output filename'),
-          const SizedBox(height: 8),
-          _buildInstructionStep(
-            '3',
-            'Click "Convert to PDF" to start conversion',
-          ),
-          const SizedBox(height: 8),
-          _buildInstructionStep(
-            '4',
-            'Save the PDF file to your device or share it',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionStep(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

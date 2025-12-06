@@ -24,20 +24,16 @@ router = APIRouter()
 async def convert_html_to_pdf(
     html_content: Optional[str] = Form(None),
     css_content: Optional[str] = Form(None),
-    url: Optional[str] = Form(None),
     filename: Optional[str] = Form(None),
     file: Union[UploadFile, str, None] = File(None)
 ):
-    """Convert HTML content, file, or URL to PDF."""
+    """Convert HTML content or file to PDF."""
     try:
         # Handle case where file is sent as empty string
         if isinstance(file, str):
             file = None
 
-        if url:
-            # Handle URL conversion
-            result = WebsiteConversionService.website_to_pdf(url, filename)
-        elif file:
+        if file:
             # Handle file upload
             import tempfile
             import os
@@ -61,7 +57,7 @@ async def convert_html_to_pdf(
             # Handle string content
             result = WebsiteConversionService.html_to_pdf(html_content, css_content, filename)
         else:
-            raise HTTPException(status_code=400, detail="Either html_content, file, or url must be provided")
+            raise HTTPException(status_code=400, detail="Either html_content or file must be provided")
         
         # Create download URL
         import os
@@ -70,9 +66,7 @@ async def convert_html_to_pdf(
         
         # Log conversion
         input_data = "HTML Content"
-        if url:
-            input_data = f"URL: {url}"
-        elif file:
+        if file:
             input_data = f"File: {file.filename}"
             
         WebsiteConversionService.log_conversion(
@@ -94,14 +88,60 @@ async def convert_html_to_pdf(
         raise he
     except Exception as e:
         input_data = "HTML Content"
-        if url:
-            input_data = f"URL: {url}"
-        elif file:
+        if file:
             input_data = f"File: {file.filename}" if file else "Unknown File"
             
         WebsiteConversionService.log_conversion(
             "html-to-pdf",
             input_data,
+            "",
+            False,
+            str(e),
+            None
+        )
+        raise create_error_response(
+            error_type="InternalServerError",
+            message="An unexpected error occurred",
+            details={"error": str(e)},
+            status_code=500
+        )
+
+
+# Website to PDF
+@router.post("/website-to-pdf", response_model=ConversionResponse)
+async def convert_website_to_pdf(
+    url: str = Form(...),
+    filename: Optional[str] = Form(None)
+):
+    """Convert Website URL to PDF."""
+    try:
+        result = WebsiteConversionService.website_to_pdf(url, filename)
+        
+        # Create download URL
+        import os
+        filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{filename}"
+        
+        # Log conversion
+        WebsiteConversionService.log_conversion(
+            "website-to-pdf",
+            url,
+            result,
+            True,
+            user_id=None
+        )
+        
+        return ConversionResponse(
+            success=True,
+            message="Website converted to PDF successfully",
+            output_filename=filename,
+            download_url=download_url
+        )
+        
+    except Exception as e:
+        WebsiteConversionService.log_conversion(
+            "website-to-pdf",
+            url,
             "",
             False,
             str(e),
@@ -528,16 +568,36 @@ async def convert_html_to_png(
 # HTML Table to CSV
 @router.post("/html-table-to-csv", response_model=ConversionResponse)
 async def convert_html_table_to_csv(
-    html_content: str = Form(...)
+    html_content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    filename: Optional[str] = Form(None)
 ):
     """Convert HTML table to CSV."""
     try:
-        result = WebsiteConversionService.html_table_to_csv(html_content)
+        input_name = "HTML Content"
+        original_filename = None
         
+        if file:
+            content_bytes = await file.read()
+            content_to_process = content_bytes.decode('utf-8')
+            input_name = file.filename
+            original_filename = file.filename
+        elif html_content:
+            content_to_process = html_content
+        else:
+            raise HTTPException(status_code=400, detail="Either html_content or file must be provided")
+
+        result = WebsiteConversionService.html_table_to_csv(content_to_process, filename, original_filename)
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
+
         # Log conversion
         WebsiteConversionService.log_conversion(
             "html-table-to-csv",
-            html_content,
+            f"Input: {input_name}",
             result,
             True,
             user_id=None
@@ -546,13 +606,18 @@ async def convert_html_table_to_csv(
         return ConversionResponse(
             success=True,
             message="HTML table converted to CSV successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:
+        input_name = "HTML Content"
+        if file:
+            input_name = f"File: {file.filename}" if file else "Unknown File"
+            
         WebsiteConversionService.log_conversion(
             "html-table-to-csv",
-            html_content,
+            f"Input: {input_name}",
             "",
             False,
             str(e),

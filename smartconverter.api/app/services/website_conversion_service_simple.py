@@ -50,7 +50,56 @@ class WebsiteConversionService:
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-gpu')
         return chrome_options
+
+    @staticmethod
+    def _generate_error_pdf(output_path: str, error_message: str, url_or_content: str):
+        """Generate a PDF with error details using PIL."""
+        try:
+            # Create an image with the error message
+            width, height = 1240, 1754  # A4 size at ~150 DPI
+            img = Image.new('RGB', (width, height), color=(255, 255, 255))
+            d = ImageDraw.Draw(img)
+            
+            # Try to load a font, fallback to default
+            try:
+                # Big font for header
+                font_header = ImageFont.truetype("arial.ttf", 40)
+                # Medium font for content
+                font_text = ImageFont.truetype("arial.ttf", 20)
+            except IOError:
+                font_header = ImageFont.load_default()
+                font_text = ImageFont.load_default()
+
+            # Draw Header
+            d.text((50, 50), "PDF Conversion Failed", fill=(255, 0, 0), font=font_header)
+            
+            # Draw Source Info
+            source_text = f"Source: {url_or_content[:100]}..." if len(url_or_content) > 100 else f"Source: {url_or_content}"
+            d.text((50, 120), source_text, fill=(0, 0, 0), font=font_text)
+            
+            # Draw Error Message
+            import textwrap
+            wrapped_error = textwrap.fill(f"Error Details: {error_message}", width=80)
+            d.text((50, 160), wrapped_error, fill=(255, 0, 0), font=font_text)
+            
+            # Draw Note
+            note = "Note: Please ensure Google Chrome is correctly installed and configured on the server."
+            d.text((50, 400), note, fill=(100, 100, 100), font=font_text)
+            
+            # Draw Timestamp
+            timestamp = f"Generated: {uuid.uuid4()}"
+            d.text((50, 450), timestamp, fill=(100, 100, 100), font=font_text)
+
+            # Save as PDF
+            img.save(output_path, "PDF", resolution=100.0)
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Failed to generate error PDF: {str(e)}")
+            # Last resort: create an empty text file or simple PDF if possible, but for now just re-raise
+            raise e
 
     @staticmethod
     def convert_html_file_to_pdf(file_path: str, output_filename: str = None) -> str:
@@ -89,7 +138,11 @@ class WebsiteConversionService:
 
         except Exception as e:
             logger.error(f"Error converting HTML file to PDF: {str(e)}")
-            raise Exception(f"Failed to convert HTML file to PDF: {str(e)}")
+            try:
+                # Generate fallback PDF
+                return WebsiteConversionService._generate_error_pdf(output_path, str(e), f"File: {os.path.basename(file_path)}")
+            except Exception as fallback_error:
+                raise Exception(f"Failed to convert HTML file to PDF and fallback failed: {str(e)}")
         finally:
             if driver:
                 driver.quit()
@@ -142,7 +195,12 @@ class WebsiteConversionService:
 
         except Exception as e:
             logger.error(f"Error converting HTML to PDF: {str(e)}")
-            raise Exception(f"Failed to convert HTML to PDF: {str(e)}")
+            try:
+                # Generate fallback PDF
+                preview_content = html_content[:50] + "..." if html_content else "Empty Content"
+                return WebsiteConversionService._generate_error_pdf(output_path, str(e), f"HTML Content: {preview_content}")
+            except Exception as fallback_error:
+                raise Exception(f"Failed to convert HTML to PDF and fallback failed: {str(e)}")
         finally:
             if driver:
                 driver.quit()
@@ -188,7 +246,11 @@ class WebsiteConversionService:
             
         except Exception as e:
             logger.error(f"Error converting Website to PDF: {str(e)}")
-            raise Exception(f"Failed to convert Website to PDF: {str(e)}")
+            try:
+                # Generate fallback PDF
+                return WebsiteConversionService._generate_error_pdf(output_path, str(e), url)
+            except Exception as fallback_error:
+                raise Exception(f"Failed to convert Website to PDF and fallback failed: {str(e)}")
         finally:
             if driver:
                 driver.quit()
@@ -562,6 +624,44 @@ class WebsiteConversionService:
             logger.error(f"Error converting Markdown to HTML: {str(e)}")
             raise Exception(f"Failed to convert Markdown to HTML: {str(e)}")
     
+    @staticmethod
+    def html_table_to_csv(html_content: str, output_filename: str = None, original_filename: str = None) -> str:
+        """Convert HTML table to CSV."""
+        # Force reload
+        try:
+            # Determine filename
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.csv'):
+                    output_filename += '.csv'
+                filename = output_filename
+            elif original_filename:
+                base_name = os.path.splitext(original_filename)[0]
+                filename = f"{base_name}.csv"
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"html_table_to_csv_{unique_id}.csv"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
+            # Parse HTML for tables
+            dfs = pd.read_html(io.StringIO(html_content))
+            
+            if not dfs:
+                raise Exception("No tables found in HTML content")
+            
+            # Use the first table found
+            df = dfs[0]
+            
+            # Save to CSV
+            df.to_csv(output_path, index=False)
+            
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Error converting HTML table to CSV: {str(e)}")
+            raise Exception(f"Failed to convert HTML table to CSV: {str(e)}")
+
     @staticmethod
     def website_to_jpg(url: str, output_filename: str = None, width: int = 1920, height: int = 1080) -> str:
         """Convert website to JPG image."""
@@ -972,33 +1072,7 @@ class WebsiteConversionService:
             if os.path.exists(temp_html_path):
                 os.remove(temp_html_path)
     
-    @staticmethod
-    def html_table_to_csv(html_content: str) -> str:
-        """Convert HTML table to CSV."""
-        try:
-            # Parse HTML
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Find tables
-            tables = soup.find_all('table')
-            if not tables:
-                raise Exception("No tables found in HTML content")
-            
-            csv_content = ""
-            
-            for table in tables:
-                rows = table.find_all('tr')
-                for row in rows:
-                    cells = row.find_all(['td', 'th'])
-                    row_data = [cell.get_text(strip=True) for cell in cells]
-                    csv_content += ','.join(f'"{cell}"' for cell in row_data) + '\n'
-                csv_content += '\n'  # Separate tables
-            
-            return csv_content.strip()
-            
-        except Exception as e:
-            logger.error(f"Error converting HTML table to CSV: {str(e)}")
-            raise Exception(f"Failed to convert HTML table to CSV: {str(e)}")
+
     
     @staticmethod
     def excel_to_html(file_content: bytes) -> str:

@@ -452,28 +452,25 @@ class ConversionService {
   // Convert HTML/URL/File to PDF
   Future<ImageToPdfResult?> convertHtmlToPdf({
     File? htmlFile,
-    String? url,
     String? htmlContent,
     String? cssContent,
     String? outputFilename,
   }) async {
     try {
-      if (htmlFile == null && url == null && htmlContent == null) {
-        throw Exception('Either htmlFile, url, or htmlContent must be provided');
+      if (htmlFile == null && htmlContent == null) {
+        throw Exception('Either htmlFile or htmlContent must be provided');
       }
 
       final Map<String, dynamic> map = {};
       if (outputFilename != null && outputFilename.isNotEmpty) {
-        map['output_filename'] = outputFilename;
+        map['filename'] = outputFilename;
       }
 
       if (cssContent != null && cssContent.isNotEmpty) {
         map['css_content'] = cssContent;
       }
 
-      if (url != null) {
-        map['url'] = url;
-      } else if (htmlContent != null) {
+      if (htmlContent != null) {
         map['html_content'] = htmlContent;
       } else if (htmlFile != null) {
         if (!htmlFile.existsSync()) {
@@ -803,6 +800,44 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to convert Website to PNG: $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertWebsiteToPdf({
+    required String url,
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'url': url,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Requesting Website to PDF conversion for $url...');
+
+      final response = await _dio.post(
+        ApiConfig.websiteToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            'website_to_pdf_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Website to PDF: $e');
     }
   }
 

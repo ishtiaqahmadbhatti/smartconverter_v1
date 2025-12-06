@@ -55,6 +55,7 @@ import 'conversions/office_documents/ods_to_excel_page.dart';
 import 'conversions/office_documents/bson_to_excel_page.dart';
 // Website pages
 import 'conversions/website/website_to_pdf_page.dart';
+import 'conversions/website/html_to_pdf_page.dart';
 import 'conversions/website/word_to_html_page.dart';
 import 'conversions/website/powerpoint_to_html_page.dart';
 import 'conversions/website/markdown_to_html_page.dart';
@@ -604,7 +605,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'AI: Convert PDF to Excel':
           return const AiPdfToExcelPage();
         case 'Convert HTML to PDF':
-          return const WebsiteToPdfPage();
+          return const HtmlToPdfPage();
         case 'Convert Word to PDF':
           return const WordToPdfPage();
         case 'Convert PowerPoint to PDF':
@@ -646,8 +647,10 @@ class CategoryToolsPage extends StatelessWidget {
 
     if (categoryId == 'website_conversion') {
       switch (toolName) {
-        case 'Convert HTML to PDF':
+        case 'Convert Website to PDF':
           return const WebsiteToPdfPage();
+        case 'Convert HTML to PDF':
+          return HtmlToPdfPage(categoryId: categoryId);
         case 'Convert Word to HTML':
           return const WordToHtmlPage();
         case 'Convert PowerPoint to HTML':

@@ -282,6 +282,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
         'icon': Icons.public_outlined,
         'category': 'Web Tools',
         'tools': [
+          'Convert Website to PDF',
           'Convert HTML to PDF',
           'Convert Word to HTML',
           'Convert PowerPoint to HTML',
