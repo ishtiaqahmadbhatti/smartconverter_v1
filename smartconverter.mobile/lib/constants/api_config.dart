@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.100';
+  static const String networkIp = '192.168.8.101';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -85,6 +85,10 @@ class ApiConfig {
       '/api/v1/websiteconversiontools/powerpoint-to-html';
   static const String websiteMarkdownToHtmlEndpoint =
       '/api/v1/websiteconversiontools/markdown-to-html';
+  static const String websiteToJpgEndpoint =
+      '/api/v1/websiteconversiontools/website-to-jpg';
+  static const String htmlToJpgEndpoint =
+      '/api/v1/websiteconversiontools/html-to-jpg';
   static const String pdfToMarkdownEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-markdown';
   static const String pdfToJsonEndpoint =

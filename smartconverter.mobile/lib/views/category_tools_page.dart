@@ -657,7 +657,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Website to JPG':
           return const WebsiteToJpgPage();
         case 'Convert HTML to JPG':
-          return const HtmlToJpgWebPage();
+          return const HtmlToJpgPage();
         case 'Convert Website to PNG':
           return const WebsiteToPngPage();
         case 'Convert HTML to PNG':
@@ -806,7 +806,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Website to JPG':
           return const WebsiteToJpgPage();
         case 'Convert HTML to JPG':
-          return const HtmlToJpgWebPage();
+          return const HtmlToJpgPage();
         case 'Convert Website to PNG':
           return const WebsiteToPngPage();
         case 'Convert HTML to PNG':

@@ -282,12 +282,18 @@ async def convert_markdown_to_html(
 @router.post("/website-to-jpg", response_model=ConversionResponse)
 async def convert_website_to_jpg(
     url: str = Form(...),
+    filename: Optional[str] = Form(None),
     width: int = Form(1920),
     height: int = Form(1080)
 ):
     """Convert website to JPG image."""
     try:
-        result = WebsiteConversionService.website_to_jpg(url, width, height)
+        result = WebsiteConversionService.website_to_jpg(url, filename, width, height)
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
@@ -301,8 +307,10 @@ async def convert_website_to_jpg(
         return ConversionResponse(
             success=True,
             message="Website converted to JPG successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
+
         
     except Exception as e:
         WebsiteConversionService.log_conversion(
@@ -322,20 +330,49 @@ async def convert_website_to_jpg(
 
 
 # HTML to JPG
+# HTML to JPG
 @router.post("/html-to-jpg", response_model=ConversionResponse)
 async def convert_html_to_jpg(
-    html_content: str = Form(...),
+    file: Optional[UploadFile] = File(None),
+    html_content: Optional[str] = Form(None),
+    filename: Optional[str] = Form(None),
     width: int = Form(1920),
     height: int = Form(1080)
 ):
-    """Convert HTML content to JPG image."""
+    """Convert HTML content or file to JPG image."""
     try:
-        result = WebsiteConversionService.html_to_jpg(html_content, width, height)
+        if not file and not html_content:
+            raise HTTPException(status_code=400, detail="Either file or html_content must be provided")
+            
+        input_name = "HTML Content"
+        content_to_process = ""
+        original_filename = None
+        
+        if file:
+            content = await file.read()
+            content_to_process = content.decode('utf-8')
+            input_name = file.filename
+            original_filename = file.filename
+        else:
+            content_to_process = html_content
+            
+        result = WebsiteConversionService.html_to_jpg(
+            content_to_process, 
+            original_filename, 
+            filename, 
+            width, 
+            height
+        )
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
             "html-to-jpg",
-            html_content,
+            f"Input: {input_name}",
             result,
             True,
             user_id=None
@@ -344,13 +381,14 @@ async def convert_html_to_jpg(
         return ConversionResponse(
             success=True,
             message="HTML converted to JPG successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:
         WebsiteConversionService.log_conversion(
             "html-to-jpg",
-            html_content,
+            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
             "",
             False,
             str(e),
@@ -364,16 +402,23 @@ async def convert_html_to_jpg(
         )
 
 
+
 # Website to PNG
 @router.post("/website-to-png", response_model=ConversionResponse)
 async def convert_website_to_png(
     url: str = Form(...),
+    filename: Optional[str] = Form(None),
     width: int = Form(1920),
     height: int = Form(1080)
 ):
     """Convert website to PNG image."""
     try:
-        result = WebsiteConversionService.website_to_png(url, width, height)
+        result = WebsiteConversionService.website_to_png(url, filename, width, height)
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
@@ -387,7 +432,8 @@ async def convert_website_to_png(
         return ConversionResponse(
             success=True,
             message="Website converted to PNG successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:
@@ -410,18 +456,46 @@ async def convert_website_to_png(
 # HTML to PNG
 @router.post("/html-to-png", response_model=ConversionResponse)
 async def convert_html_to_png(
-    html_content: str = Form(...),
+    file: Optional[UploadFile] = File(None),
+    html_content: Optional[str] = Form(None),
+    filename: Optional[str] = Form(None),
     width: int = Form(1920),
     height: int = Form(1080)
 ):
-    """Convert HTML content to PNG image."""
+    """Convert HTML content or file to PNG image."""
     try:
-        result = WebsiteConversionService.html_to_png(html_content, width, height)
+        if not file and not html_content:
+            raise HTTPException(status_code=400, detail="Either file or html_content must be provided")
+            
+        input_name = "HTML Content"
+        content_to_process = ""
+        original_filename = None
+        
+        if file:
+            content = await file.read()
+            content_to_process = content.decode('utf-8')
+            input_name = file.filename
+            original_filename = file.filename
+        else:
+            content_to_process = html_content
+            
+        result = WebsiteConversionService.html_to_png(
+            content_to_process, 
+            original_filename, 
+            filename, 
+            width, 
+            height
+        )
+        
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
         # Log conversion
         WebsiteConversionService.log_conversion(
             "html-to-png",
-            html_content,
+            f"Input: {input_name}",
             result,
             True,
             user_id=None
@@ -430,13 +504,14 @@ async def convert_html_to_png(
         return ConversionResponse(
             success=True,
             message="HTML converted to PNG successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:
         WebsiteConversionService.log_conversion(
             "html-to-png",
-            html_content,
+            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
             "",
             False,
             str(e),

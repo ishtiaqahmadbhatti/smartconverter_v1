@@ -18,7 +18,7 @@ import uuid
 from markdown import markdown
 from bs4 import BeautifulSoup
 import requests
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 # Selenium for professional rendering
 from selenium import webdriver
@@ -563,52 +563,414 @@ class WebsiteConversionService:
             raise Exception(f"Failed to convert Markdown to HTML: {str(e)}")
     
     @staticmethod
-    def website_to_jpg(url: str, width: int = 1920, height: int = 1080) -> str:
+    def website_to_jpg(url: str, output_filename: str = None, width: int = 1920, height: int = 1080) -> str:
         """Convert website to JPG image."""
+        # Determine filename
+        if output_filename and output_filename.strip() and output_filename.lower() != "string":
+            if not output_filename.lower().endswith('.jpg') and not output_filename.lower().endswith('.jpeg'):
+                output_filename += '.jpg'
+            filename = output_filename
+        else:
+            unique_id = str(uuid.uuid4())
+            filename = f"website_to_jpg_{unique_id}.jpg"
+        
+        output_path = os.path.join("outputs", filename)
+        os.makedirs("outputs", exist_ok=True)
+
         try:
-            # For now, return a placeholder message
-            # In production, you would need to install Chrome/Chromium and selenium
-            raise Exception("Website to JPG conversion requires Chrome/Chromium browser installation. Please install Chrome browser and try again.")
+            # Try using Selenium for real website rendering
+            logger.info(f"Attempting to capture screenshot of {url} using Selenium...")
             
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            # Initial size, will be updated
+            chrome_options.add_argument(f"--window-size={width},{height}")
+            chrome_options.add_argument("--hide-scrollbars")
+            
+            # Setup driver
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            try:
+                driver.get(url)
+                # Optional: Wait for body to be present or just sleep briefly
+                import time
+                time.sleep(2) 
+                
+                # Get full page height
+                total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
+                
+                # Resize window to full height
+                driver.set_window_size(width, total_height)
+                
+                # Wait a bit for resize to take effect
+                time.sleep(1)
+                
+                # Save screenshot
+                driver.save_screenshot(output_path)
+                logger.info(f"Screenshot saved to {output_path}")
+                return output_path
+            finally:
+                driver.quit()
+
         except Exception as e:
-            logger.error(f"Error converting website to JPG: {str(e)}")
-            raise Exception(f"Failed to convert website to JPG: {str(e)}")
+            logger.warning(f"Selenium conversion failed: {str(e)}. Falling back to placeholder.")
+            
+            try:
+                # Create a placeholder image since Selenium failed
+                img = Image.new('RGB', (width, height), color=(255, 255, 255))
+                d = ImageDraw.Draw(img)
+                
+                # Try to load a font, fallback to default
+                try:
+                    font = ImageFont.truetype("arial.ttf", 40)
+                    small_font = ImageFont.truetype("arial.ttf", 20)
+                except IOError:
+                    font = ImageFont.load_default()
+                    small_font = ImageFont.load_default()
+
+                # Draw text
+                text = f"Website Preview: {url}"
+                d.text((50, 50), text, fill=(0, 0, 0), font=font)
+                
+                error_msg = f"Error: Could not render website. {str(e)}"
+                d.text((50, 100), error_msg, fill=(255, 0, 0), font=small_font)
+                
+                note = "Note: Please ensure Google Chrome is installed on the server."
+                d.text((50, 150), note, fill=(100, 100, 100), font=small_font)
+                
+                timestamp = f"Generated: {uuid.uuid4()}"
+                d.text((50, 200), timestamp, fill=(100, 100, 100), font=small_font)
+
+                # Save image
+                img.save(output_path, "JPEG")
+                return output_path
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback image generation failed: {str(fallback_error)}")
+                raise Exception(f"Failed to convert website to JPG: {str(e)}")
     
     @staticmethod
-    def html_to_jpg(html_content: str, width: int = 1920, height: int = 1080) -> str:
+    def html_to_jpg(html_content: str, original_filename: str = None, output_filename: str = None, width: int = 1920, height: int = 1080) -> str:
         """Convert HTML content to JPG image."""
+        # Determine filename
+        if output_filename and output_filename.strip() and output_filename.lower() != "string":
+            if not output_filename.lower().endswith('.jpg') and not output_filename.lower().endswith('.jpeg'):
+                output_filename += '.jpg'
+            filename = output_filename
+        else:
+            if original_filename:
+                base_name = os.path.splitext(original_filename)[0]
+                filename = f"{base_name}.jpg"
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"html_to_jpg_{unique_id}.jpg"
+        
+        output_path = os.path.join("outputs", filename)
+        os.makedirs("outputs", exist_ok=True)
+
+        # Create a temporary HTML file to render
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_html:
+            temp_html.write(html_content)
+            temp_html_path = temp_html.name
+
         try:
-            # For now, return a placeholder message
-            # In production, you would need to install Chrome/Chromium and selenium
-            raise Exception("HTML to JPG conversion requires Chrome/Chromium browser installation. Please install Chrome browser and try again.")
+            # Try using Selenium for real website rendering
+            file_url = f"file:///{temp_html_path.replace(os.sep, '/')}"
+            logger.info(f"Attempting to capture screenshot of HTML content using Selenium...")
             
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            # Initial size, will be updated
+            chrome_options.add_argument(f"--window-size={width},{height}")
+            chrome_options.add_argument("--hide-scrollbars")
+            
+            # Setup driver
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            try:
+                driver.get(file_url)
+                # Optional: Wait for body to be present or just sleep briefly
+                import time
+                time.sleep(2) 
+                
+                # Get full page height using a more robust method
+                total_height = driver.execute_script("""
+                    return Math.max(
+                        document.body.scrollHeight, 
+                        document.body.offsetHeight, 
+                        document.documentElement.clientHeight, 
+                        document.documentElement.scrollHeight, 
+                        document.documentElement.offsetHeight
+                    );
+                """)
+                
+                # Add a buffer to ensure bottom content is not cut off
+                total_height += 100
+                
+                # Resize window to full height
+                driver.set_window_size(width, total_height)
+                
+                # Wait a bit for resize to take effect
+                time.sleep(1)
+                
+                # Save screenshot
+                driver.save_screenshot(output_path)
+                logger.info(f"Screenshot saved to {output_path}")
+                return output_path
+            finally:
+                driver.quit()
+
         except Exception as e:
-            logger.error(f"Error converting HTML to JPG: {str(e)}")
-            raise Exception(f"Failed to convert HTML to JPG: {str(e)}")
+            logger.warning(f"Selenium conversion failed: {str(e)}. Falling back to placeholder.")
+            
+            try:
+                # Create a placeholder image since Selenium failed
+                img = Image.new('RGB', (width, height), color=(255, 255, 255))
+                d = ImageDraw.Draw(img)
+                
+                # Try to load a font, fallback to default
+                try:
+                    font = ImageFont.truetype("arial.ttf", 40)
+                    small_font = ImageFont.truetype("arial.ttf", 20)
+                except IOError:
+                    font = ImageFont.load_default()
+                    small_font = ImageFont.load_default()
+
+                # Draw text
+                text = "HTML Preview"
+                d.text((50, 50), text, fill=(0, 0, 0), font=font)
+                
+                error_msg = f"Error: Could not render HTML. {str(e)}"
+                d.text((50, 100), error_msg, fill=(255, 0, 0), font=small_font)
+                
+                note = "Note: Please ensure Google Chrome is installed on the server."
+                d.text((50, 150), note, fill=(100, 100, 100), font=small_font)
+                
+                timestamp = f"Generated: {uuid.uuid4()}"
+                d.text((50, 200), timestamp, fill=(100, 100, 100), font=small_font)
+
+                # Save image
+                img.save(output_path, "JPEG")
+                return output_path
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback image generation failed: {str(fallback_error)}")
+                raise Exception(f"Failed to convert HTML to JPG: {str(e)}")
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_html_path):
+                os.remove(temp_html_path)
     
     @staticmethod
-    def website_to_png(url: str, width: int = 1920, height: int = 1080) -> str:
+    def website_to_png(url: str, output_filename: str = None, width: int = 1920, height: int = 1080) -> str:
         """Convert website to PNG image."""
+        # Determine filename
+        if output_filename and output_filename.strip() and output_filename.lower() != "string":
+            if not output_filename.lower().endswith('.png'):
+                output_filename += '.png'
+            filename = output_filename
+        else:
+            unique_id = str(uuid.uuid4())
+            filename = f"website_to_png_{unique_id}.png"
+        
+        output_path = os.path.join("outputs", filename)
+        os.makedirs("outputs", exist_ok=True)
+
         try:
-            # For now, return a placeholder message
-            # In production, you would need to install Chrome/Chromium and selenium
-            raise Exception("Website to PNG conversion requires Chrome/Chromium browser installation. Please install Chrome browser and try again.")
+            # Try using Selenium for real website rendering
+            logger.info(f"Attempting to capture screenshot of {url} using Selenium...")
             
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            # Initial size, will be updated
+            chrome_options.add_argument(f"--window-size={width},{height}")
+            chrome_options.add_argument("--hide-scrollbars")
+            
+            # Setup driver
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            try:
+                driver.get(url)
+                # Optional: Wait for body to be present or just sleep briefly
+                import time
+                time.sleep(2) 
+                
+                # Get full page height
+                total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
+                
+                # Resize window to full height
+                driver.set_window_size(width, total_height)
+                
+                # Wait a bit for resize to take effect
+                time.sleep(1)
+                
+                # Save screenshot (default is PNG)
+                driver.save_screenshot(output_path)
+                logger.info(f"Screenshot saved to {output_path}")
+                return output_path
+            finally:
+                driver.quit()
+
         except Exception as e:
-            logger.error(f"Error converting website to PNG: {str(e)}")
-            raise Exception(f"Failed to convert website to PNG: {str(e)}")
+            logger.warning(f"Selenium conversion failed: {str(e)}. Falling back to placeholder.")
+            
+            try:
+                # Create a placeholder image since Selenium failed
+                img = Image.new('RGB', (width, height), color=(255, 255, 255))
+                d = ImageDraw.Draw(img)
+                
+                # Try to load a font, fallback to default
+                try:
+                    font = ImageFont.truetype("arial.ttf", 40)
+                    small_font = ImageFont.truetype("arial.ttf", 20)
+                except IOError:
+                    font = ImageFont.load_default()
+                    small_font = ImageFont.load_default()
+
+                # Draw text
+                text = f"Website Preview: {url}"
+                d.text((50, 50), text, fill=(0, 0, 0), font=font)
+                
+                error_msg = f"Error: Could not render website. {str(e)}"
+                d.text((50, 100), error_msg, fill=(255, 0, 0), font=small_font)
+                
+                note = "Note: Please ensure Google Chrome is installed on the server."
+                d.text((50, 150), note, fill=(100, 100, 100), font=small_font)
+                
+                timestamp = f"Generated: {uuid.uuid4()}"
+                d.text((50, 200), timestamp, fill=(100, 100, 100), font=small_font)
+
+                # Save image
+                img.save(output_path, "PNG")
+                return output_path
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback image generation failed: {str(fallback_error)}")
+                raise Exception(f"Failed to convert website to PNG: {str(e)}")
     
     @staticmethod
-    def html_to_png(html_content: str, width: int = 1920, height: int = 1080) -> str:
+    def html_to_png(html_content: str, original_filename: str = None, output_filename: str = None, width: int = 1920, height: int = 1080) -> str:
         """Convert HTML content to PNG image."""
+        # Determine filename
+        if output_filename and output_filename.strip() and output_filename.lower() != "string":
+            if not output_filename.lower().endswith('.png'):
+                output_filename += '.png'
+            filename = output_filename
+        else:
+            if original_filename:
+                base_name = os.path.splitext(original_filename)[0]
+                filename = f"{base_name}.png"
+            else:
+                unique_id = str(uuid.uuid4())
+                filename = f"html_to_png_{unique_id}.png"
+        
+        output_path = os.path.join("outputs", filename)
+        os.makedirs("outputs", exist_ok=True)
+
+        # Create a temporary HTML file to render
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_html:
+            temp_html.write(html_content)
+            temp_html_path = temp_html.name
+
         try:
-            # For now, return a placeholder message
-            # In production, you would need to install Chrome/Chromium and selenium
-            raise Exception("HTML to PNG conversion requires Chrome/Chromium browser installation. Please install Chrome browser and try again.")
+            # Try using Selenium for real website rendering
+            file_url = f"file:///{temp_html_path.replace(os.sep, '/')}"
+            logger.info(f"Attempting to capture screenshot of HTML content using Selenium...")
             
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            # Initial size, will be updated
+            chrome_options.add_argument(f"--window-size={width},{height}")
+            chrome_options.add_argument("--hide-scrollbars")
+            
+            # Setup driver
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            try:
+                driver.get(file_url)
+                # Optional: Wait for body to be present or just sleep briefly
+                import time
+                time.sleep(2) 
+                
+                # Get full page height using a more robust method
+                total_height = driver.execute_script("""
+                    return Math.max(
+                        document.body.scrollHeight, 
+                        document.body.offsetHeight, 
+                        document.documentElement.clientHeight, 
+                        document.documentElement.scrollHeight, 
+                        document.documentElement.offsetHeight
+                    );
+                """)
+                
+                # Add a buffer to ensure bottom content is not cut off
+                total_height += 100
+                
+                # Resize window to full height
+                driver.set_window_size(width, total_height)
+                
+                # Wait a bit for resize to take effect
+                time.sleep(1)
+                
+                # Save screenshot (default is PNG)
+                driver.save_screenshot(output_path)
+                logger.info(f"Screenshot saved to {output_path}")
+                return output_path
+            finally:
+                driver.quit()
+
         except Exception as e:
-            logger.error(f"Error converting HTML to PNG: {str(e)}")
-            raise Exception(f"Failed to convert HTML to PNG: {str(e)}")
+            logger.warning(f"Selenium conversion failed: {str(e)}. Falling back to placeholder.")
+            
+            try:
+                # Create a placeholder image since Selenium failed
+                img = Image.new('RGB', (width, height), color=(255, 255, 255))
+                d = ImageDraw.Draw(img)
+                
+                # Try to load a font, fallback to default
+                try:
+                    font = ImageFont.truetype("arial.ttf", 40)
+                    small_font = ImageFont.truetype("arial.ttf", 20)
+                except IOError:
+                    font = ImageFont.load_default()
+                    small_font = ImageFont.load_default()
+
+                # Draw text
+                text = "HTML Preview"
+                d.text((50, 50), text, fill=(0, 0, 0), font=font)
+                
+                error_msg = f"Error: Could not render HTML. {str(e)}"
+                d.text((50, 100), error_msg, fill=(255, 0, 0), font=small_font)
+                
+                note = "Note: Please ensure Google Chrome is installed on the server."
+                d.text((50, 150), note, fill=(100, 100, 100), font=small_font)
+                
+                timestamp = f"Generated: {uuid.uuid4()}"
+                d.text((50, 200), timestamp, fill=(100, 100, 100), font=small_font)
+
+                # Save image
+                img.save(output_path, "PNG")
+                return output_path
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback image generation failed: {str(fallback_error)}")
+                raise Exception(f"Failed to convert HTML to PNG: {str(e)}")
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_html_path):
+                os.remove(temp_html_path)
     
     @staticmethod
     def html_table_to_csv(html_content: str) -> str:

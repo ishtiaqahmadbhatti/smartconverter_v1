@@ -71,6 +71,8 @@ class FileManager {
   static const String _wordToHtmlSubFolder = 'word-to-html';
   static const String _powerPointToHtmlSubFolder = 'powerpoint-to-html';
   static const String _markdownToHtmlSubFolder = 'markdown-to-html';
+  static const String _websiteToJpgSubFolder = 'website-to-jpg';
+  static const String _htmlToJpgSubFolder = 'html-to-jpg';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -577,6 +579,26 @@ class FileManager {
   static Future<Directory> getMarkdownToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
     final dir = Directory('${websiteConversionsDir.path}/$_markdownToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Website to JPG outputs (under WebsiteConversion)
+  static Future<Directory> getWebsiteToJpgDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_websiteToJpgSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for HTML to JPG outputs (under WebsiteConversion)
+  static Future<Directory> getHtmlToJpgDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_htmlToJpgSubFolder');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

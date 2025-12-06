@@ -97,22 +97,13 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
       );
 
       if (result != null && result.files.single.path != null) {
-        final originalFile = File(result.files.single.path!);
-        
-        // Copy to a persistent temp location to avoid cache cleanup issues
-        final appDir = await FileManager.getWebsiteConversionsDirectory();
-        final tempDir = Directory('${appDir.path}/temp_uploads');
-        if (!await tempDir.exists()) {
-          await tempDir.create(recursive: true);
-        }
-        final persistentFile = File('${tempDir.path}/${p.basename(originalFile.path)}');
-        await originalFile.copy(persistentFile.path);
+        final file = File(result.files.single.path!);
 
         setState(() {
-          _selectedFile = persistentFile;
+          _selectedFile = file;
           _conversionResult = null;
           _savedFilePath = null;
-          _statusMessage = 'Word document selected: ${p.basename(persistentFile.path)}';
+          _statusMessage = 'Word document selected: ${p.basename(file.path)}';
         });
         _updateSuggestedFileName();
       } else {
