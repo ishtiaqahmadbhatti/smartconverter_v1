@@ -661,7 +661,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Website to PNG':
           return const WebsiteToPngPage();
         case 'Convert HTML to PNG':
-          return const HtmlToPngWebPage();
+          return const HtmlToPngPage();
         case 'Convert HTML Table to CSV':
           return const HtmlTableToCsvPage();
         case 'Convert Excel to HTML':
@@ -810,7 +810,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Website to PNG':
           return const WebsiteToPngPage();
         case 'Convert HTML to PNG':
-          return const HtmlToPngWebPage();
+          return const HtmlToPngPage();
         case 'Convert PDF to JPG':
           return const PdfToJpgImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to PNG':

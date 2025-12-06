@@ -764,6 +764,93 @@ class ConversionService {
     }
   }
 
+  Future<ImageToPdfResult?> convertWebsiteToPng(
+    String url, {
+    String? outputFilename,
+    int width = 1920,
+    int height = 1080,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'url': url,
+        'width': width,
+        'height': height,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Requesting Website to PNG conversion for $url...');
+
+      final response = await _dio.post(
+        ApiConfig.websiteToPngEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            'website_to_png_${DateTime.now().millisecondsSinceEpoch}.png';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Website to PNG: $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertHtmlToPng(
+    File htmlFile, {
+    String? outputFilename,
+    int width = 1920,
+    int height = 1080,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          htmlFile.path,
+          filename: p.basename(htmlFile.path),
+        ),
+        'width': width,
+        'height': height,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Requesting HTML to PNG conversion for ${htmlFile.path}...');
+
+      final response = await _dio.post(
+        ApiConfig.htmlToPngEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            'html_to_png_${DateTime.now().millisecondsSinceEpoch}.png';
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert HTML to PNG: $e');
+    }
+  }
+
   // Add page numbers to PDF
   Future<File?> addPageNumbersToPdf(
     File pdfFile, {

@@ -89,6 +89,10 @@ class ApiConfig {
       '/api/v1/websiteconversiontools/website-to-jpg';
   static const String htmlToJpgEndpoint =
       '/api/v1/websiteconversiontools/html-to-jpg';
+  static const String websiteToPngEndpoint =
+      '/api/v1/websiteconversiontools/website-to-png';
+  static const String htmlToPngEndpoint =
+      '/api/v1/websiteconversiontools/html-to-png';
   static const String pdfToMarkdownEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-markdown';
   static const String pdfToJsonEndpoint =
