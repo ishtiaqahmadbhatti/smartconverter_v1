@@ -66,7 +66,7 @@ import 'conversions/website/html_to_png_page.dart';
 import 'conversions/website/excel_to_html_page.dart';
 import 'conversions/website/pdf_to_html_web_page.dart';
 // Reuse CSV tool for HTML Table to CSV
-import 'conversions/csv/html_table_to_csv_page.dart';
+import 'conversions/website/html_table_to_csv_page.dart';
 // Video pages
 import 'conversions/video/mov_to_mp4_page.dart';
 import 'conversions/video/mkv_to_mp4_page.dart';

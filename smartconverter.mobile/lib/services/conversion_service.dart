@@ -521,6 +521,74 @@ class ConversionService {
     }
   }
 
+  // Convert HTML Table to CSV
+  Future<ImageToPdfResult?> convertHtmlTableToCsv({
+    File? htmlFile,
+    String? htmlContent,
+    String? outputFilename,
+  }) async {
+    try {
+      if (htmlFile == null && htmlContent == null) {
+        throw Exception('Either htmlFile or htmlContent must be provided');
+      }
+
+      final Map<String, dynamic> map = {};
+      if (outputFilename != null && outputFilename.isNotEmpty) {
+        map['filename'] = outputFilename;
+      }
+
+      if (htmlContent != null) {
+        map['html_content'] = htmlContent;
+      } else if (htmlFile != null) {
+        if (!htmlFile.existsSync()) {
+          throw Exception('HTML file does not exist');
+        }
+        final extension = p.extension(htmlFile.path).toLowerCase();
+        // Allow .html, .htm, and .txt files
+        if (extension != '.html' && extension != '.htm' && extension != '.txt') {
+             // throw Exception('Only .html, .htm or .txt files are supported');
+        }
+        map['file'] = await MultipartFile.fromFile(
+            htmlFile.path,
+            filename: p.basename(htmlFile.path),
+        );
+      }
+
+      final formData = FormData.fromMap(map);
+
+      _debugLog('📤 Uploading data for HTML Table to CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.htmlTableToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_table.csv';
+
+        _debugLog('✅ HTML Table converted to CSV successfully!');
+        _debugLog('📥 Downloading CSV: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('HTML Table to CSV conversion failed: $e');
+    }
+  }
+
   Future<ImageToPdfResult?> convertWordToHtml(
     File wordFile, {
     String? outputFilename,

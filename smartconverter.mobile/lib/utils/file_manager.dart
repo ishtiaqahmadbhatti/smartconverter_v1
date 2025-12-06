@@ -619,6 +619,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _websiteHtmlToCsvSubFolder = 'html-to-csv';
+
+  /// Get directory for HTML to CSV outputs (under WebsiteConversion)
+  static Future<Directory> getWebsiteHtmlToCsvDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_websiteHtmlToCsvSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   /// Get directory for Website to PNG outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToPngDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
