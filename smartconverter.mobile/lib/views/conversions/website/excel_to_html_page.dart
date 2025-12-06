@@ -220,7 +220,7 @@ class _ExcelToHtmlWebPageState extends State<ExcelToHtmlWebPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Saved: $targetFileName'),
+          content: Text('Saved to: ${destinationFile.path}'),
           backgroundColor: AppColors.success,
         ),
       );

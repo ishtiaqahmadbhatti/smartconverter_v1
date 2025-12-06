@@ -685,6 +685,7 @@ async def convert_excel_to_html(
 # PDF to HTML
 @router.post("/pdf-to-html", response_model=ConversionResponse)
 async def convert_pdf_to_html(
+    filename: Optional[str] = Form(None),
     file: UploadFile = File(...)
 ):
     """Convert PDF to HTML."""
@@ -692,8 +693,13 @@ async def convert_pdf_to_html(
         # Read file content
         file_content = await file.read()
         
-        result = WebsiteConversionService.pdf_to_html(file_content)
+        result = WebsiteConversionService.pdf_to_html(file_content, file.filename, filename)
         
+        # Create download URL
+        import os
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
+
         # Log conversion
         WebsiteConversionService.log_conversion(
             "pdf-to-html",
@@ -706,7 +712,8 @@ async def convert_pdf_to_html(
         return ConversionResponse(
             success=True,
             message="PDF converted to HTML successfully",
-            converted_data=result
+            output_filename=result_filename,
+            download_url=download_url
         )
         
     except Exception as e:

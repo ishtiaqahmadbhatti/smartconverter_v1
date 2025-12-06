@@ -643,6 +643,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _websitePdfToHtmlSubFolder = 'pdf-to-html';
+
+  /// Get directory for PDF to HTML outputs (under WebsiteConversion)
+  static Future<Directory> getWebsitePdfToHtmlDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_websitePdfToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   /// Get directory for Website to PNG outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToPngDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();

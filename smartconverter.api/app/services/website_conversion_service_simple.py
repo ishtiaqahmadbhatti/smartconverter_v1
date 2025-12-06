@@ -1144,9 +1144,30 @@ class WebsiteConversionService:
             raise Exception(f"Failed to convert Excel to HTML: {str(e)}")
     
     @staticmethod
-    def pdf_to_html(file_content: bytes) -> str:
+    def pdf_to_html(file_content: bytes, original_filename: str = None, output_filename: str = None) -> str:
         """Convert PDF to HTML."""
         try:
+            # Determine title
+            title = os.path.splitext(original_filename)[0] if original_filename else "Converted PDF"
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                title = os.path.splitext(output_filename)[0]
+
+            # Determine filename
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.html'):
+                    output_filename += '.html'
+                filename = output_filename
+            else:
+                if original_filename:
+                    base_name = os.path.splitext(original_filename)[0]
+                    filename = f"{base_name}.html"
+                else:
+                    unique_id = str(uuid.uuid4())
+                    filename = f"pdf_to_html_{unique_id}.html"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
             # Create temporary file for PDF
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as pdf_file:
                 pdf_file.write(file_content)
@@ -1155,8 +1176,18 @@ class WebsiteConversionService:
             # Read PDF
             doc = fitz.open(pdf_file_path)
             
+            # CSS for better styling
+            css = """
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+                .page { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
+                h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+                p { white-space: pre-wrap; color: #555; }
+            </style>
+            """
+            
             # Convert to HTML
-            html_content = "<html><head><title>Converted PDF</title></head><body>"
+            html_content = f"<html><head><title>{title}</title>{css}</head><body>"
             
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
@@ -1168,10 +1199,14 @@ class WebsiteConversionService:
             
             html_content += "</body></html>"
             
+            # Save HTML to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
             # Cleanup
             WebsiteConversionService.cleanup_temp_files([pdf_file_path])
             
-            return html_content
+            return output_path
             
         except Exception as e:
             logger.error(f"Error converting PDF to HTML: {str(e)}")
