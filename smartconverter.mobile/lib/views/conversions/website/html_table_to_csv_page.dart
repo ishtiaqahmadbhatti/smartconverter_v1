@@ -115,7 +115,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage>
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['html', 'htm', 'txt'],
+        allowedExtensions: ['html', 'htm'],
       );
 
       if (result != null && result.files.single.path != null) {

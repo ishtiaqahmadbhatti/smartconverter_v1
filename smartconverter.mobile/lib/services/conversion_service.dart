@@ -544,9 +544,9 @@ class ConversionService {
           throw Exception('HTML file does not exist');
         }
         final extension = p.extension(htmlFile.path).toLowerCase();
-        // Allow .html, .htm, and .txt files
-        if (extension != '.html' && extension != '.htm' && extension != '.txt') {
-             // throw Exception('Only .html, .htm or .txt files are supported');
+        // Allow .html and .htm files
+        if (extension != '.html' && extension != '.htm') {
+             // throw Exception('Only .html or .htm files are supported');
         }
         map['file'] = await MultipartFile.fromFile(
             htmlFile.path,

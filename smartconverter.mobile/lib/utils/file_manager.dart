@@ -619,7 +619,7 @@ class FileManager {
     return dir;
   }
 
-  static const String _websiteHtmlToCsvSubFolder = 'html-to-csv';
+  static const String _websiteHtmlToCsvSubFolder = 'html-table-to-csv';
 
   /// Get directory for HTML to CSV outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteHtmlToCsvDirectory() async {
