@@ -1075,9 +1075,30 @@ class WebsiteConversionService:
 
     
     @staticmethod
-    def excel_to_html(file_content: bytes) -> str:
+    def excel_to_html(file_content: bytes, original_filename: str = None, output_filename: str = None) -> str:
         """Convert Excel file to HTML."""
         try:
+            # Determine title
+            title = os.path.splitext(original_filename)[0] if original_filename else "Converted Excel"
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                title = os.path.splitext(output_filename)[0]
+
+            # Determine filename
+            if output_filename and output_filename.strip() and output_filename.lower() != "string":
+                if not output_filename.lower().endswith('.html'):
+                    output_filename += '.html'
+                filename = output_filename
+            else:
+                if original_filename:
+                    base_name = os.path.splitext(original_filename)[0]
+                    filename = f"{base_name}.html"
+                else:
+                    unique_id = str(uuid.uuid4())
+                    filename = f"excel_to_html_{unique_id}.html"
+            
+            output_path = os.path.join("outputs", filename)
+            os.makedirs("outputs", exist_ok=True)
+
             # Create temporary file for Excel
             with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as excel_file:
                 excel_file.write(file_content)
@@ -1086,20 +1107,37 @@ class WebsiteConversionService:
             # Read Excel file
             df = pd.read_excel(excel_file_path, sheet_name=None)
             
+            # CSS for better styling
+            css = """
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; max-width: 100%; margin: 0 auto; }
+                table { border-collapse: collapse; width: 100%; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                th { background-color: #f2f2f2; font-weight: bold; color: #333; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+                tr:hover { background-color: #f5f5f5; }
+                h2 { color: #333; margin-top: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+            </style>
+            """
+            
             # Convert to HTML
-            html_content = "<html><head><title>Converted Excel</title></head><body>"
+            html_content = f"<html><head><title>{title}</title>{css}</head><body>"
             
             for sheet_name, data in df.items():
                 html_content += f"<h2>Sheet: {sheet_name}</h2>"
-                html_content += data.to_html(index=False, classes='table table-striped')
+                html_content += data.to_html(index=False, classes='table')
                 html_content += "<br>"
             
             html_content += "</body></html>"
             
+            # Save HTML to file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
             # Cleanup
             WebsiteConversionService.cleanup_temp_files([excel_file_path])
             
-            return html_content
+            return output_path
             
         except Exception as e:
             logger.error(f"Error converting Excel to HTML: {str(e)}")

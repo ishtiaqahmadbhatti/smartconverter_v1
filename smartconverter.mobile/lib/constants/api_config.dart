@@ -181,6 +181,7 @@ class ApiConfig {
   static const List<String> allowedExcelFormats = ['xls', 'xlsx'];
   static const List<String> allowedPowerPointFormats = ['ppt', 'pptx'];
   static const String htmlTableToCsvEndpoint = '/api/v1/websiteconversiontools/html-table-to-csv';
+  static const String excelToHtmlEndpoint = '/api/v1/websiteconversiontools/excel-to-html';
   static const List<String> allowedHtmlFormats = ['html', 'htm'];
 
   // Response Configuration

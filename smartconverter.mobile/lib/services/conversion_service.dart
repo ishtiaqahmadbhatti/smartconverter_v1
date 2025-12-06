@@ -589,6 +589,65 @@ class ConversionService {
     }
   }
 
+  Future<ImageToPdfResult?> convertExcelToHtml(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!excelFile.existsSync()) {
+        throw Exception('Excel file does not exist');
+      }
+      final extension = p.extension(excelFile.path).toLowerCase();
+      // Allow .xls and .xlsx files
+      if (extension != '.xls' && extension != '.xlsx') {
+         // throw Exception('Only .xls or .xlsx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        excelFile.path,
+        filename: p.basename(excelFile.path),
+      );
+
+      final Map<String, dynamic> map = {'file': file};
+      if (outputFilename != null && outputFilename.isNotEmpty) {
+        map['filename'] = outputFilename;
+      }
+
+      final formData = FormData.fromMap(map);
+
+      _debugLog('📤 Uploading Excel file for HTML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.excelToHtmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_excel.html';
+
+        _debugLog('✅ Excel converted to HTML successfully!');
+        _debugLog('📥 Downloading HTML: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Excel to HTML conversion failed: $e');
+    }
+  }
+
   Future<ImageToPdfResult?> convertWordToHtml(
     File wordFile, {
     String? outputFilename,

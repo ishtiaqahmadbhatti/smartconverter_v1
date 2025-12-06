@@ -631,6 +631,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _websiteExcelToHtmlSubFolder = 'excel-to-html';
+
+  /// Get directory for Excel to HTML outputs (under WebsiteConversion)
+  static Future<Directory> getWebsiteExcelToHtmlDirectory() async {
+    final websiteConversionsDir = await getWebsiteConversionsDirectory();
+    final dir = Directory('${websiteConversionsDir.path}/$_websiteExcelToHtmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   /// Get directory for Website to PNG outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToPngDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
