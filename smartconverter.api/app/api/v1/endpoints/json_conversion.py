@@ -87,7 +87,10 @@ def _cleanup_files(*paths: Optional[str]) -> None:
 # ---------------------------------------------------------------------------
 
 @router.post("/ai/pdf-to-json", response_model=ConversionResponse)
-async def ai_convert_pdf_to_json(file: UploadFile = File(...)):
+async def ai_convert_pdf_to_json(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
     """AI-assisted PDF to JSON conversion with structured extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
@@ -95,16 +98,28 @@ async def ai_convert_pdf_to_json(file: UploadFile = File(...)):
     try:
         FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
-        output_path = FileService.get_output_path(input_path, ".json")
+        
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "pdf_to_json"
+            output_filename = f"{base_name}.json"
+        
+        output_path = os.path.join(settings.output_dir, output_filename)
 
         result_path = PDFConversionService.pdf_to_json(input_path, output_path)
-        with open(result_path, "r", encoding="utf-8") as f:
-            json_payload = f.read()
+        
+        # Create download URL
+        result_filename = os.path.basename(result_path)
+        download_url = _build_download_url(result_filename)
 
         JSONConversionService.log_conversion(
             "ai-pdf-to-json",
             f"File: {file.filename}",
-            json_payload[:500],
+            f"Output: {result_filename}",
             True,
             user_id=None,
         )
@@ -112,9 +127,8 @@ async def ai_convert_pdf_to_json(file: UploadFile = File(...)):
         return ConversionResponse(
             success=True,
             message="AI: PDF converted to JSON successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=_build_download_url(os.path.basename(result_path)),
-            converted_data=json_payload,
+            output_filename=result_filename,
+            download_url=download_url,
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -148,6 +162,7 @@ async def ai_convert_pdf_to_json(file: UploadFile = File(...)):
         )
     finally:
         _cleanup_files(input_path)
+
 
 
 # ---------------------------------------------------------------------------
