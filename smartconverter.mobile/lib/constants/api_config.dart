@@ -189,6 +189,9 @@ class ApiConfig {
   static const String jsonToXmlEndpoint = '/api/v1/jsonconversiontools/json-to-xml';
   static const String jsonToCsvEndpoint = '/api/v1/jsonconversiontools/json-to-csv';
   static const String jsonToExcelEndpoint = '/api/v1/jsonconversiontools/json-to-excel';
+  static const String excelToJsonEndpoint = '/api/v1/jsonconversiontools/excel-to-json';
+  static const String csvToJsonEndpoint = '/api/v1/jsonconversiontools/csv-to-json';
+  static const String jsonToYamlEndpoint = '/api/v1/jsonconversiontools/json-to-yaml';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';

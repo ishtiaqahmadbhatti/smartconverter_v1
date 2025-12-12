@@ -1999,6 +1999,121 @@ Future<ImageToPdfResult?> convertJsonToExcel(
   }
 }
 
+
+
+  Future<ImageToPdfResult?> convertExcelToJson(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!excelFile.existsSync()) {
+        throw Exception('Excel file does not exist');
+      }
+
+      final extension = p.extension(excelFile.path).toLowerCase();
+      if (!['.xls', '.xlsx'].contains(extension)) {
+        throw Exception('Only Excel files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        excelFile.path,
+        filename: p.basename(excelFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null) 'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.excelToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final outputName = response.data['output_filename'] ??
+            (outputFilename != null && outputFilename.isNotEmpty
+                ? (outputFilename.toLowerCase().endsWith('.json')
+                    ? outputFilename
+                    : '$outputFilename.json')
+                : 'converted.json');
+
+        if (downloadUrl != null) {
+          final resultFile =
+              await _downloadFile(downloadUrl, outputName);
+          if (resultFile != null) {
+            return ImageToPdfResult(
+              file: resultFile,
+              fileName: outputName,
+              downloadUrl: downloadUrl,
+            );
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Excel to JSON: $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertCsvToJson(
+    File csvFile, {
+    String? outputFilename,
+    String delimiter = ',',
+  }) async {
+    try {
+      if (!csvFile.existsSync()) {
+        throw Exception('CSV file does not exist');
+      }
+
+      final extension = p.extension(csvFile.path).toLowerCase();
+      if (extension != '.csv') {
+        throw Exception('Only CSV files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        csvFile.path,
+        filename: p.basename(csvFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'delimiter': delimiter,
+        if (outputFilename != null) 'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.csvToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final outputName = response.data['output_filename'] ??
+            (outputFilename != null && outputFilename.isNotEmpty
+                ? (outputFilename.toLowerCase().endsWith('.json')
+                    ? outputFilename
+                    : '$outputFilename.json')
+                : 'converted.json');
+
+        if (downloadUrl != null) {
+          final resultFile = await _downloadFile(downloadUrl, outputName);
+          if (resultFile != null) {
+            return ImageToPdfResult(
+              file: resultFile,
+              fileName: outputName,
+              downloadUrl: downloadUrl,
+            );
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert CSV to JSON: $e');
+    }
+  }
+
   // Convert PDF to Markdown
   Future<ImageToPdfResult?> convertPdfToMarkdown(
     File pdfFile, {
@@ -4069,6 +4184,66 @@ async def download_file(filename: str):
       return null;
     } catch (e) {
       throw Exception('Failed to translate SRT: $e');
+    }
+  }
+
+  // Convert JSON to YAML
+  Future<ImageToPdfResult?> convertJsonToYaml(
+    File jsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JSON file for YAML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonToYamlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jsonFile.path)}.yaml';
+
+        _debugLog('✅ JSON converted to YAML successfully!');
+        _debugLog('📥 Downloading YAML: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON to YAML: $e');
     }
   }
 

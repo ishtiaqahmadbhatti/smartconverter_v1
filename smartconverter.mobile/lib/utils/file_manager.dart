@@ -202,6 +202,42 @@ class FileManager {
     return dir;
   }
 
+  static const String _excelToJsonSubFolder = 'excel-to-json';
+
+  /// Get directory for Excel to JSON outputs (under JSONConversion)
+  static Future<Directory> getExcelToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_excelToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static const String _csvToJsonSubFolder = 'csv-to-json';
+
+  /// Get directory for CSV to JSON outputs (under JSONConversion)
+  static Future<Directory> getCsvToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_csvToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static const String _jsonToYamlSubFolder = 'json-to-yaml';
+
+  /// Get directory for JSON to YAML outputs (under JSONConversion)
+  static Future<Directory> getJsonToYamlDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonToYamlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
 
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {

@@ -30,7 +30,6 @@ import 'conversions/xml/xml_xsd_validator_page.dart';
 import 'conversions/xml/json_to_xml_from_xml_category_page.dart';
 // CSV pages
 import 'conversions/csv/csv_to_excel_page.dart';
-import 'conversions/csv/csv_to_json_page.dart';
 import 'conversions/csv/csv_to_xml_page.dart';
 // (removed unused) csv_validation_page, csv_formatter_page
 import 'conversions/csv/ai_convert_pdf_to_csv_page.dart';
@@ -431,7 +430,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Convert Excel to JSON':
           return const ExcelToJsonPage();
         case 'Convert CSV to JSON':
-          return const CsvToJsonFromJsonCategoryPage();
+          return const CsvToJsonPage();
         case 'Convert JSON to YAML':
           return const JsonToYamlPage();
         case 'Convert JSON objects to CSV':

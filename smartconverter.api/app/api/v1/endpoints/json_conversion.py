@@ -808,7 +808,10 @@ async def convert_json_to_excel(
 # ---------------------------------------------------------------------------
 
 @router.post("/excel-to-json", response_model=ConversionResponse)
-async def convert_excel_to_json(file: UploadFile = File(...)):
+async def convert_excel_to_json(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
     """Convert Excel file to JSON."""
     input_path: Optional[str] = None
 
@@ -816,12 +819,29 @@ async def convert_excel_to_json(file: UploadFile = File(...)):
         FileService.validate_file(file)
         input_path = FileService.save_uploaded_file(file)
 
+        # Convert to JSON
         result = JSONConversionService.excel_to_json(input_path)
+        
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "excel_to_json"
+            output_filename = f"{base_name}.json"
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+            
+        final_filename = os.path.basename(output_path)
+        download_url = _build_download_url(final_filename)
 
         JSONConversionService.log_conversion(
             "excel-to-json",
             f"File: {file.filename}",
-            json.dumps(result),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
@@ -829,7 +849,8 @@ async def convert_excel_to_json(file: UploadFile = File(...)):
         return ConversionResponse(
             success=True,
             message="Excel converted to JSON successfully",
-            converted_data=result,
+            output_filename=final_filename,
+            download_url=download_url,
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -873,6 +894,7 @@ async def convert_excel_to_json(file: UploadFile = File(...)):
 async def convert_csv_to_json(
     file: UploadFile = File(...),
     delimiter: str = Form(","),
+    filename: Optional[str] = Form(None),
 ):
     """Convert CSV file to JSON."""
     input_path: Optional[str] = None
@@ -886,10 +908,26 @@ async def convert_csv_to_json(
 
         result = JSONConversionService.csv_to_json(csv_content, delimiter)
 
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "converted"
+            output_filename = f"{base_name}.json"
+
+        # Save JSON to file
+        output_filename_path = FileService.get_output_path(output_filename, ".json")
+        with open(output_filename_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+
+        final_filename = os.path.basename(output_filename_path)
+
         JSONConversionService.log_conversion(
             "csv-to-json",
             f"File: {file.filename}",
-            json.dumps(result),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
@@ -897,7 +935,8 @@ async def convert_csv_to_json(
         return ConversionResponse(
             success=True,
             message="CSV converted to JSON successfully",
-            converted_data=result,
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -938,15 +977,52 @@ async def convert_csv_to_json(
 # ---------------------------------------------------------------------------
 
 @router.post("/json-to-yaml", response_model=ConversionResponse)
-async def convert_json_to_yaml(request: JSONToYAMLRequest):
-    """Convert JSON to YAML format."""
+async def convert_json_to_yaml(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
+    """Convert JSON file to YAML."""
+    input_path = None
+    json_data = None
+    
     try:
-        result = JSONConversionService.json_to_yaml(request.json_data)
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Read and parse JSON
+        with open(input_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not content.strip():
+                raise FileProcessingError("Input file is empty")
+            try:
+                parsed_json = json.loads(content)
+                json_data = content  # For logging
+            except json.JSONDecodeError as e:
+                raise FileProcessingError(f"Invalid JSON format: {str(e)}")
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.yaml'):
+                filename += '.yaml'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_yaml"
+            output_filename = f"{base_name}.yaml"
+
+        # Convert to YAML
+        yaml_content = JSONConversionService.json_to_yaml(parsed_json)
+        
+        # Save YAML to file
+        output_filename_path = FileService.get_output_path(output_filename, ".yaml")
+        with open(output_filename_path, "w", encoding="utf-8") as f:
+            f.write(yaml_content)
+        
+        final_filename = os.path.basename(output_filename_path)
 
         JSONConversionService.log_conversion(
             "json-to-yaml",
-            json.dumps(request.json_data),
-            result,
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
@@ -954,10 +1030,24 @@ async def convert_json_to_yaml(request: JSONToYAMLRequest):
         return ConversionResponse(
             success=True,
             message="JSON converted to YAML successfully",
-            converted_data=result,
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
+        JSONConversionService.log_conversion(
+            "json-to-yaml",
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400,
+        )
         JSONConversionService.log_conversion(
             "json-to-yaml",
             json.dumps(request.json_data),
