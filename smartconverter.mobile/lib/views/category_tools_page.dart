@@ -597,7 +597,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'Add Watermark':
           return const WatermarkPdfPage();
         case 'AI: Convert PDF to JSON':
-          return const AiPdfToJsonPage();
+          return AiPdfToJsonPage(categoryId: categoryId);
         case 'AI: Convert PDF to Markdown':
           return const AiPdfToMarkdownPage();
         case 'AI: Convert PDF to CSV':

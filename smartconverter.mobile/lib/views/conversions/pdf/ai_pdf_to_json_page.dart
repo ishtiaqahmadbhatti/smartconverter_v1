@@ -12,7 +12,8 @@ import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
 class AiPdfToJsonPage extends StatefulWidget {
-  const AiPdfToJsonPage({super.key});
+  final String? categoryId;
+  const AiPdfToJsonPage({super.key, this.categoryId});
 
   @override
   State<AiPdfToJsonPage> createState() => _AiPdfToJsonPageState();
@@ -220,7 +221,10 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
     setState(() => _isSaving = true);
 
     try {
-      final directory = await FileManager.getPdfToJsonDirectory();
+      // Use JSON PDF to JSON directory if called from JSON tools, otherwise use PDF directory
+      final directory = widget.categoryId == 'json_conversion'
+          ? await FileManager.getJsonPdfToJsonDirectory()
+          : await FileManager.getPdfToJsonDirectory();
 
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
@@ -523,7 +527,18 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
 
     final file = _selectedFile!;
     final fileName = p.basename(file.path);
-    final fileSize = _formatBytes(file.lengthSync());
+    
+    // Check if file still exists before accessing its size
+    String fileSize;
+    try {
+      if (file.existsSync()) {
+        fileSize = _formatBytes(file.lengthSync());
+      } else {
+        fileSize = 'File no longer available';
+      }
+    } catch (e) {
+      fileSize = 'Unknown size';
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),

@@ -75,6 +75,8 @@ class FileManager {
   static const String _htmlToJpgSubFolder = 'html-to-jpg';
   static const String _websiteToPngSubFolder = 'website-to-png';
   static const String _htmlToPngSubFolder = 'html-to-png';
+  static const String _jsonConversionsFolder = 'JSONConversion';
+  static const String _jsonPdfToJsonSubFolder = 'pdf-to-json';
 
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
@@ -102,6 +104,30 @@ class FileManager {
     }
 
     return smartConverterDir;
+  }
+
+  /// Get or create the JSONConversion folder
+  static Future<Directory> getJsonConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final jsonConversionsDir = Directory(
+      '${smartConverterDir.path}/$_jsonConversionsFolder',
+    );
+
+    if (!await jsonConversionsDir.exists()) {
+      await jsonConversionsDir.create(recursive: true);
+    }
+
+    return jsonConversionsDir;
+  }
+
+  /// Get directory for JSON PDF to JSON outputs (under JSONConversion)
+  static Future<Directory> getJsonPdfToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonPdfToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
   /// Get or create a tool-specific directory

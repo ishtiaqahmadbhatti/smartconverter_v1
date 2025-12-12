@@ -91,57 +91,115 @@ class ImageConversionService:
             raise FileProcessingError(f"Image format conversion failed: {str(e)}")
     
     @staticmethod
-    def image_to_json(input_path: str, include_metadata: bool = True) -> str:
-        """Convert image to JSON format with metadata and base64 encoding."""
+    def image_to_json(input_path: str, output_path: str = None) -> str:
+        """Convert image to JSON format with advanced OCR text extraction."""
         try:
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input image file not found: {input_path}")
             
-            # Generate output path
-            output_path = FileService.get_output_path(input_path, ".json")
+            # Generate output path if not provided
+            if output_path is None:
+                output_path = FileService.get_output_path(input_path, ".json")
             
             with Image.open(input_path) as img:
-                # Get image metadata
-                metadata = {
-                    "filename": os.path.basename(input_path),
-                    "format": img.format,
-                    "mode": img.mode,
-                    "size": img.size,
-                    "width": img.width,
-                    "height": img.height
-                }
-                
-                if include_metadata:
-                    # Add EXIF data if available
-                    if hasattr(img, '_getexif') and img._getexif():
-                        exif_data = img._getexif()
-                        metadata["exif"] = {str(k): str(v) for k, v in exif_data.items()}
+                # Extract text using OCR (pytesseract)
+                try:
+                    import pytesseract
                     
-                    # Add additional metadata
-                    metadata.update({
-                        "has_transparency": img.mode in ['RGBA', 'LA', 'P'],
-                        "color_count": len(img.getcolors(maxcolors=256*256*256)) if img.mode == 'P' else None
-                    })
-                
-                # Convert image to base64
-                img_buffer = io.BytesIO()
-                img.save(img_buffer, format=img.format or 'PNG')
-                img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-                
-                # Create JSON structure
-                json_data = {
-                    "image_data": {
-                        "base64": img_base64,
-                        "format": img.format or 'PNG',
-                        "mime_type": f"image/{img.format.lower() if img.format else 'png'}"
-                    },
-                    "metadata": metadata if include_metadata else None,
-                    "conversion_info": {
-                        "converted_at": str(pd.Timestamp.now()),
-                        "original_size": os.path.getsize(input_path),
-                        "base64_size": len(img_base64)
+                    # Get full extracted text
+                    extracted_text = pytesseract.image_to_string(img)
+                    
+                    # Get detailed OCR data for structured extraction
+                    ocr_data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
+                    
+                    # Organize text by lines and paragraphs
+                    lines = []
+                    current_line = []
+                    current_line_num = -1
+                    
+                    for i in range(len(ocr_data['text'])):
+                        text = ocr_data['text'][i].strip()
+                        if text:
+                            line_num = ocr_data['line_num'][i]
+                            
+                            # New line detected
+                            if line_num != current_line_num:
+                                if current_line:
+                                    lines.append({
+                                        "line_number": current_line_num,
+                                        "text": " ".join([w["text"] for w in current_line]),
+                                        "confidence": sum([w["confidence"] for w in current_line]) / len(current_line)
+                                    })
+                                current_line = []
+                                current_line_num = line_num
+                            
+                            current_line.append({
+                                "text": text,
+                                "confidence": float(ocr_data['conf'][i])
+                            })
+                    
+                    # Add last line
+                    if current_line:
+                        lines.append({
+                            "line_number": current_line_num,
+                            "text": " ".join([w["text"] for w in current_line]),
+                            "confidence": sum([w["confidence"] for w in current_line]) / len(current_line)
+                        })
+                    
+                    # Group lines into paragraphs (lines separated by significant vertical gaps)
+                    paragraphs = []
+                    current_paragraph = []
+                    
+                    for line in lines:
+                        if line["text"].strip():
+                            current_paragraph.append(line["text"])
+                        elif current_paragraph:
+                            paragraphs.append(" ".join(current_paragraph))
+                            current_paragraph = []
+                    
+                    if current_paragraph:
+                        paragraphs.append(" ".join(current_paragraph))
+                    
+                    # Create clean, structured JSON focused on content
+                    json_data = {
+                        "content": {
+                            "full_text": extracted_text.strip(),
+                            "paragraphs": paragraphs,
+                            "lines": [line["text"] for line in lines],
+                            "total_lines": len(lines)
+                        },
+                        "structure": {
+                            "lines_detail": [
+                                {
+                                    "line": i + 1,
+                                    "text": line["text"],
+                                    "confidence": round(line["confidence"], 2)
+                                }
+                                for i, line in enumerate(lines)
+                            ]
+                        }
                     }
-                }
+                    
+                except ImportError:
+                    json_data = {
+                        "error": "OCR not available",
+                        "message": "pytesseract is not installed. Please install it to extract text from images.",
+                        "content": {
+                            "full_text": "",
+                            "paragraphs": [],
+                            "lines": []
+                        }
+                    }
+                except Exception as e:
+                    json_data = {
+                        "error": "OCR extraction failed",
+                        "message": str(e),
+                        "content": {
+                            "full_text": "",
+                            "paragraphs": [],
+                            "lines": []
+                        }
+                    }
             
             # Save JSON file
             with open(output_path, 'w', encoding='utf-8') as f:

@@ -172,28 +172,43 @@ async def ai_convert_pdf_to_json(
 @router.post("/ai/png-to-json", response_model=ConversionResponse)
 async def ai_convert_png_to_json(
     file: UploadFile = File(...),
-    include_metadata: bool = Form(True),
+    filename: Optional[str] = Form(None)
 ):
-    """AI-assisted PNG to JSON conversion (base64 + metadata)."""
+    """AI-assisted image to JSON conversion with OCR text extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
 
     try:
         FileService.validate_file(file, "image")
+        # Accept all common image formats
         ext = os.path.splitext(file.filename or "")[1].lower()
-        if ext != ".png":
-            raise UnsupportedFileTypeError("Only PNG images are allowed for this tool.")
+        if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp"}:
+            raise UnsupportedFileTypeError("Only image files (PNG, JPG, JPEG, BMP, GIF, TIFF, WEBP) are allowed.")
 
         input_path = FileService.save_uploaded_file(file)
-        output_path = ImageConversionService.image_to_json(input_path, include_metadata)
-
-        with open(output_path, "r", encoding="utf-8") as f:
-            json_payload = f.read()
+        
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "png_to_json"
+            output_filename = f"{base_name}.json"
+        
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        # Convert image to JSON
+        result_path = ImageConversionService.image_to_json(input_path, output_path=output_path)
+        
+        # Create download URL
+        result_filename = os.path.basename(result_path)
+        download_url = _build_download_url(result_filename)
 
         JSONConversionService.log_conversion(
             "ai-png-to-json",
             f"File: {file.filename}",
-            json_payload[:500],
+            f"Output: {result_filename}",
             True,
             user_id=None,
         )
@@ -201,9 +216,8 @@ async def ai_convert_png_to_json(
         return ConversionResponse(
             success=True,
             message="AI: PNG converted to JSON successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=_build_download_url(os.path.basename(output_path)),
-            converted_data=json_payload,
+            output_filename=result_filename,
+            download_url=download_url,
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -237,6 +251,7 @@ async def ai_convert_png_to_json(
         )
     finally:
         _cleanup_files(input_path)
+
 
 
 # ---------------------------------------------------------------------------
