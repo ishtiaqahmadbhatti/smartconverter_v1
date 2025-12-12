@@ -238,6 +238,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _jsonObjectsToCsvSubFolder = 'json-objects-to-csv';
+
+  /// Get directory for JSON Objects to CSV outputs (under JSONConversion)
+  static Future<Directory> getJsonObjectsToCsvDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonObjectsToCsvSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
 
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {

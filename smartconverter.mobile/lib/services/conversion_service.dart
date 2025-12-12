@@ -4247,4 +4247,66 @@ async def download_file(filename: str):
     }
   }
 
+  // Convert JSON Objects to CSV
+  Future<ImageToPdfResult?> convertJsonObjectsToCsv(
+    File jsonFile, {
+    String? outputFilename,
+    String delimiter = ',',
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        'delimiter': delimiter,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JSON file for Objects to CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonObjectsToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jsonFile.path)}.csv';
+
+        _debugLog('✅ JSON successfully converted to CSV!');
+        _debugLog('📥 Downloading CSV: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON objects to CSV: $e');
+    }
+  }
+
 }
