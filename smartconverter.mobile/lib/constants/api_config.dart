@@ -183,6 +183,9 @@ class ApiConfig {
   static const String htmlTableToCsvEndpoint = '/api/v1/websiteconversiontools/html-table-to-csv';
   static const String excelToHtmlEndpoint = '/api/v1/websiteconversiontools/excel-to-html';
   static const List<String> allowedHtmlFormats = ['html', 'htm'];
+  static const String pngToJsonEndpoint = '/api/v1/jsonconversiontools/ai/png-to-json';
+  static const String jpgToJsonEndpoint = '/api/v1/jsonconversiontools/ai/jpg-to-json';
+  static const String xmlToJsonEndpoint = '/api/v1/jsonconversiontools/xml-to-json';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';

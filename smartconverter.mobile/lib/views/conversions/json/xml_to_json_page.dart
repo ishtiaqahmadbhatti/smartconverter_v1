@@ -11,14 +11,14 @@ import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
-class AiConvertJpgToJsonPage extends StatefulWidget {
-  const AiConvertJpgToJsonPage({super.key});
+class XmlToJsonPage extends StatefulWidget {
+  const XmlToJsonPage({super.key});
 
   @override
-  State<AiConvertJpgToJsonPage> createState() => _AiConvertJpgToJsonPageState();
+  State<XmlToJsonPage> createState() => _XmlToJsonPageState();
 }
 
-class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
+class _XmlToJsonPageState extends State<XmlToJsonPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -28,7 +28,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Select a Jpg file to begin.';
+  String _statusMessage = 'Select an XML file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -91,10 +91,10 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     ad.load();
   }
 
-  Future<void> _pickImageFile() async {
+  Future<void> _pickXmlFile() async {
     try {
       final file = await _service.pickFile(
-        allowedExtensions: const ['jpg', 'jpeg'],
+        allowedExtensions: const ['xml'],
         type: 'custom',
       );
 
@@ -106,15 +106,15 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
       }
 
       final extension = p.extension(file.path).toLowerCase();
-      if (!['.jpg', '.jpeg'].contains(extension)) {
+      if (extension != '.xml') {
         if (mounted) {
           setState(
-            () => _statusMessage = 'Please select a Jpg file.',
+            () => _statusMessage = 'Please select an XML file.',
           );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Only Jpg files are supported. Please select a file with .Jpg extension.',
+                'Only XML files are supported. Please select a file with .xml extension.',
               ),
               backgroundColor: AppColors.warning,
             ),
@@ -127,12 +127,12 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
         _selectedFile = file;
         _conversionResult = null;
         _savedFilePath = null;
-        _statusMessage = 'Image file selected: ${p.basename(file.path)}';
+        _statusMessage = 'XML file selected: ${p.basename(file.path)}';
       });
 
       _updateSuggestedFileName();
     } catch (e) {
-      final message = 'Failed to select image file: $e';
+      final message = 'Failed to select XML file: $e';
       if (mounted) {
         setState(() => _statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,11 +142,11 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     }
   }
 
-  Future<void> _convertImageToJson() async {
+  Future<void> _convertXmlToJson() async {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select an image file first.'),
+          content: Text('Please select an XML file first.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -155,7 +155,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting image to JSON...';
+      _statusMessage = 'Converting XML to JSON...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -165,7 +165,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertJpgToJson(
+      final result = await _service.convertXmlToJson(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -220,7 +220,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     setState(() => _isSaving = true);
 
     try {
-      final directory = await FileManager.getJsonJpgToJsonDirectory();
+      final directory = await FileManager.getJsonXmlToJsonDirectory();
 
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
@@ -322,7 +322,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
     if (base.isEmpty) {
-      base = 'converted_image';
+      base = 'converted_xml';
     }
     return base.substring(0, min(base.length, 80));
   }
@@ -341,7 +341,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
       _fileNameEdited = false;
       _suggestedBaseName = null;
       _savedFilePath = null;
-      _statusMessage = 'Select a Jpg file to begin.';
+      _statusMessage = 'Select an XML file to begin.';
       _fileNameController.clear();
     });
     _admobService.preloadAd();
@@ -364,7 +364,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'AI: Jpg to JSON',
+          'XML to JSON',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -439,7 +439,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.image_outlined,
+              Icons.code,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -450,7 +450,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text(
-                  'AI: Convert Jpg to JSON',
+                  'Convert XML to JSON',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -459,7 +459,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Extract text and structured data from Jpg images using advanced OCR technology.',
+                  'Transform XML files into structured JSON format.',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -479,10 +479,10 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickImageFile,
+            onPressed: _isConverting ? null : _pickXmlFile,
             icon: const Icon(Icons.file_open_outlined),
             label: Text(
-              _selectedFile == null ? 'Select Jpg File' : 'Change File',
+              _selectedFile == null ? 'Select XML File' : 'Change File',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -524,7 +524,6 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     final file = _selectedFile!;
     final fileName = p.basename(file.path);
     
-    // Check if file still exists before accessing its size
     String fileSize;
     try {
       if (file.existsSync()) {
@@ -552,7 +551,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
-              Icons.image,
+              Icons.code,
               color: AppColors.primaryBlue,
               size: 24,
             ),
@@ -593,7 +592,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
       return const SizedBox.shrink();
     }
 
-    final hintText = _suggestedBaseName ?? 'converted_image';
+    final hintText = _suggestedBaseName ?? 'converted_xml';
 
     return TextField(
       controller: _fileNameController,
@@ -618,7 +617,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertImageToJson : null,
+        onPressed: canConvert ? _convertXmlToJson : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -717,7 +716,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.code,
+                  Icons.data_object,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -845,11 +844,11 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select a Jpg file (.Jpg extension)'),
+          _buildInstructionStep('1', 'Select an XML file (.xml extension)'),
           const SizedBox(height: 8),
           _buildInstructionStep(
             '2',
-            'Tap "Convert to JSON" to extract text using OCR',
+            'Tap "Convert to JSON" to transform the XML structure',
           ),
           const SizedBox(height: 8),
           _buildInstructionStep('3', 'Save or share the generated JSON file'),

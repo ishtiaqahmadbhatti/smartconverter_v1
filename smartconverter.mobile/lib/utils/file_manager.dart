@@ -130,6 +130,42 @@ class FileManager {
     return dir;
   }
 
+  static const String _jsonPngToJsonSubFolder = 'png-to-json';
+
+  /// Get directory for JSON PNG to JSON outputs (under JSONConversion)
+  static Future<Directory> getJsonPngToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonPngToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static const String _jsonJpgToJsonSubFolder = 'jpg-to-json';
+
+  /// Get directory for JSON JPG to JSON outputs (under JSONConversion)
+  static Future<Directory> getJsonJpgToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonJpgToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static const String _jsonXmlToJsonSubFolder = 'xml-to-json';
+
+  /// Get directory for JSON XML to JSON outputs (under JSONConversion)
+  static Future<Directory> getJsonXmlToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonXmlToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {
     final smartConverterDir = await getSmartConverterDirectory();

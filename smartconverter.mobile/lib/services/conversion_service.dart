@@ -1645,6 +1645,183 @@ class ConversionService {
     }
   }
 
+Future<ImageToPdfResult?> convertPngToJson(
+  File imageFile, {
+  String? outputFilename,
+}) async {
+  try {
+    if (!imageFile.existsSync()) {
+      throw Exception('Image file does not exist');
+    }
+
+    final extension = p.extension(imageFile.path).toLowerCase();
+    if (extension != '.png') {
+      throw Exception('Only PNG files are supported');
+    }
+
+    final file = await MultipartFile.fromFile(
+      imageFile.path,
+      filename: p.basename(imageFile.path),
+    );
+
+    FormData formData = FormData.fromMap({
+      'file': file,
+      if (outputFilename != null && outputFilename.isNotEmpty)
+        'filename': outputFilename,
+    });
+
+    _debugLog('📤 Uploading image file for JSON conversion...');
+
+    Response response = await _dio.post(
+      ApiConfig.pngToJsonEndpoint,
+      data: formData,
+    );
+
+    if (response.statusCode == 200) {
+      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+      String fileName =
+          response.data['output_filename'] ??
+          '${p.basenameWithoutExtension(imageFile.path)}.json';
+
+      _debugLog('✅ Image converted to JSON successfully!');
+      _debugLog('📥 Downloading JSON: $fileName');
+
+      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+      if (downloadedFile == null) {
+        return null;
+      }
+
+      return ImageToPdfResult(
+        file: downloadedFile,
+        fileName: fileName,
+        downloadUrl: downloadUrl,
+      );
+    }
+
+    return null;
+  } catch (e) {
+    throw Exception('Failed to convert image to JSON: $e');
+  }
+}
+
+Future<ImageToPdfResult?> convertJpgToJson(
+  File imageFile, {
+  String? outputFilename,
+}) async {
+  try {
+    if (!imageFile.existsSync()) {
+      throw Exception('Image file does not exist');
+    }
+
+    final extension = p.extension(imageFile.path).toLowerCase();
+    if (!['.jpg', '.jpeg'].contains(extension)) {
+      throw Exception('Only JPG/JPEG files are supported');
+    }
+
+    final file = await MultipartFile.fromFile(
+      imageFile.path,
+      filename: p.basename(imageFile.path),
+    );
+
+    FormData formData = FormData.fromMap({
+      'file': file,
+      if (outputFilename != null && outputFilename.isNotEmpty)
+        'filename': outputFilename,
+    });
+
+    _debugLog('📤 Uploading JPG file for JSON conversion...');
+
+    Response response = await _dio.post(
+      ApiConfig.jpgToJsonEndpoint,
+      data: formData,
+    );
+
+    if (response.statusCode == 200) {
+      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+      String fileName =
+          response.data['output_filename'] ??
+          '${p.basenameWithoutExtension(imageFile.path)}.json';
+
+      _debugLog('✅ JPG converted to JSON successfully!');
+      _debugLog('📥 Downloading JSON: $fileName');
+
+      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+      if (downloadedFile == null) {
+        return null;
+      }
+
+      return ImageToPdfResult(
+        file: downloadedFile,
+        fileName: fileName,
+        downloadUrl: downloadUrl,
+      );
+    }
+
+    return null;
+  } catch (e) {
+    throw Exception('Failed to convert JPG to JSON: $e');
+  }
+}
+
+Future<ImageToPdfResult?> convertXmlToJson(
+  File xmlFile, {
+  String? outputFilename,
+}) async {
+  try {
+    if (!xmlFile.existsSync()) {
+      throw Exception('XML file does not exist');
+    }
+
+    final extension = p.extension(xmlFile.path).toLowerCase();
+    if (extension != '.xml') {
+      throw Exception('Only XML files are supported');
+    }
+
+    final file = await MultipartFile.fromFile(
+      xmlFile.path,
+      filename: p.basename(xmlFile.path),
+    );
+
+    FormData formData = FormData.fromMap({
+      'file': file,
+      if (outputFilename != null && outputFilename.isNotEmpty)
+        'filename': outputFilename,
+    });
+
+    _debugLog('📤 Uploading XML file for JSON conversion...');
+
+    Response response = await _dio.post(
+      ApiConfig.xmlToJsonEndpoint,
+      data: formData,
+    );
+
+    if (response.statusCode == 200) {
+      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+      String fileName =
+          response.data['output_filename'] ??
+          '${p.basenameWithoutExtension(xmlFile.path)}.json';
+
+      _debugLog('✅ XML converted to JSON successfully!');
+      _debugLog('📥 Downloading JSON: $fileName');
+
+      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+      if (downloadedFile == null) {
+        return null;
+      }
+
+      return ImageToPdfResult(
+        file: downloadedFile,
+        fileName: fileName,
+        downloadUrl: downloadUrl,
+      );
+    }
+
+    return null;
+  } catch (e) {
+    throw Exception('Failed to convert XML to JSON: $e');
+  }
+}
+
   // Convert PDF to Markdown
   Future<ImageToPdfResult?> convertPdfToMarkdown(
     File pdfFile, {

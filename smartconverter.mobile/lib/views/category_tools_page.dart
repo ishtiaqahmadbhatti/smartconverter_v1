@@ -16,6 +16,7 @@ import 'conversions/json/json_to_yaml_page.dart';
 import 'conversions/json/json_objects_to_csv_page.dart';
 import 'conversions/json/json_objects_to_excel_page.dart';
 import 'conversions/json/yaml_to_json_page.dart';
+import 'conversions/json/xml_to_json_page.dart' as json_xml;
 // XML pages
 import 'conversions/xml/xml_to_json_page.dart';
 import 'conversions/xml/xml_to_csv_page.dart';
@@ -416,7 +417,7 @@ class CategoryToolsPage extends StatelessWidget {
         case 'AI: Convert JPG to JSON':
           return const AiConvertJpgToJsonPage();
         case 'Convert XML to JSON':
-          return const JsonToXmlPage();
+          return const json_xml.XmlToJsonPage();
         case 'JSON Formatter':
           return const JsonFormatterPage();
         case 'JSON Validator':

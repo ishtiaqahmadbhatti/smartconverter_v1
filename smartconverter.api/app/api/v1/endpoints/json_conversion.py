@@ -180,10 +180,10 @@ async def ai_convert_png_to_json(
 
     try:
         FileService.validate_file(file, "image")
-        # Accept all common image formats
+        # Accept only PNG files
         ext = os.path.splitext(file.filename or "")[1].lower()
-        if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp"}:
-            raise UnsupportedFileTypeError("Only image files (PNG, JPG, JPEG, BMP, GIF, TIFF, WEBP) are allowed.")
+        if ext != ".png":
+            raise UnsupportedFileTypeError("Only PNG image files are allowed for this tool.")
 
         input_path = FileService.save_uploaded_file(file)
         
@@ -254,6 +254,8 @@ async def ai_convert_png_to_json(
 
 
 
+
+
 # ---------------------------------------------------------------------------
 # 3. AI: Convert JPG to JSON
 # ---------------------------------------------------------------------------
@@ -261,28 +263,43 @@ async def ai_convert_png_to_json(
 @router.post("/ai/jpg-to-json", response_model=ConversionResponse)
 async def ai_convert_jpg_to_json(
     file: UploadFile = File(...),
-    include_metadata: bool = Form(True),
+    filename: Optional[str] = Form(None)
 ):
-    """AI-assisted JPG/JPEG to JSON conversion (base64 + metadata)."""
+    """AI-assisted JPG to JSON conversion with OCR text extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
 
     try:
         FileService.validate_file(file, "image")
+        # Accept only JPG/JPEG files
         ext = os.path.splitext(file.filename or "")[1].lower()
         if ext not in {".jpg", ".jpeg"}:
-            raise UnsupportedFileTypeError("Only JPG or JPEG images are allowed for this tool.")
+            raise UnsupportedFileTypeError("Only JPG/JPEG image files are allowed for this tool.")
 
         input_path = FileService.save_uploaded_file(file)
-        output_path = ImageConversionService.image_to_json(input_path, include_metadata)
-
-        with open(output_path, "r", encoding="utf-8") as f:
-            json_payload = f.read()
+        
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "jpg_to_json"
+            output_filename = f"{base_name}.json"
+        
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        # Convert image to JSON
+        result_path = ImageConversionService.image_to_json(input_path, output_path=output_path)
+        
+        # Create download URL
+        result_filename = os.path.basename(result_path)
+        download_url = _build_download_url(result_filename)
 
         JSONConversionService.log_conversion(
             "ai-jpg-to-json",
             f"File: {file.filename}",
-            json_payload[:500],
+            f"Output: {result_filename}",
             True,
             user_id=None,
         )
@@ -290,9 +307,8 @@ async def ai_convert_jpg_to_json(
         return ConversionResponse(
             success=True,
             message="AI: JPG converted to JSON successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=_build_download_url(os.path.basename(output_path)),
-            converted_data=json_payload,
+            output_filename=result_filename,
+            download_url=download_url,
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -328,13 +344,15 @@ async def ai_convert_jpg_to_json(
         _cleanup_files(input_path)
 
 
+
 # ---------------------------------------------------------------------------
 # 4. Convert XML to JSON
 # ---------------------------------------------------------------------------
 
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
 ):
     """
     Convert XML to JSON format.
@@ -353,15 +371,26 @@ async def convert_xml_to_json(
         json_result = JSONConversionService.xml_to_json(xml_data)
         json_string = json.dumps(json_result, indent=2)
 
-        output_filename = f"xml_to_json_{uuid.uuid4().hex[:8]}.json"
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "xml_to_json"
+            output_filename = f"{base_name}.json"
+
         output_path = os.path.join(settings.output_dir, output_filename)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(json_string)
 
+        # Create download URL
+        download_url = _build_download_url(output_filename)
+
         JSONConversionService.log_conversion(
             "xml-to-json",
             xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
-            json_string[:500] if len(json_string) > 500 else json_string,
+            f"Output: {output_filename}",
             True,
             user_id=None,
         )
@@ -369,9 +398,8 @@ async def convert_xml_to_json(
         return ConversionResponse(
             success=True,
             message="XML converted to JSON successfully",
-            converted_data=json_string,
             output_filename=output_filename,
-            download_url=_build_download_url(output_filename),
+            download_url=download_url,
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
