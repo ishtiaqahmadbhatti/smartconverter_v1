@@ -626,15 +626,49 @@ async def convert_json_to_xml(
 # ---------------------------------------------------------------------------
 
 @router.post("/json-to-csv", response_model=ConversionResponse)
-async def convert_json_to_csv(request: JSONToCSVRequest):
-    """Convert JSON to CSV format."""
+async def convert_json_to_csv(
+    file: UploadFile = File(...),
+    delimiter: Optional[str] = Form(","),
+    filename: Optional[str] = Form(None)
+):
+    """
+    Convert JSON to CSV format.
+
+    Only multipart/form-data with an uploaded JSON file is supported.
+    """
+    json_data: Optional[str] = None
+    input_path: Optional[str] = None
+    
     try:
-        result = JSONConversionService.json_to_csv(request.json_data, request.delimiter)
+        FileService.validate_file(file, "json")
+        input_path = FileService.save_uploaded_file(file)
+        with open(input_path, "r", encoding="utf-8") as f:
+            json_data = f.read()
+
+        # Parse JSON and convert to CSV
+        parsed_json = json.loads(json_data)
+        csv_result = JSONConversionService.json_to_csv(parsed_json, delimiter)
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.csv'):
+                filename += '.csv'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_csv"
+            output_filename = f"{base_name}.csv"
+
+        output_path = os.path.join(settings.output_dir, output_filename)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(csv_result)
+
+        # Create download URL
+        download_url = _build_download_url(output_filename)
 
         JSONConversionService.log_conversion(
             "json-to-csv",
-            json.dumps(request.json_data),
-            result,
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
+            f"Output: {output_filename}",
             True,
             user_id=None,
         )
@@ -642,27 +676,28 @@ async def convert_json_to_csv(request: JSONToCSVRequest):
         return ConversionResponse(
             success=True,
             message="JSON converted to CSV successfully",
-            converted_data=result,
+            output_filename=output_filename,
+            download_url=download_url,
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-to-csv",
-            json.dumps(request.json_data),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-to-csv",
-            json.dumps(request.json_data),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
@@ -674,6 +709,8 @@ async def convert_json_to_csv(request: JSONToCSVRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------
@@ -681,45 +718,76 @@ async def convert_json_to_csv(request: JSONToCSVRequest):
 # ---------------------------------------------------------------------------
 
 @router.post("/json-to-excel", response_model=ConversionResponse)
-async def convert_json_to_excel(request: JSONObjectsToExcelRequest):
-    """Convert JSON to Excel file."""
+async def convert_json_to_excel(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
+    """Convert JSON file to Excel."""
+    input_path = None
+    json_data = None
+    
     try:
-        output_path = JSONConversionService.json_to_excel(request.json_objects)
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Read and parse JSON
+        with open(input_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not content.strip():
+                raise FileProcessingError("Input file is empty")
+            try:
+                parsed_json = json.loads(content)
+                json_data = content  # For logging
+            except json.JSONDecodeError as e:
+                raise FileProcessingError(f"Invalid JSON format: {str(e)}")
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.xlsx'):
+                filename += '.xlsx'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_excel"
+            output_filename = f"{base_name}.xlsx"
+
+        # Convert to Excel
+        output_filename_path = JSONConversionService.json_to_excel(parsed_json, output_filename)
+        
+        final_filename = os.path.basename(output_filename_path)
 
         JSONConversionService.log_conversion(
             "json-to-excel",
-            json.dumps(request.json_objects),
-            f"File: {output_path}",
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
 
-        filename = os.path.basename(output_path)
         return ConversionResponse(
             success=True,
             message="JSON converted to Excel successfully",
-            output_filename=filename,
-            download_url=_build_download_url(filename),
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-to-excel",
-            json.dumps(request.json_objects),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-to-excel",
-            json.dumps(request.json_objects),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
@@ -731,6 +799,8 @@ async def convert_json_to_excel(request: JSONObjectsToExcelRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------

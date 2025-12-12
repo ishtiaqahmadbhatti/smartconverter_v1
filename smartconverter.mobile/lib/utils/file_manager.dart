@@ -178,6 +178,31 @@ class FileManager {
     return dir;
   }
 
+  static const String _jsonJsonToCsvSubFolder = 'json-to-csv';
+
+  /// Get directory for JSON to CSV outputs (under JSONConversion)
+  static Future<Directory> getJsonJsonToCsvDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToCsvSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  static const String _jsonJsonToExcelSubFolder = 'json-to-excel';
+
+  /// Get directory for JSON to Excel outputs (under JSONConversion)
+  static Future<Directory> getJsonJsonToExcelDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToExcelSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {
     final smartConverterDir = await getSmartConverterDirectory();

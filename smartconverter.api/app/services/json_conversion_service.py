@@ -273,6 +273,10 @@ class JSONConversionService:
             else:
                 data = json_data
             
+            # Handle single object by wrapping in list
+            if isinstance(data, dict):
+                data = [data]
+            
             if isinstance(data, list):
                 if not data:
                     return ""
@@ -283,6 +287,9 @@ class JSONConversionService:
                     if isinstance(item, dict):
                         all_keys.update(item.keys())
                 
+                if not all_keys:
+                    return ""
+
                 # Create CSV
                 output = io.StringIO()
                 writer = csv.DictWriter(output, fieldnames=sorted(all_keys), delimiter=delimiter)
@@ -290,11 +297,20 @@ class JSONConversionService:
                 
                 for item in data:
                     if isinstance(item, dict):
-                        writer.writerow(item)
+                        # Handle values that might be None or non-string
+                        row = {}
+                        for k, v in item.items():
+                            if v is None:
+                                row[k] = ""
+                            elif isinstance(v, (dict, list)):
+                                row[k] = json.dumps(v)
+                            else:
+                                row[k] = v
+                        writer.writerow(row)
                 
                 return output.getvalue()
             else:
-                raise FileProcessingError("JSON must be an array of objects for CSV conversion")
+                raise FileProcessingError("JSON must be an array of objects or a single object for CSV conversion")
                 
         except Exception as e:
             raise FileProcessingError(f"JSON to CSV conversion failed: {str(e)}")
@@ -314,15 +330,41 @@ class JSONConversionService:
             output_path = FileService.get_output_path(filename, ".xlsx")
             
             if isinstance(data, list):
-                df = pd.DataFrame(data)
+                # Preprocess list data to handle nested objects and nulls
+                processed_data = []
+                for item in data:
+                    if isinstance(item, dict):
+                        row = {}
+                        for k, v in item.items():
+                            if v is None:
+                                row[k] = ""
+                            elif isinstance(v, (dict, list)):
+                                row[k] = json.dumps(v)
+                            else:
+                                row[k] = v
+                        processed_data.append(row)
+                    else:
+                         # Handle primitive types in list by wrapping them
+                        processed_data.append({"value": item})
+                df = pd.DataFrame(processed_data)
             elif isinstance(data, dict):
-                # Convert dict to list of records
-                if all(isinstance(v, (list, tuple)) for v in data.values()):
-                    # If all values are lists, treat as columns
+                 # Check if it is a columnar format (all values are lists of same length)
+                is_columnar = all(isinstance(v, (list, tuple)) for v in data.values())
+                
+                if is_columnar:
                     df = pd.DataFrame(data)
                 else:
                     # Single record
-                    df = pd.DataFrame([data])
+                    # Preprocess single record
+                    row = {}
+                    for k, v in data.items():
+                        if v is None:
+                            row[k] = ""
+                        elif isinstance(v, (dict, list)):
+                            row[k] = json.dumps(v)
+                        else:
+                            row[k] = v
+                    df = pd.DataFrame([row])
             else:
                 raise FileProcessingError("Unsupported JSON structure for Excel conversion")
             
