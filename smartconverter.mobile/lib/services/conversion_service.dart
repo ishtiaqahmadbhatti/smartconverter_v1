@@ -1822,6 +1822,67 @@ Future<ImageToPdfResult?> convertXmlToJson(
   }
 }
 
+Future<ImageToPdfResult?> convertJsonToXml(
+  File jsonFile, {
+  String? outputFilename,
+  String? rootName,
+}) async {
+  try {
+    if (!jsonFile.existsSync()) {
+      throw Exception('JSON file does not exist');
+    }
+
+    final extension = p.extension(jsonFile.path).toLowerCase();
+    if (extension != '.json') {
+      throw Exception('Only JSON files are supported');
+    }
+
+    final file = await MultipartFile.fromFile(
+      jsonFile.path,
+      filename: p.basename(jsonFile.path),
+    );
+
+    FormData formData = FormData.fromMap({
+      'file': file,
+      if (rootName != null && rootName.isNotEmpty) 'root_name': rootName,
+      if (outputFilename != null && outputFilename.isNotEmpty)
+        'filename': outputFilename,
+    });
+
+    _debugLog('📤 Uploading JSON file for XML conversion...');
+
+    Response response = await _dio.post(
+      ApiConfig.jsonToXmlEndpoint,
+      data: formData,
+    );
+
+    if (response.statusCode == 200) {
+      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+      String fileName =
+          response.data['output_filename'] ??
+          '${p.basenameWithoutExtension(jsonFile.path)}.xml';
+
+      _debugLog('✅ JSON converted to XML successfully!');
+      _debugLog('📥 Downloading XML: $fileName');
+
+      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+      if (downloadedFile == null) {
+        return null;
+      }
+
+      return ImageToPdfResult(
+        file: downloadedFile,
+        fileName: fileName,
+        downloadUrl: downloadUrl,
+      );
+    }
+
+    return null;
+  } catch (e) {
+    throw Exception('Failed to convert JSON to XML: $e');
+  }
+}
+
   // Convert PDF to Markdown
   Future<ImageToPdfResult?> convertPdfToMarkdown(
     File pdfFile, {

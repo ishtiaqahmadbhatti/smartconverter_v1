@@ -166,6 +166,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _jsonJsonToXmlSubFolder = 'json-to-xml';
+
+  /// Get directory for JSON to XML outputs (under JSONConversion)
+  static Future<Directory> getJsonJsonToXmlDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToXmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {
     final smartConverterDir = await getSmartConverterDirectory();

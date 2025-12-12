@@ -534,15 +534,49 @@ async def validate_json(json_data: dict):
 # ---------------------------------------------------------------------------
 
 @router.post("/json-to-xml", response_model=ConversionResponse)
-async def convert_json_to_xml(request: JSONToXMLRequest):
-    """Convert JSON to XML format."""
+async def convert_json_to_xml(
+    file: UploadFile = File(...),
+    root_name: Optional[str] = Form("root"),
+    filename: Optional[str] = Form(None)
+):
+    """
+    Convert JSON to XML format.
+
+    Only multipart/form-data with an uploaded JSON file is supported.
+    """
+    json_data: Optional[str] = None
+    input_path: Optional[str] = None
+    
     try:
-        result = JSONConversionService.json_to_xml(request.json_data, request.root_name)
+        FileService.validate_file(file, "json")
+        input_path = FileService.save_uploaded_file(file)
+        with open(input_path, "r", encoding="utf-8") as f:
+            json_data = f.read()
+
+        # Parse JSON and convert to XML
+        parsed_json = json.loads(json_data)
+        xml_result = JSONConversionService.json_to_xml(parsed_json, root_name)
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.xml'):
+                filename += '.xml'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_xml"
+            output_filename = f"{base_name}.xml"
+
+        output_path = os.path.join(settings.output_dir, output_filename)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(xml_result)
+
+        # Create download URL
+        download_url = _build_download_url(output_filename)
 
         JSONConversionService.log_conversion(
             "json-to-xml",
-            json.dumps(request.json_data),
-            result,
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
+            f"Output: {output_filename}",
             True,
             user_id=None,
         )
@@ -550,27 +584,28 @@ async def convert_json_to_xml(request: JSONToXMLRequest):
         return ConversionResponse(
             success=True,
             message="JSON converted to XML successfully",
-            converted_data=result,
+            output_filename=output_filename,
+            download_url=download_url,
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-to-xml",
-            json.dumps(request.json_data),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-to-xml",
-            json.dumps(request.json_data),
+            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
             "",
             False,
             str(e),
@@ -582,6 +617,8 @@ async def convert_json_to_xml(request: JSONToXMLRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------

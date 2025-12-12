@@ -186,6 +186,7 @@ class ApiConfig {
   static const String pngToJsonEndpoint = '/api/v1/jsonconversiontools/ai/png-to-json';
   static const String jpgToJsonEndpoint = '/api/v1/jsonconversiontools/ai/jpg-to-json';
   static const String xmlToJsonEndpoint = '/api/v1/jsonconversiontools/xml-to-json';
+  static const String jsonToXmlEndpoint = '/api/v1/jsonconversiontools/json-to-xml';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';
