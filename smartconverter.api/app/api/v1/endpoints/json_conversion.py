@@ -1083,15 +1083,53 @@ async def convert_json_to_yaml(
 # ---------------------------------------------------------------------------
 
 @router.post("/json-objects-to-csv", response_model=ConversionResponse)
-async def convert_json_objects_to_csv(request: JSONObjectsToCSVRequest):
-    """Convert JSON objects array to CSV format."""
+async def convert_json_objects_to_csv(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None),
+    delimiter: str = Form(","),
+):
+    """Convert JSON file (list of objects) to CSV."""
+    input_path = None
+    json_data_for_log = None
+
     try:
-        result = JSONConversionService.json_objects_to_csv(request.json_objects, request.delimiter)
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+
+        # Read and parse JSON
+        with open(input_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not content.strip():
+                raise FileProcessingError("Input file is empty")
+            try:
+                parsed_json = json.loads(content)
+                json_data_for_log = content  # For logging
+            except json.JSONDecodeError as e:
+                raise FileProcessingError(f"Invalid JSON format: {str(e)}")
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.csv'):
+                filename += '.csv'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_csv"
+            output_filename = f"{base_name}.csv"
+
+        # Convert to CSV
+        csv_content = JSONConversionService.json_objects_to_csv(parsed_json, delimiter=delimiter)
+
+        # Save CSV to file
+        output_filename_path = FileService.get_output_path(output_filename, ".csv")
+        with open(output_filename_path, "w", encoding="utf-8", newline="") as f:
+            f.write(csv_content)
+
+        final_filename = os.path.basename(output_filename_path)
 
         JSONConversionService.log_conversion(
             "json-objects-to-csv",
-            json.dumps(request.json_objects),
-            result,
+            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
@@ -1099,27 +1137,28 @@ async def convert_json_objects_to_csv(request: JSONObjectsToCSVRequest):
         return ConversionResponse(
             success=True,
             message="JSON objects converted to CSV successfully",
-            converted_data=result,
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-objects-to-csv",
-            json.dumps(request.json_objects),
+            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-objects-to-csv",
-            json.dumps(request.json_objects),
+            f"File: {file.filename if file else 'unknown'}",
             "",
             False,
             str(e),
@@ -1131,6 +1170,8 @@ async def convert_json_objects_to_csv(request: JSONObjectsToCSVRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------
