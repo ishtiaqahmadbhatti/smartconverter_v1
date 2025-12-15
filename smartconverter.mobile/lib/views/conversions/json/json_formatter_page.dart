@@ -653,23 +653,66 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
               ],
             ),
           ),
-          TextField(
-            controller: _jsonTextController,
-            maxLines: 10,
-            onChanged: (value) {
-              // Trigger rebuild to update button state
-              setState(() {});
-            },
-            decoration: InputDecoration(
-              hintText: 'Paste your JSON here...',
-              hintStyle: TextStyle(color: AppColors.textSecondary),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(12),
-            ),
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontFamily: 'monospace',
-              fontSize: 12,
+          // Line numbers and text input
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Line numbers
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundCard.withOpacity(0.5),
+                    border: Border(
+                      right: BorderSide(
+                        color: AppColors.primaryBlue.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(
+                      _jsonTextController.text.split('\n').length.clamp(1, 30),
+                      (index) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 1.5),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Text input
+                Expanded(
+                  child: TextField(
+                    controller: _jsonTextController,
+                    maxLines: 10,
+                    onChanged: (value) {
+                      // Trigger rebuild to update button state and line numbers
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Paste your JSON here...',
+                      hintStyle: TextStyle(color: AppColors.textSecondary),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -994,13 +1037,53 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
           Container(
             constraints: const BoxConstraints(maxHeight: 300),
             child: SingleChildScrollView(
-              child: Text(
-                _formattedJson!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Line numbers
+                  Container(
+                    padding: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(
+                          color: AppColors.primaryBlue.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: List.generate(
+                        _formattedJson!.split('\n').length,
+                        (index) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 0.5),
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withOpacity(0.4),
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Formatted JSON text
+                  Expanded(
+                    child: SelectableText(
+                      _formattedJson!,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
