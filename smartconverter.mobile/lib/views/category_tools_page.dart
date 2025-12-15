@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../constants/app_colors.dart';
 import 'tool_action_page.dart';
 // JSON pages
@@ -227,6 +228,173 @@ class CategoryToolsPage extends StatelessWidget {
     );
   }
 
+  // Helper function to get icon for a format
+  IconData _getFormatIcon(String format) {
+    switch (format.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'image':
+        return Icons.image;
+      case 'excel':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'csv':
+        return Icons.grid_on;
+      case 'xml':
+        return Icons.code;
+      case 'yaml':
+      case 'yml':
+        return Icons.description;
+      case 'json':
+        return Icons.data_object;
+      default:
+        return Icons.data_object;
+    }
+  }
+
+  // Parse tool name to get source and destination formats (for JSON tools only)
+  Map<String, String>? _parseJsonToolFormats(String toolName) {
+    if (id != 'json_conversion') return null;
+
+    // Handle "AI: Convert X to JSON" format
+    final aiMatch = RegExp(r'AI:\s*Convert\s+(\w+)\s+to\s+JSON', caseSensitive: false)
+        .firstMatch(toolName);
+    if (aiMatch != null) {
+      return {'source': aiMatch.group(1)!, 'destination': 'JSON'};
+    }
+
+    // Handle "Convert X to JSON" format
+    final toJsonMatch = RegExp(r'Convert\s+(\w+)\s+to\s+JSON', caseSensitive: false)
+        .firstMatch(toolName);
+    if (toJsonMatch != null) {
+      return {'source': toJsonMatch.group(1)!, 'destination': 'JSON'};
+    }
+
+    // Handle "Convert JSON to X" format
+    final fromJsonMatch = RegExp(r'Convert\s+JSON\s+(?:objects\s+)?to\s+(\w+)', caseSensitive: false)
+        .firstMatch(toolName);
+    if (fromJsonMatch != null) {
+      return {'source': 'JSON', 'destination': fromJsonMatch.group(1)!};
+    }
+
+    // Handle "X to JSON" format
+    final simpleToJson = RegExp(r'(\w+)\s+to\s+JSON', caseSensitive: false)
+        .firstMatch(toolName);
+    if (simpleToJson != null) {
+      return {'source': simpleToJson.group(1)!, 'destination': 'JSON'};
+    }
+
+    // Handle "JSON to X" format
+    final simpleFromJson = RegExp(r'JSON\s+to\s+(\w+)', caseSensitive: false)
+        .firstMatch(toolName);
+    if (simpleFromJson != null) {
+      return {'source': 'JSON', 'destination': simpleFromJson.group(1)!};
+    }
+
+    return null;
+  }
+
+  // Build icon widget for a tool
+  Widget _buildToolIcon(String toolName) {
+    final formats = _parseJsonToolFormats(toolName);
+    
+    if (formats != null) {
+      // Show diagonal layout: source (top-left) ↘ destination (bottom-right)
+      return Container(
+        width: 52,
+        height: 52,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primaryBlue.withOpacity(0.15),
+              AppColors.primaryBlue.withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.primaryBlue.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryBlue.withOpacity(0.2),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Source icon - top left
+            Positioned(
+              top: 2,
+              left: 2,
+              child: Icon(
+                _getFormatIcon(formats['source']!),
+                size: 18,
+                color: AppColors.primaryBlue,
+              ),
+            ),
+            // Destination icon - bottom right
+            Positioned(
+              bottom: 2,
+              right: 2,
+              child: Icon(
+                _getFormatIcon(formats['destination']!),
+                size: 18,
+                color: AppColors.primaryBlue,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Default single icon for non-conversion tools (Formatter, Validator, etc.)
+    return Container(
+      width: 52,
+      height: 52,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.15),
+            AppColors.primaryBlue.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryBlue.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.2),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          size: 24,
+          color: AppColors.primaryBlue,
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -370,15 +538,15 @@ class CategoryToolsPage extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(icon, size: 18, color: AppColors.primaryBlue),
-                      const SizedBox(width: 10),
+                      _buildToolIcon(toolName),
+                      const SizedBox(width: 19),
                       Expanded(
                         child: Text(
                           toolName,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

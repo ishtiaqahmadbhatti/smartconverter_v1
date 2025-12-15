@@ -443,7 +443,7 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.data_object_sharp,
+              Icons.picture_as_pdf,
               color: AppColors.textPrimary,
               size: 32,
             ),
