@@ -250,6 +250,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _jsonObjectsToExcelSubFolder = 'json-objects-to-excel';
+
+  /// Get directory for JSON Objects to Excel outputs (under JSONConversion)
+  static Future<Directory> getJsonObjectsToExcelDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_jsonObjectsToExcelSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
 
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {

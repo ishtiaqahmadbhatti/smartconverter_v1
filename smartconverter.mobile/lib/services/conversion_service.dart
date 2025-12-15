@@ -4309,4 +4309,64 @@ async def download_file(filename: str):
     }
   }
 
+  // Convert JSON Objects to Excel
+  Future<ImageToPdfResult?> convertJsonObjectsToExcel(
+    File jsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JSON file for Objects to Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonObjectsToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jsonFile.path)}.xlsx';
+
+        _debugLog('✅ JSON successfully converted to Excel!');
+        _debugLog('📥 Downloading Excel: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON objects to Excel: $e');
+    }
+  }
+
 }

@@ -1179,45 +1179,80 @@ async def convert_json_objects_to_csv(
 # ---------------------------------------------------------------------------
 
 @router.post("/json-objects-to-excel", response_model=ConversionResponse)
-async def convert_json_objects_to_excel(request: JSONObjectsToExcelRequest):
-    """Convert JSON objects array to Excel file."""
+async def convert_json_objects_to_excel(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None),
+):
+    """Convert JSON file (list of objects) to Excel."""
+    input_path = None
+    json_data_for_log = None
+
     try:
-        output_path = JSONConversionService.json_objects_to_excel(request.json_objects)
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+
+        # Read and parse JSON
+        with open(input_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not content.strip():
+                raise FileProcessingError("Input file is empty")
+            try:
+                parsed_json = json.loads(content)
+                json_data_for_log = content  # For logging
+            except json.JSONDecodeError as e:
+                raise FileProcessingError(f"Invalid JSON format: {str(e)}")
+
+        # Validate it's a list of objects
+        if not isinstance(parsed_json, list):
+            raise FileProcessingError("Input must be a list of JSON objects")
+
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.xlsx'):
+                filename += '.xlsx'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "json_to_excel"
+            output_filename = f"{base_name}.xlsx"
+
+        # Convert to Excel using the service method
+        output_path = JSONConversionService.json_objects_to_excel(parsed_json, filename=output_filename)
+
+        final_filename = os.path.basename(output_path)
 
         JSONConversionService.log_conversion(
             "json-objects-to-excel",
-            json.dumps(request.json_objects),
-            f"File: {output_path}",
+            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
 
-        filename = os.path.basename(output_path)
         return ConversionResponse(
             success=True,
             message="JSON objects converted to Excel successfully",
-            output_filename=filename,
-            download_url=_build_download_url(filename),
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-objects-to-excel",
-            json.dumps(request.json_objects),
+            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-objects-to-excel",
-            json.dumps(request.json_objects),
+            f"File: {file.filename if file else 'unknown'}",
             "",
             False,
             str(e),
@@ -1229,6 +1264,8 @@ async def convert_json_objects_to_excel(request: JSONObjectsToExcelRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------
