@@ -4369,4 +4369,64 @@ async def download_file(filename: str):
     }
   }
 
+  // Convert YAML to JSON
+  Future<ImageToPdfResult?> convertYamlToJson(
+    File yamlFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!yamlFile.existsSync()) {
+        throw Exception('YAML file does not exist');
+      }
+
+      final extension = p.extension(yamlFile.path).toLowerCase();
+      if (extension != '.yaml' && extension != '.yml') {
+        throw Exception('Only .yaml or .yml files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        yamlFile.path,
+        filename: p.basename(yamlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading YAML file for conversion to JSON...');
+
+      Response response = await _dio.post(
+        ApiConfig.yamlToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(yamlFile.path)}.json';
+
+        _debugLog('✅ YAML successfully converted to JSON!');
+        _debugLog('📥 Downloading JSON: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert YAML to JSON: $e');
+    }
+  }
+
 }

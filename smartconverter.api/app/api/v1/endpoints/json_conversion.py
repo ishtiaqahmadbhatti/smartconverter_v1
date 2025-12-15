@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any, List, Union
@@ -18,6 +19,14 @@ from app.core.exceptions import (
     FileSizeExceededError,
     create_error_response,
 )
+
+
+# Custom JSON Encoder to handle date/datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (date, datetime)):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 router = APIRouter()
@@ -1273,15 +1282,48 @@ async def convert_json_objects_to_excel(
 # ---------------------------------------------------------------------------
 
 @router.post("/yaml-to-json", response_model=ConversionResponse)
-async def convert_yaml_to_json(request: YAMLToJSONRequest):
-    """Convert YAML to JSON format."""
+async def convert_yaml_to_json(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
+    """Convert YAML file to JSON."""
+    input_path = None
+    yaml_data = None
+    
     try:
-        result = JSONConversionService.yaml_to_json(request.yaml_content)
+        # Save uploaded file
+        input_path = FileService.save_uploaded_file(file)
+        
+        # Read YAML content
+        with open(input_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            if not content.strip():
+                raise FileProcessingError("Input file is empty")
+            yaml_data = content  # For logging
+
+        # Convert to JSON
+        parsed_data = JSONConversionService.yaml_to_json(content)
+        
+        # Determine output filename
+        if filename and filename.strip() and filename.lower() != "string":
+            if not filename.lower().endswith('.json'):
+                filename += '.json'
+            output_filename = filename
+        else:
+            base_name = os.path.splitext(file.filename)[0] if file.filename else "yaml_to_json"
+            output_filename = f"{base_name}.json"
+
+        # Save JSON to file
+        output_filename_path = FileService.get_output_path(output_filename, ".json")
+        with open(output_filename_path, "w", encoding="utf-8") as f:
+            json.dump(parsed_data, f, indent=2, ensure_ascii=False, cls=DateTimeEncoder)
+        
+        final_filename = os.path.basename(output_filename_path)
 
         JSONConversionService.log_conversion(
             "yaml-to-json",
-            request.yaml_content,
-            json.dumps(result),
+            yaml_data[:500] if yaml_data and len(yaml_data) > 500 else (yaml_data or ""),
+            f"Output: {final_filename}",
             True,
             user_id=None,
         )
@@ -1289,27 +1331,28 @@ async def convert_yaml_to_json(request: YAMLToJSONRequest):
         return ConversionResponse(
             success=True,
             message="YAML converted to JSON successfully",
-            converted_data=result,
+            output_filename=final_filename,
+            download_url=_build_download_url(final_filename),
         )
 
-    except FileProcessingError as e:
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "yaml-to-json",
-            request.yaml_content,
+            yaml_data[:500] if yaml_data and len(yaml_data) > 500 else (yaml_data or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "yaml-to-json",
-            request.yaml_content,
+            f"File: {file.filename if file else 'unknown'}",
             "",
             False,
             str(e),
@@ -1321,6 +1364,8 @@ async def convert_yaml_to_json(request: YAMLToJSONRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------

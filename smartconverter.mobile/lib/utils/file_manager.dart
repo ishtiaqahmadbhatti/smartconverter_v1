@@ -262,6 +262,18 @@ class FileManager {
     return dir;
   }
 
+  static const String _yamlToJsonSubFolder = 'yaml-to-json';
+
+  /// Get directory for YAML to JSON outputs (under JSONConversion)
+  static Future<Directory> getYamlToJsonDirectory() async {
+    final jsonConversionsDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonConversionsDir.path}/$_yamlToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
 
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {
