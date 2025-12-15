@@ -494,15 +494,6 @@ class CategoryToolsPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'API Tools',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
         ListView.separated(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
@@ -546,7 +537,7 @@ class CategoryToolsPage extends StatelessWidget {
                           style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
