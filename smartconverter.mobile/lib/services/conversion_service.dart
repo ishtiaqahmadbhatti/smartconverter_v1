@@ -4429,4 +4429,111 @@ async def download_file(filename: str):
     }
   }
 
+  // Format JSON File
+  Future<ImageToPdfResult?> formatJsonFile(
+    File jsonFile, {
+    String? outputFilename,
+    int indent = 2,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+        'indent': indent,
+      });
+
+      _debugLog('📤 Uploading JSON file for formatting...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonFormatterEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jsonFile.path)}_formatted.json';
+
+        _debugLog('✅ JSON file formatted successfully!');
+        _debugLog('📥 Downloading formatted JSON: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to format JSON file: $e');
+    }
+  }
+
+  // Format JSON Text (direct input)
+  Future<String?> formatJsonText(
+    String jsonText, {
+    int indent = 2,
+  }) async {
+    try {
+      if (jsonText.trim().isEmpty) {
+        throw Exception('JSON text is empty');
+      }
+
+      _debugLog('📤 Sending JSON text for formatting...');
+      _debugLog('JSON text length: ${jsonText.length}');
+      _debugLog('Indent: $indent');
+
+      // Use FormData for multipart/form-data
+      final formData = FormData.fromMap({
+        'json_text': jsonText.trim(),
+        'indent': indent,
+      });
+
+      _debugLog('FormData created with json_text and indent');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonFormatterEndpoint,
+        data: formData,
+      );
+
+      _debugLog('Response received: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        String formattedJson = response.data['converted_data']?.toString() ?? '';
+        
+        _debugLog('✅ JSON text formatted successfully!');
+        _debugLog('Formatted length: ${formattedJson.length}');
+        
+        return formattedJson;
+      }
+
+      return null;
+    } catch (e) {
+      _debugLog('❌ Error formatting JSON text: $e');
+      throw Exception('Failed to format JSON text: $e');
+    }
+  }
+
 }

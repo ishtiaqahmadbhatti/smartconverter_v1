@@ -195,6 +195,7 @@ class ApiConfig {
   static const String yamlToJsonEndpoint = '/api/v1/jsonconversiontools/yaml-to-json';
   static const String jsonObjectsToCsvEndpoint = '/api/v1/jsonconversiontools/json-objects-to-csv';
   static const String jsonObjectsToExcelEndpoint = '/api/v1/jsonconversiontools/json-objects-to-excel';
+  static const String jsonFormatterEndpoint = '/api/v1/jsonconversiontools/json-formatter';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';

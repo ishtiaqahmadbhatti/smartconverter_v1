@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import logging
 from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
@@ -21,6 +22,7 @@ from app.core.exceptions import (
 )
 
 
+
 # Custom JSON Encoder to handle date/datetime objects
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -29,6 +31,17 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+# Custom dependency to handle optional file upload (handles empty string from Swagger UI)
+async def optional_file_upload(file: Union[UploadFile, str, None] = File(default=None)) -> Optional[UploadFile]:
+    """Handle file upload that may be None, empty string, or actual file."""
+    if file is None or file == "" or (isinstance(file, str) and not file.strip()):
+        return None
+    if isinstance(file, UploadFile):
+        return file
+    return None
+
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -448,44 +461,133 @@ async def convert_xml_to_json(
 # 5. JSON Formatter
 # ---------------------------------------------------------------------------
 
+
 @router.post("/json-formatter", response_model=ConversionResponse)
-async def format_json(request: JSONFormatRequest):
-    """Format JSON with proper indentation."""
+async def format_json(
+    json_text: Optional[str] = Form(default=None),
+    filename: Optional[str] = Form(default=None),
+    indent: int = Form(default=2),
+    file: Union[UploadFile, str, None] = File(default=None),
+):
+    """Format JSON with proper indentation. Supports both file upload and direct JSON text input."""
+    input_path = None
+    json_data_str = None
+    
     try:
-        formatted = JSONConversionService.format_json(request.json_data)
+        # Handle file parameter (may be UploadFile, empty string, or None)
+        actual_file = None
+        if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
+            # Check if it's an UploadFile by checking for the 'filename' attribute (duck typing)
+            if hasattr(file, 'filename'):
+                actual_file = file
+        
+        # Check if file is actually provided (has filename and content)
+        has_file = (
+            actual_file is not None 
+            and hasattr(actual_file, 'filename') 
+            and actual_file.filename 
+            and actual_file.filename.strip() != ""
+        )
+        
+        # Clean up json_text - ignore common placeholder values
+        cleaned_json_text = None
+        if json_text and json_text.strip():
+            # Ignore common placeholder values from Swagger UI
+            if json_text.strip().lower() not in ['string', 'null', 'none', '']:
+                cleaned_json_text = json_text.strip()
+        
+        # Validate that at least one input method is provided
+        if not has_file and not cleaned_json_text:
+            raise FileProcessingError("Please provide either a JSON file or JSON text")
+        
+        # Handle file upload (priority over text)
+        if has_file:
+            input_path = FileService.save_uploaded_file(actual_file)
+            with open(input_path, "r", encoding="utf-8") as f:
+                json_data_str = f.read()
+                if not json_data_str.strip():
+                    raise FileProcessingError("Input file is empty")
+        # Handle direct JSON text input
+        elif cleaned_json_text:
+            json_data_str = cleaned_json_text
+        
+        # Parse JSON
+        try:
+            parsed_json = json.loads(json_data_str)
+        except json.JSONDecodeError as e:
+            raise FileProcessingError(f"Invalid JSON format: {str(e)}")
+        
+        # Format JSON
+        formatted_json = json.dumps(parsed_json, indent=indent, ensure_ascii=False, cls=DateTimeEncoder)
+        
+        # If file was uploaded, save formatted JSON to file and return download URL
+        # If direct JSON text, just return formatted JSON in response
+        if has_file:
+            # Determine output filename
+            if filename and filename.strip() and filename.lower() != "string":
+                if not filename.lower().endswith('.json'):
+                    filename += '.json'
+                output_filename = filename
+            else:
+                base_name = os.path.splitext(actual_file.filename)[0] if actual_file.filename else "formatted"
+                output_filename = f"{base_name}_formatted.json"
+            
+            # Save formatted JSON to file
+            output_filename_path = FileService.get_output_path(output_filename, ".json")
+            with open(output_filename_path, "w", encoding="utf-8") as f:
+                f.write(formatted_json)
+            
+            final_filename = os.path.basename(output_filename_path)
 
+            JSONConversionService.log_conversion(
+                "json-formatter",
+                json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
+                f"Output file: {final_filename}",
+                True,
+                user_id=None,
+            )
+
+            return ConversionResponse(
+                success=True,
+                message="JSON formatted successfully",
+                output_filename=final_filename,
+                download_url=_build_download_url(final_filename),
+                converted_data=formatted_json,
+            )
+        else:
+            # Direct JSON text - just return formatted content
+            JSONConversionService.log_conversion(
+                "json-formatter",
+                json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
+                "Direct text formatting",
+                True,
+                user_id=None,
+            )
+
+            return ConversionResponse(
+                success=True,
+                message="JSON formatted successfully",
+                converted_data=formatted_json,
+            )
+
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
         JSONConversionService.log_conversion(
             "json-formatter",
-            json.dumps(request.json_data),
-            formatted,
-            True,
-            user_id=None,
-        )
-
-        return ConversionResponse(
-            success=True,
-            message="JSON formatted successfully",
-            converted_data=formatted,
-        )
-
-    except FileProcessingError as e:
-        JSONConversionService.log_conversion(
-            "json-formatter",
-            json.dumps(request.json_data),
+            json_data_str[:500] if json_data_str and len(json_data_str) > 500 else (json_data_str or ""),
             "",
             False,
             str(e),
             None,
         )
         raise create_error_response(
-            error_type="FileProcessingError",
+            error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-formatter",
-            json.dumps(request.json_data),
+            f"File: {file.filename if file else 'JSON text input'}",
             "",
             False,
             str(e),
@@ -497,6 +599,8 @@ async def format_json(request: JSONFormatRequest):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------
