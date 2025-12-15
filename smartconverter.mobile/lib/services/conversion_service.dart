@@ -4536,4 +4536,81 @@ async def download_file(filename: str):
     }
   }
 
+  // Validate JSON File
+  Future<Map<String, dynamic>?> validateJsonFile(File jsonFile) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+      });
+
+      _debugLog('📤 Uploading JSON file for validation...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonValidatorEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final result = response.data as Map<String, dynamic>;
+        
+        _debugLog('✅ JSON validation complete!');
+        _debugLog('Valid: ${result['valid']}');
+        
+        return result;
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to validate JSON file: $e');
+    }
+  }
+
+  // Validate JSON Text (direct input)
+  Future<Map<String, dynamic>?> validateJsonText(String jsonText) async {
+    try {
+      if (jsonText.trim().isEmpty) {
+        throw Exception('JSON text is empty');
+      }
+
+      FormData formData = FormData.fromMap({
+        'json_text': jsonText.trim(),
+      });
+
+      _debugLog('📤 Sending JSON text for validation...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonValidatorEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final result = response.data as Map<String, dynamic>;
+        
+        _debugLog('✅ JSON validation complete!');
+        _debugLog('Valid: ${result['valid']}');
+        
+        return result;
+      }
+
+      return null;
+    } catch (e) {
+      _debugLog('❌ Error validating JSON text: $e');
+      throw Exception('Failed to validate JSON text: $e');
+    }
+  }
+
 }

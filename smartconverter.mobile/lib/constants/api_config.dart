@@ -196,6 +196,7 @@ class ApiConfig {
   static const String jsonObjectsToCsvEndpoint = '/api/v1/jsonconversiontools/json-objects-to-csv';
   static const String jsonObjectsToExcelEndpoint = '/api/v1/jsonconversiontools/json-objects-to-excel';
   static const String jsonFormatterEndpoint = '/api/v1/jsonconversiontools/json-formatter';
+  static const String jsonValidatorEndpoint = '/api/v1/jsonconversiontools/json-validator';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';

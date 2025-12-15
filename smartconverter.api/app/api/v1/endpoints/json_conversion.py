@@ -608,27 +608,110 @@ async def format_json(
 # ---------------------------------------------------------------------------
 
 @router.post("/json-validator")
-async def validate_json(json_data: dict):
-    """Validate JSON directly without string wrapper."""
+async def validate_json(
+    json_text: Optional[str] = Form(default=None),
+    file: Union[UploadFile, str, None] = File(default=None),
+):
+    """Validate JSON. Supports both file upload and direct JSON text input."""
+    input_path = None
+    json_data_str = None
+    
     try:
-        json_string = json.dumps(json_data)
-        result = JSONConversionService.validate_json(json_string)
-
+        # Handle file parameter
+        actual_file = None
+        if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
+            if hasattr(file, 'filename'):
+                actual_file = file
+        
+        # Check if file is provided
+        has_file = (
+            actual_file is not None 
+            and hasattr(actual_file, 'filename') 
+            and actual_file.filename 
+            and actual_file.filename.strip() != ""
+        )
+        
+        # Clean up json_text
+        cleaned_json_text = None
+        if json_text and json_text.strip():
+            if json_text.strip().lower() not in ['string', 'null', 'none', '']:
+                cleaned_json_text = json_text.strip()
+        
+        # Validate input
+        if not has_file and not cleaned_json_text:
+            raise FileProcessingError("Please provide either a JSON file or JSON text")
+        
+        # Get JSON content
+        if has_file:
+            input_path = FileService.save_uploaded_file(actual_file)
+            with open(input_path, "r", encoding="utf-8") as f:
+                json_data_str = f.read()
+                if not json_data_str.strip():
+                    raise FileProcessingError("Input file is empty")
+        elif cleaned_json_text:
+            json_data_str = cleaned_json_text
+        
+        # Validate JSON
+        is_valid = False
+        error_message = None
+        line_number = None
+        column_number = None
+        
+        try:
+            parsed_json = json.loads(json_data_str)
+            is_valid = True
+        except json.JSONDecodeError as e:
+            is_valid = False
+            error_message = str(e.msg)
+            line_number = e.lineno
+            column_number = e.colno
+        except Exception as e:
+            is_valid = False
+            error_message = str(e)
+        
+        # Prepare response
+        result = {
+            "valid": is_valid,
+            "message": "JSON is valid!" if is_valid else f"Invalid JSON: {error_message}",
+        }
+        
+        if not is_valid:
+            result["error"] = {
+                "message": error_message,
+                "line": line_number,
+                "column": column_number,
+            }
+        
+        # Log
         JSONConversionService.log_conversion(
             "json-validator",
-            json_string,
+            json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
             json.dumps(result),
-            result.get("valid", False),
-            None if result.get("valid") else result.get("message"),
+            is_valid,
+            None if is_valid else error_message,
             None,
         )
-
+        
         return result
 
+    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        JSONConversionService.log_conversion(
+            "json-validator",
+            json_data_str[:500] if json_data_str and len(json_data_str) > 500 else (json_data_str or ""),
+            "",
+            False,
+            str(e),
+            None,
+        )
+        raise create_error_response(
+            error_type=type(e).__name__,
+            message=str(e),
+            status_code=400,
+        )
     except Exception as e:
         JSONConversionService.log_conversion(
             "json-validator",
-            str(json_data),
+            f"File: {file.filename if file and hasattr(file, 'filename') else 'JSON text input'}",
             "",
             False,
             str(e),
@@ -640,6 +723,8 @@ async def validate_json(json_data: dict):
             details={"error": str(e)},
             status_code=500,
         )
+    finally:
+        _cleanup_files(input_path)
 
 
 # ---------------------------------------------------------------------------
