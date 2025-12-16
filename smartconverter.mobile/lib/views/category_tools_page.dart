@@ -171,7 +171,7 @@ import 'conversions/ocr/jpg_to_pdf_page.dart';
 import 'conversions/ocr/pdf_to_text_page.dart';
 import 'conversions/ocr/pdf_image_to_pdf_text_page.dart';
 
-class CategoryToolsPage extends StatelessWidget {
+class CategoryToolsPage extends StatefulWidget {
   final String id;
   final String name;
   final String description;
@@ -188,6 +188,35 @@ class CategoryToolsPage extends StatelessWidget {
   });
 
   @override
+  State<CategoryToolsPage> createState() => _CategoryToolsPageState();
+}
+
+class _CategoryToolsPageState extends State<CategoryToolsPage> {
+  late TextEditingController _searchController;
+  late List<String> _filteredTools;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _filteredTools = widget.tools;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterTools(String query) {
+    setState(() {
+      _filteredTools = widget.tools
+          .where((tool) => tool.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -195,7 +224,7 @@ class CategoryToolsPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          name,
+          widget.name,
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
@@ -217,7 +246,7 @@ class CategoryToolsPage extends StatelessWidget {
               children: [
                 _buildHeader(context),
                 const SizedBox(height: 16),
-                _buildDescription(),
+                _buildSearchBar(),
                 const SizedBox(height: 16),
                 _buildToolsList(context),
               ],
@@ -230,68 +259,51 @@ class CategoryToolsPage extends StatelessWidget {
 
   // Helper function to get icon for a format
   IconData _getFormatIcon(String format) {
-    switch (format.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'image':
-        return Icons.image;
-      case 'excel':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'csv':
-        return Icons.grid_on;
-      case 'xml':
-        return Icons.code;
-      case 'yaml':
-      case 'yml':
-        return Icons.description;
-      case 'json':
-        return Icons.data_object;
-      default:
-        return Icons.data_object;
-    }
+    final f = format.toLowerCase();
+    if (f.contains('pdf')) return Icons.picture_as_pdf;
+    if (f.contains('image') || f.contains('png') || f.contains('jpg') || f.contains('jpeg')) return Icons.image;
+    if (f.contains('excel') || f.contains('xls') || f.contains('sheet')) return Icons.table_chart;
+    if (f.contains('csv')) return Icons.grid_on;
+    if (f.contains('xml')) return Icons.code;
+    if (f.contains('json')) return Icons.data_object;
+    if (f.contains('yaml') || f.contains('yml')) return Icons.list_alt;
+    if (f.contains('html') || f.contains('web') || f.contains('site')) return Icons.language;
+    if (f.contains('word') || f.contains('doc')) return Icons.description;
+    if (f.contains('text') || f.contains('txt')) return Icons.text_fields;
+    if (f.contains('powerpoint') || f.contains('ppt') || f.contains('slides')) return Icons.slideshow;
+    if (f.contains('audio') || f.contains('mp3') || f.contains('wav') || f.contains('sound') || f.contains('flac')) return Icons.audiotrack;
+    if (f.contains('video') || f.contains('mp4') || f.contains('avi') || f.contains('mov') || f.contains('mkv')) return Icons.movie;
+    if (f.contains('ebook') || f.contains('epub') || f.contains('mobi') || f.contains('azw') || f.contains('fb2')) return Icons.book;
+    if (f.contains('zip') || f.contains('rar') || f.contains('7z') || f.contains('archive')) return Icons.folder_zip;
+    if (f.contains('svg')) return Icons.photo_size_select_large;
+    
+    return Icons.insert_drive_file;
   }
 
-  // Parse tool name to get source and destination formats (for JSON tools only)
-  Map<String, String>? _parseJsonToolFormats(String toolName) {
-    if (id != 'json_conversion') return null;
-
-    // Handle "AI: Convert X to JSON" format
-    final aiMatch = RegExp(r'AI:\s*Convert\s+(\w+)\s+to\s+JSON', caseSensitive: false)
+  // Parse tool name to get source and destination formats (generic for all categories)
+  Map<String, String>? _parseToolFormats(String toolName) {
+    // 1. "AI: Convert X to Y"
+    final aiMatch = RegExp(r'AI:\s*Convert\s+(\w+)\s+to\s+(\w+)', caseSensitive: false)
         .firstMatch(toolName);
     if (aiMatch != null) {
-      return {'source': aiMatch.group(1)!, 'destination': 'JSON'};
+      return {'source': aiMatch.group(1)!, 'destination': aiMatch.group(2)!};
     }
 
-    // Handle "Convert X to JSON" format
-    final toJsonMatch = RegExp(r'Convert\s+(\w+)\s+to\s+JSON', caseSensitive: false)
+    // 2. "Convert X to Y" (handles "Convert JSON objects to CSV" etc)
+    // Using (.+?) to capture multi-word formats like "OpenOffice Calc ODS"
+    final convertMatch = RegExp(r'Convert\s+(.+?)\s+to\s+(.+)', caseSensitive: false)
         .firstMatch(toolName);
-    if (toJsonMatch != null) {
-      return {'source': toJsonMatch.group(1)!, 'destination': 'JSON'};
+    if (convertMatch != null) {
+      return {'source': convertMatch.group(1)!, 'destination': convertMatch.group(2)!};
     }
 
-    // Handle "Convert JSON to X" format
-    final fromJsonMatch = RegExp(r'Convert\s+JSON\s+(?:objects\s+)?to\s+(\w+)', caseSensitive: false)
+    // 3. "X to Y" (fallback)
+    final simpleMatch = RegExp(r'(.+?)\s+to\s+(.+)', caseSensitive: false)
         .firstMatch(toolName);
-    if (fromJsonMatch != null) {
-      return {'source': 'JSON', 'destination': fromJsonMatch.group(1)!};
-    }
-
-    // Handle "X to JSON" format
-    final simpleToJson = RegExp(r'(\w+)\s+to\s+JSON', caseSensitive: false)
-        .firstMatch(toolName);
-    if (simpleToJson != null) {
-      return {'source': simpleToJson.group(1)!, 'destination': 'JSON'};
-    }
-
-    // Handle "JSON to X" format
-    final simpleFromJson = RegExp(r'JSON\s+to\s+(\w+)', caseSensitive: false)
-        .firstMatch(toolName);
-    if (simpleFromJson != null) {
-      return {'source': 'JSON', 'destination': simpleFromJson.group(1)!};
+    if (simpleMatch != null) {
+      // Must contain "to" as whole word to avoid false positives in names? 
+      // The regex requires space around "to".
+      return {'source': simpleMatch.group(1)!, 'destination': simpleMatch.group(2)!};
     }
 
     return null;
@@ -299,7 +311,7 @@ class CategoryToolsPage extends StatelessWidget {
 
   // Build icon widget for a tool
   Widget _buildToolIcon(String toolName) {
-    final formats = _parseJsonToolFormats(toolName);
+    final formats = _parseToolFormats(toolName);
     
     if (formats != null) {
       // Show diagonal layout: source (top-left) ↘ destination (bottom-right)
@@ -387,7 +399,7 @@ class CategoryToolsPage extends StatelessWidget {
       ),
       child: Center(
         child: Icon(
-          icon,
+          widget.icon,
           size: 24,
           color: AppColors.primaryBlue,
         ),
@@ -417,12 +429,12 @@ class CategoryToolsPage extends StatelessWidget {
               color: AppColors.backgroundCard.withOpacity(0.25),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.textPrimary, size: 28),
+            child: Icon(widget.icon, color: AppColors.textPrimary, size: 28),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              name,
+              widget.name,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 22,
@@ -446,7 +458,7 @@ class CategoryToolsPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${tools.length}',
+                  '${widget.tools.length}',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
@@ -460,10 +472,8 @@ class CategoryToolsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDescription() {
+  Widget _buildSearchBar() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
@@ -479,30 +489,48 @@ class CategoryToolsPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        description,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 14,
-          height: 1.5,
+      child: TextField(
+        controller: _searchController,
+        style: const TextStyle(color: AppColors.textPrimary),
+        onChanged: _filterTools,
+        decoration: InputDecoration(
+          hintText: 'Search tools...',
+          hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
+          suffixIcon: const Icon(Icons.search, color: AppColors.primaryBlue),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
   }
 
   Widget _buildToolsList(BuildContext context) {
+    if (_filteredTools.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Text(
+            'No tools found',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListView.separated(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          itemCount: tools.length,
+          itemCount: _filteredTools.length,
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            final toolName = tools[index];
+            final toolName = _filteredTools[index];
             void handleTap() {
-              final page = _resolveToolPage(context, id, toolName, icon);
+              final page = _resolveToolPage(context, widget.id, toolName, widget.icon);
               Navigator.of(context).push(
                 PageRouteBuilder(
                   pageBuilder: (_, __, ___) => page,
