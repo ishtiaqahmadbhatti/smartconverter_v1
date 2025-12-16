@@ -423,7 +423,9 @@ class _JsonToYamlPageState extends State<JsonToYamlPage> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 68,
+            height: 68,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.backgroundSurface.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
@@ -432,10 +434,27 @@ class _JsonToYamlPageState extends State<JsonToYamlPage> {
                 width: 1,
               ),
             ),
-            child: const Icon(
-              Icons.data_object,
-              color: AppColors.textPrimary,
-              size: 32,
+            child: Stack(
+              children: const [
+                Positioned(
+                  top: 4,
+                  left: 4,
+                  child: Icon(
+                    Icons.data_object,
+                    size: 24,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Icon(
+                    Icons.description,
+                    size: 24,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 16),
