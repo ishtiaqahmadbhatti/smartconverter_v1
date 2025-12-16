@@ -49,7 +49,7 @@ class XMLConversionService:
                 xml_content += f'  <{record_name} id="{index}">\n'
                 for column, value in row.items():
                     # Clean column name for XML
-                    clean_column = column.replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '')
+                    clean_column = XMLConversionService._clean_tag_name(column)
                     # Escape XML special characters
                     escaped_value = XMLConversionService._escape_xml(str(value))
                     xml_content += f'    <{clean_column}>{escaped_value}</{clean_column}>\n'
@@ -82,7 +82,7 @@ class XMLConversionService:
                 for index, row in data.iterrows():
                     xml_content += f'    <{record_name} id="{index}">\n'
                     for column, value in row.items():
-                        clean_column = column.replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '')
+                        clean_column = XMLConversionService._clean_tag_name(column)
                         escaped_value = XMLConversionService._escape_xml(str(value))
                         xml_content += f'      <{clean_column}>{escaped_value}</{clean_column}>\n'
                     xml_content += f'    </{record_name}>\n'
@@ -392,6 +392,25 @@ class XMLConversionService:
             logger.error(f"Error converting JSON to XML: {str(e)}")
             raise Exception(f"Failed to convert JSON to XML: {str(e)}")
     
+    @staticmethod
+    def _clean_tag_name(name: str) -> str:
+        """Clean string to be a valid XML tag name."""
+        name = str(name).strip()
+        # Replace spaces, dashes, colons (namespace separator), parens with underscore
+        name = re.sub(r'[\s\-:().]+', '_', name)
+        # Remove any other invalid characters (keep alphanum and _)
+        name = re.sub(r'[^a-zA-Z0-9_]', '', name)
+        
+        # XML tags cannot start with a number
+        if name and name[0].isdigit():
+            name = f'_{name}'
+            
+        # Ensure it's not empty
+        if not name:
+            name = 'field'
+            
+        return name
+
     @staticmethod
     def _escape_xml(text: str) -> str:
         """Escape XML special characters."""
