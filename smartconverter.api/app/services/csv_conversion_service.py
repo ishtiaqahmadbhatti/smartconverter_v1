@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 
 # Database logging
 from app.services.request_logging_service import RequestLoggingService
+from app.services.xml_conversion_service import XMLConversionService
 
 logger = logging.getLogger(__name__)
 
@@ -175,35 +176,7 @@ class CSVConversionService:
     def xml_to_csv(xml_content: str) -> str:
         """Convert XML to CSV."""
         try:
-            # Parse XML
-            root = ET.fromstring(xml_content)
-            
-            # Extract data
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
-            
-            if not records:
-                raise Exception("No records found in XML")
-            
-            # Convert to CSV
-            import io
-            output = io.StringIO()
-            
-            # Get all unique keys
-            all_keys = set()
-            for record in records:
-                all_keys.update(record.keys())
-            
-            # Write CSV
-            writer = csv.DictWriter(output, fieldnames=sorted(all_keys))
-            writer.writeheader()
-            writer.writerows(records)
-            
-            return output.getvalue()
+            return XMLConversionService.xml_to_csv(xml_content)
             
         except Exception as e:
             logger.error(f"Error converting XML to CSV: {str(e)}")
