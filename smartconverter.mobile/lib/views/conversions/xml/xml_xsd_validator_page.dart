@@ -245,6 +245,27 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
       }
     } catch (e) {
       if (!mounted) return;
+
+      // Handle 500 Internal Server Error as specific validation failure
+      if (e is DioException && e.response?.statusCode == 500) {
+        final data = e.response?.data;
+        if (data is Map && data.containsKey('detail')) {
+          final detail = data['detail'];
+          if (detail is Map && detail['details'] != null && detail['details']['error'] != null) {
+            final errorMessage = detail['details']['error'].toString();
+            
+            setState(() {
+              _isValid = false;
+              _validationResultText = errorMessage;
+              _previewController.text = errorMessage;
+              _statusMessage = 'Validation Failed: XML is Invalid';
+            });
+            // Stop here, allowing the UI to show the Red Banner instead of SnackBar
+            return; 
+          }
+        }
+      }
+
       setState(() => _statusMessage = 'Validation Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
@@ -555,77 +576,90 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
 
   Widget _buildResultCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(16),
+        color: _isValid 
+            ? AppColors.success.withOpacity(0.1) 
+            : AppColors.error.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _isValid ? AppColors.success.withOpacity(0.5) : AppColors.error.withOpacity(0.5),
+          color: _isValid ? AppColors.success : AppColors.error,
+          width: 2,
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                _isValid ? Icons.verified : Icons.warning,
-                color: _isValid ? AppColors.success : AppColors.error,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Validation Result',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
+          Icon(
+            _isValid ? Icons.check_circle_outline : Icons.error_outline,
+            size: 64,
+            color: _isValid ? AppColors.success : AppColors.error,
           ),
-          const SizedBox(height: 12),
-          Container(
-             height: 200,
-             padding: const EdgeInsets.all(12),
-             decoration: BoxDecoration(
-               color: Colors.black12,
-               borderRadius: BorderRadius.circular(8),
-             ),
-             child: TextField(
-               controller: _previewController,
-               readOnly: true,
-               maxLines: null,
-               style: const TextStyle(
-                 fontFamily: 'monospace',
-                 fontSize: 12,
-                 color: AppColors.textPrimary,
-               ),
-               decoration: const InputDecoration(
-                 border: InputBorder.none,
-                 contentPadding: EdgeInsets.zero,
-               ),
-             ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              onPressed: () async {
-                 if (_previewController.text.isNotEmpty) {
-                    await Clipboard.setData(ClipboardData(text: _previewController.text));
-                    if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text('Copied to clipboard')),
-                        );
-                    }
-                 }
-              },
-              icon: const Icon(Icons.copy, color: AppColors.primaryBlue),
-              tooltip: 'Copy Result',
+          const SizedBox(height: 16),
+          Text(
+            _isValid ? 'XML IS VALID' : 'XML IS INVALID',
+            style: TextStyle(
+              color: _isValid ? AppColors.success : AppColors.error,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
             ),
-          )
+          ),
+          if (!_isValid && _validationResultText != null) ...[
+             const SizedBox(height: 24),
+             Container(
+               padding: const EdgeInsets.all(16),
+               decoration: BoxDecoration(
+                 color: AppColors.backgroundSurface,
+                 borderRadius: BorderRadius.circular(12),
+                 border: Border.all(color: AppColors.error.withOpacity(0.3)),
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   const Text(
+                     'Error Details:',
+                     style: TextStyle(
+                       color: AppColors.textPrimary,
+                       fontWeight: FontWeight.bold,
+                       fontSize: 14,
+                     ),
+                   ),
+                   const SizedBox(height: 8),
+                   Text(
+                     _parseErrorText(_validationResultText!),
+                     style: const TextStyle(
+                       color: AppColors.textSecondary,
+                       fontSize: 13, 
+                       height: 1.5,
+                       fontFamily: 'monospace',
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+          ],
         ],
       ),
     );
+  }
+
+  String _parseErrorText(String jsonResult) {
+    try {
+      final json = jsonDecode(jsonResult);
+      if (json is Map && json.containsKey('errors')) {
+        final errors = json['errors'];
+        if (errors is List && errors.isNotEmpty) {
+           return errors.map((e) => "• $e").join('\n');
+        }
+      }
+      // If parsing specific structure fails, try to return message or just raw text cleanup
+      if (json is Map && json.containsKey('message')) {
+         return json['message'].toString();
+      }
+      return jsonResult; // Fallback
+    } catch (e) {
+      return jsonResult;
+    }
   }
 }
