@@ -43,53 +43,9 @@ def _cleanup_files(*paths: Optional[str]) -> None:
         if path:
             FileService.cleanup_file(path)
 
-async def _get_content_from_file_or_text(
-    file: Union[UploadFile, str, None],
-    text: Optional[str],
-    file_type_name: str = "file"
-) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Helper to extract content from either uploaded file or text input.
-    Returns (content_string, file_path_to_cleanup).
-    """
-    input_path = None
-    content = None
-
-    # Handle file parameter
-    actual_file = None
-    if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
-        if hasattr(file, 'filename'):
-            actual_file = file
-    
-    # Check if file is provided
-    has_file = (
-        actual_file is not None 
-        and hasattr(actual_file, 'filename') 
-        and actual_file.filename 
-        and actual_file.filename.strip() != ""
-    )
-    
-    # Clean up text
-    cleaned_text = None
-    if text and text.strip():
-        if text.strip().lower() not in ['string', 'null', 'none', '']:
-            cleaned_text = text.strip()
-    
-    if not has_file and not cleaned_text:
-        return None, None
-        
-    if has_file:
-        input_path = FileService.save_uploaded_file(actual_file)
-        with open(input_path, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-    elif cleaned_text:
-        content = cleaned_text
-        
-    return content, input_path
-
 def _determine_output_filename(
     user_filename: Optional[str],
-    input_file: Union[UploadFile, str, None],
+    input_file: UploadFile,
     default_base: str,
     extension: str
 ) -> str:
@@ -110,21 +66,19 @@ def _determine_output_filename(
     else:
         # Fallback to input file name or default
         base_name = default_base
-        if input_file is not None and hasattr(input_file, 'filename') and input_file.filename:
+        if input_file and input_file.filename:
             # Strip input extension
             base_name = os.path.splitext(input_file.filename)[0]
         
-        # Avoid collisions or just return base? 
-        # User requested "jo file selected osi name say save kary" (Save with same name as selected file)
-        # But we need to ensure unique output if we don't want to overwrite?
-        # json_conversion.py uses base_name directly. I will follow that.
-        # But if text input (no file), we might want UUID to avoid constant overwrite of "xml_to_json.json"
-        
-        if not (input_file and hasattr(input_file, 'filename')):
-             # For text input, append short UUID to avoid conflicts
-             base_name = f"{base_name}_{uuid.uuid4().hex[:8]}"
-             
         return f"{base_name}{extension}"
+
+async def _read_file_content(file: UploadFile) -> str:
+    """Read and decode file content to string."""
+    try:
+        content_bytes = await file.read()
+        return content_bytes.decode('utf-8', errors='replace')
+    except Exception as e:
+        raise FileProcessingError(f"Error reading file content: {str(e)}")
 
 # ---------------------------------------------------------------------------
 # Endpoints
@@ -133,19 +87,17 @@ def _determine_output_filename(
 # CSV to XML
 @router.post("/csv-to-xml", response_model=ConversionResponse)
 async def convert_csv_to_xml(
-    csv_content: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     root_name: str = Form("data"),
     record_name: str = Form("record")
 ):
-    """Convert CSV to XML. Supports file upload or text input."""
-    input_path = None
+    """Convert CSV to XML. Requires CSV file upload."""
     try:
-        content, input_path = await _get_content_from_file_or_text(file, csv_content, "CSV")
+        content = await _read_file_content(file)
         
-        if not content:
-             raise FileProcessingError("Please provide either a CSV file or CSV text")
+        if not content.strip():
+             raise FileProcessingError("CSV file is empty")
 
         result = XMLConversionService.csv_to_xml(content, root_name, record_name)
         
@@ -176,7 +128,7 @@ async def convert_csv_to_xml(
     except Exception as e:
         XMLConversionService.log_conversion(
             "csv-to-xml",
-            csv_content if csv_content else (file.filename if hasattr(file, 'filename') else "Unknown"),
+            file.filename if file else "Unknown",
             "",
             False,
             str(e),
@@ -188,8 +140,6 @@ async def convert_csv_to_xml(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # Excel to XML
@@ -251,20 +201,18 @@ async def convert_excel_to_xml(
 # XML to JSON
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
-    xml_content: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None)
 ):
     """
     Convert XML to JSON.
-    Accepts either XML content (as string) or XML file upload.
+    Requires XML file upload.
     """
-    input_path = None
     try:
-        content, input_path = await _get_content_from_file_or_text(file, xml_content, "XML")
+        content = await _read_file_content(file)
         
-        if not content:
-            raise FileProcessingError("Please provide either an XML file or XML content")
+        if not content.strip():
+            raise FileProcessingError("XML file is empty")
         
         # Convert XML to JSON
         json_result = XMLConversionService.xml_to_json(content)
@@ -296,7 +244,7 @@ async def convert_xml_to_json(
     except Exception as e:
         XMLConversionService.log_conversion(
             "xml-to-json",
-            xml_content if xml_content else (file.filename if hasattr(file, 'filename') else "Unknown"),
+            file.filename if file else "Unknown",
             "",
             False,
             str(e),
@@ -308,24 +256,20 @@ async def convert_xml_to_json(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # XML to CSV
 @router.post("/xml-to-csv", response_model=ConversionResponse)
 async def convert_xml_to_csv(
-    xml_content: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None)
 ):
-    """Convert XML to CSV. Supports file upload or text."""
-    input_path = None
+    """Convert XML to CSV. Requires XML file upload."""
     try:
-        content, input_path = await _get_content_from_file_or_text(file, xml_content, "XML")
+        content = await _read_file_content(file)
 
-        if not content:
-            raise FileProcessingError("Please provide either XML file or text")
+        if not content.strip():
+            raise FileProcessingError("XML file is empty")
 
         result = XMLConversionService.xml_to_csv(content)
         
@@ -368,24 +312,20 @@ async def convert_xml_to_csv(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # XML to Excel
 @router.post("/xml-to-excel", response_model=ConversionResponse)
 async def convert_xml_to_excel(
-    xml_content: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None)
 ):
-    """Convert XML to Excel file. Supports file upload or text."""
-    input_path = None
+    """Convert XML to Excel file. Requires XML file upload."""
     try:
-        content, input_path = await _get_content_from_file_or_text(file, xml_content, "XML")
+        content = await _read_file_content(file)
 
-        if not content:
-            raise FileProcessingError("Please provide either XML file or text")
+        if not content.strip():
+            raise FileProcessingError("XML file is empty")
 
         # Service method saves file directly and returns path
         service_output_path = XMLConversionService.xml_to_excel(content)
@@ -429,24 +369,20 @@ async def convert_xml_to_excel(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # Fix XML Escaping
 @router.post("/fix-xml-escaping", response_model=ConversionResponse)
 async def fix_xml_escaping(
-    xml_content: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None)
 ):
-    """Fix XML escaping issues. Supports file upload or text."""
-    input_path = None
+    """Fix XML escaping issues. Requires XML file upload."""
     try:
-        content, input_path = await _get_content_from_file_or_text(file, xml_content, "XML")
+        content = await _read_file_content(file)
 
-        if not content:
-            raise FileProcessingError("Please provide either XML file or text")
+        if not content.strip():
+            raise FileProcessingError("XML file is empty")
 
         result = XMLConversionService.fix_xml_escaping(content)
         
@@ -489,8 +425,6 @@ async def fix_xml_escaping(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # Convert Excel XML to Excel XLSX
@@ -550,23 +484,21 @@ async def convert_excel_xml_to_xlsx(
 # XML/XSD Validator
 @router.post("/xml-xsd-validator", response_model=ConversionResponse)
 async def validate_xml_xsd(
-    xml_content: Optional[str] = Form(None),
-    file_xml: Union[UploadFile, str, None] = File(None),
-    xsd_content: Optional[str] = Form(None),
-    file_xsd: Union[UploadFile, str, None] = File(None)
+    file_xml: UploadFile = File(...),
+    file_xsd: Optional[UploadFile] = File(None)
 ):
-    """Validate XML against XSD schema. Check both text or file inputs."""
-    xml_input_path = None
-    xsd_input_path = None
+    """Validate XML against XSD schema. Requires XML file. XSD file is optional."""
     try:
         # Get XML Content
-        xml_text, xml_input_path = await _get_content_from_file_or_text(file_xml, xml_content, "XML")
+        xml_text = await _read_file_content(file_xml)
         
-        if not xml_text:
-            raise FileProcessingError("Please provide XML content or file")
+        if not xml_text.strip():
+            raise FileProcessingError("XML file is empty")
 
         # Get XSD Content (Optional)
-        xsd_text, xsd_input_path = await _get_content_from_file_or_text(file_xsd, xsd_content, "XSD")
+        xsd_text = None
+        if file_xsd:
+            xsd_text = await _read_file_content(file_xsd)
         
         result = XMLConversionService.xml_xsd_validator(xml_text, xsd_text)
         
@@ -600,25 +532,21 @@ async def validate_xml_xsd(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(xml_input_path, xsd_input_path)
 
 
 # JSON to XML
 @router.post("/json-to-xml", response_model=ConversionResponse)
 async def convert_json_to_xml(
-    json_text: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     root_name: str = Form("root")
 ):
-    """Convert JSON to XML. Supports file upload or text."""
-    input_path = None
+    """Convert JSON to XML. Requires JSON file upload."""
     try:
-        content, input_path = await _get_content_from_file_or_text(file, json_text, "JSON")
+        content = await _read_file_content(file)
         
-        if not content:
-            raise FileProcessingError("Please provide either JSON file or text")
+        if not content.strip():
+            raise FileProcessingError("JSON file is empty")
 
         # Parse JSON
         try:
@@ -667,8 +595,6 @@ async def convert_json_to_xml(
             details={"error": str(e)},
             status_code=500
         )
-    finally:
-        _cleanup_files(input_path)
 
 
 # Download endpoint for generated files
