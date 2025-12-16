@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
 export "FLUTTER_ROOT=D:\All Rounder Development\Programming Development\Flutter Dart Framework\Flutter SDK"
-export "FLUTTER_APPLICATION_PATH=D:\All Rounder Development\Programming Development\Flutter Dart Framework\Flutter Projects\New folder\smartconverter"
+export "FLUTTER_APPLICATION_PATH=D:\smartconverter_v1\smartconverter.mobile"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"

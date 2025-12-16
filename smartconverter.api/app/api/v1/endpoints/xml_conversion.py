@@ -427,65 +427,14 @@ async def fix_xml_escaping(
         )
 
 
-# Convert Excel XML to Excel XLSX
-@router.post("/excel-xml-to-xlsx", response_model=ConversionResponse)
-async def convert_excel_xml_to_xlsx(
-    file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
-):
-    """Convert Excel XML to Excel XLSX file."""
-    try:
-        # Read file content
-        file_content = await file.read()
-        
-        service_output_path = XMLConversionService.excel_xml_to_xlsx(file_content)
-        
-        # Rename/Move to desired filename
-        output_filename = _determine_output_filename(filename, file, "excel_xml_to_xlsx", ".xlsx")
-        output_path = os.path.join(settings.output_dir, output_filename)
-        
-        # If paths are different, move/rename
-        if os.path.abspath(service_output_path) != os.path.abspath(output_path):
-            shutil.move(service_output_path, output_path)
-        
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "excel-xml-to-xlsx",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
-        )
-        
-        return ConversionResponse(
-            success=True,
-            message="Excel XML converted to XLSX successfully",
-            output_filename=output_filename,
-            download_url=_build_download_url(output_filename)
-        )
-        
-    except Exception as e:
-        XMLConversionService.log_conversion(
-            "excel-xml-to-xlsx",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+
 
 
 # XML/XSD Validator
 @router.post("/xml-xsd-validator", response_model=ConversionResponse)
 async def validate_xml_xsd(
     file_xml: UploadFile = File(...),
-    file_xsd: Optional[UploadFile] = File(None)
+    file_xsd: Union[UploadFile, str, None] = File(None)
 ):
     """Validate XML against XSD schema. Requires XML file. XSD file is optional."""
     try:
@@ -497,7 +446,7 @@ async def validate_xml_xsd(
 
         # Get XSD Content (Optional)
         xsd_text = None
-        if file_xsd:
+        if file_xsd and isinstance(file_xsd, UploadFile):
             xsd_text = await _read_file_content(file_xsd)
         
         result = XMLConversionService.xml_xsd_validator(xml_text, xsd_text)

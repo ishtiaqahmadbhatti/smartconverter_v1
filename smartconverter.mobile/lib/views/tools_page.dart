@@ -90,7 +90,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert XML to CSV',
           'Convert XML to Excel',
           'Fix XML Escaping',
-          'Convert Excel XML to Excel XLSX',
+
           'XML/XSD Validator',
           'Convert JSON to XML',
         ],
@@ -146,7 +146,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert Excel to XML',
           'Convert XML to CSV',
           'Convert XML to Excel',
-          'Convert Excel XML to Excel XLSX',
+
           'Convert PDF to CSV',
           'Convert PDF to Excel',
           'Convert PDF to Word',

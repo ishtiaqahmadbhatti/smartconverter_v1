@@ -197,6 +197,17 @@ class ApiConfig {
   static const String jsonObjectsToExcelEndpoint = '/api/v1/jsonconversiontools/json-objects-to-excel';
   static const String jsonFormatterEndpoint = '/api/v1/jsonconversiontools/json-formatter';
   static const String jsonValidatorEndpoint = '/api/v1/jsonconversiontools/json-validator';
+  
+  // XML Conversion Endpoints
+  static const String csvToXmlEndpoint = '/api/v1/xmlconversiontools/csv-to-xml';
+  static const String excelToXmlEndpoint = '/api/v1/xmlconversiontools/excel-to-xml';
+  static const String xmlToJsonXmlToolsEndpoint = '/api/v1/xmlconversiontools/xml-to-json';
+  static const String xmlToCsvEndpoint = '/api/v1/xmlconversiontools/xml-to-csv';
+  static const String xmlToExcelEndpoint = '/api/v1/xmlconversiontools/xml-to-excel';
+  static const String fixXmlEscapingEndpoint = '/api/v1/xmlconversiontools/fix-xml-escaping';
+
+  static const String xmlXsdValidatorEndpoint = '/api/v1/xmlconversiontools/xml-xsd-validator';
+  static const String jsonToXmlXmlToolsEndpoint = '/api/v1/xmlconversiontools/json-to-xml';
 
   // Response Configuration
   static const String downloadUrlKey = 'download_url';

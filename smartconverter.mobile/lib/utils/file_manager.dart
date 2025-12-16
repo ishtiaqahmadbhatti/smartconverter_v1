@@ -88,6 +88,16 @@ class FileManager {
     return null;
   }
 
+  /// Get the temporary directory
+  static Future<Directory> getTempDirectory() async {
+    return await getTemporaryDirectory();
+  }
+
+  /// Get the app's main document directory (SmartConverter folder)
+  static Future<Directory> getAppDirectory() async {
+    return await getSmartConverterDirectory();
+  }
+
   /// Get or create the SmartConverter main folder
   static Future<Directory> getSmartConverterDirectory() async {
     final documentsDir = await getDocumentsDirectory();
@@ -1095,5 +1105,110 @@ class FileManager {
 
   static Future<Directory> getImagePdfToSvgDirectory() async {
     return getImageCategoryDirectory(_imagePdfToSvgSubFolder);
+  }
+
+  static const String _xmlConversionsFolder = 'XMLConversion';
+  static const String _csvToXmlSubFolder = 'csv-to-xml';
+  static const String _excelToXmlSubFolder = 'excel-to-xml';
+  static const String _xmlToJsonSubFolder = 'xml-to-json';
+  static const String _xmlToCsvSubFolder = 'xml-to-csv';
+  static const String _xmlToExcelSubFolder = 'xml-to-excel';
+  static const String _fixXmlEscapingSubFolder = 'fix-xml-escaping';
+
+  static const String _xmlXsdValidatorSubFolder = 'xml-validation';
+  static const String _jsonToXmlSubFolder = 'json-to-xml';
+
+  /// Get or create the XML conversions directory
+  static Future<Directory> getXmlConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final xmlConversionsDir = Directory(
+      '${smartConverterDir.path}/$_xmlConversionsFolder',
+    );
+    if (!await xmlConversionsDir.exists()) {
+      await xmlConversionsDir.create(recursive: true);
+    }
+    return xmlConversionsDir;
+  }
+
+  /// Get directory for CSV to XML outputs
+  static Future<Directory> getCsvToXmlDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_csvToXmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Excel to XML outputs
+  static Future<Directory> getExcelToXmlDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_excelToXmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for XML to JSON outputs
+  static Future<Directory> getXmlToJsonDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_xmlToJsonSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for XML to CSV outputs
+  static Future<Directory> getXmlToCsvDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_xmlToCsvSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for XML to Excel outputs
+  static Future<Directory> getXmlToExcelDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_xmlToExcelSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for Fix XML Escaping outputs
+  static Future<Directory> getFixXmlEscapingDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_fixXmlEscapingSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+
+
+  /// Get directory for XML Validator outputs
+  static Future<Directory> getXmlValidatorDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_xmlXsdValidatorSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Get directory for JSON to XML outputs
+  static Future<Directory> getJsonToXmlDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_jsonToXmlSubFolder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 }

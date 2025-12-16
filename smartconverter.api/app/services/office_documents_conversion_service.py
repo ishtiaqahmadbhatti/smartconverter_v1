@@ -30,6 +30,7 @@ import xlsxwriter
 # Database logging
 from app.services.request_logging_service import RequestLoggingService
 from app.services.file_service import FileService
+from app.services.xml_conversion_service import XMLConversionService
 
 logger = logging.getLogger(__name__)
 
@@ -838,129 +839,14 @@ class OfficeDocumentsConversionService:
     @staticmethod
     def xml_to_csv(xml_content: str) -> str:
         """Convert XML to CSV."""
-        try:
-            # Parse XML
-            root = ET.fromstring(xml_content)
-            
-            # Extract data
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
-            
-            if not records:
-                raise Exception("No records found in XML")
-            
-            # Convert to CSV
-            import io
-            output = io.StringIO()
-            
-            # Get all unique keys
-            all_keys = set()
-            for record in records:
-                all_keys.update(record.keys())
-            
-            # Write CSV
-            writer = csv.DictWriter(output, fieldnames=sorted(all_keys))
-            writer.writeheader()
-            writer.writerows(records)
-            
-            return output.getvalue()
-            
-        except Exception as e:
-            logger.error(f"Error converting XML to CSV: {str(e)}")
-            raise Exception(f"Failed to convert XML to CSV: {str(e)}")
+        return XMLConversionService.xml_to_csv(xml_content)
     
     @staticmethod
     def xml_to_excel(xml_content: str) -> str:
         """Convert XML to Excel file."""
-        try:
-            import uuid
-            
-            # Create unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"xml_to_excel_{unique_id}.xlsx"
-            output_path = os.path.join("outputs", filename)
-            
-            # Ensure outputs directory exists
-            os.makedirs("outputs", exist_ok=True)
-            
-            # Parse XML
-            root = ET.fromstring(xml_content)
-            
-            # Extract data
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
-            
-            if not records:
-                raise Exception("No records found in XML")
-            
-            # Convert to DataFrame and save as Excel
-            df = pd.DataFrame(records)
-            df.to_excel(output_path, index=False)
-            
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Error converting XML to Excel: {str(e)}")
-            raise Exception(f"Failed to convert XML to Excel: {str(e)}")
+        return XMLConversionService.xml_to_excel(xml_content)
     
-    @staticmethod
-    def excel_xml_to_xlsx(file_content: bytes) -> str:
-        """Convert Excel XML to Excel XLSX file."""
-        try:
-            import uuid
-            
-            # Create unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"excel_xml_to_xlsx_{unique_id}.xlsx"
-            output_path = os.path.join("outputs", filename)
-            
-            # Ensure outputs directory exists
-            os.makedirs("outputs", exist_ok=True)
-            
-            # Parse XML content
-            xml_content = file_content.decode('utf-8')
-            root = ET.fromstring(xml_content)
-            
-            # Create new Excel workbook
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Sheet1"
-            
-            # Extract data from XML
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
-            
-            if records:
-                # Write headers
-                headers = list(records[0].keys())
-                for col, header in enumerate(headers, 1):
-                    ws.cell(row=1, column=col, value=header)
-                
-                # Write data
-                for row, record in enumerate(records, 2):
-                    for col, header in enumerate(headers, 1):
-                        ws.cell(row=row, column=col, value=record.get(header, ''))
-            
-            # Save workbook
-            wb.save(output_path)
-            
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Error converting Excel XML to XLSX: {str(e)}")
-            raise Exception(f"Failed to convert Excel XML to XLSX: {str(e)}")
+
     
     # JSON Conversions
     @staticmethod

@@ -40,7 +40,7 @@ The Office Documents Conversion API provides comprehensive document conversion c
 ### **XML Conversions**
 - ✅ **XML to CSV** - Convert XML files to CSV format
 - ✅ **XML to Excel** - Convert XML files to Excel format
-- ✅ **Excel XML to XLSX** - Convert Excel XML files to XLSX format
+
 
 ### **JSON Conversions**
 - ✅ **JSON to Excel** - Convert JSON data to Excel format
@@ -81,7 +81,7 @@ POST /ods-to-csv
 POST /ods-to-pdf
 POST /ods-to-excel
 POST /excel-to-xml
-POST /excel-xml-to-xlsx
+
 POST /excel-to-json
 POST /bson-to-excel
 POST /srt-to-excel

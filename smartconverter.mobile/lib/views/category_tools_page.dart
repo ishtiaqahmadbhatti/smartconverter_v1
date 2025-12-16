@@ -27,7 +27,7 @@ import 'conversions/xml/csv_to_xml_from_xml_category_page.dart';
 import 'conversions/xml/excel_to_xml_page.dart';
 import 'conversions/xml/xml_to_excel_page.dart';
 import 'conversions/xml/xml_fix_escaping_page.dart';
-import 'conversions/xml/excel_xml_to_xlsx_page.dart';
+
 import 'conversions/xml/xml_xsd_validator_page.dart';
 import 'conversions/xml/json_to_xml_from_xml_category_page.dart';
 // CSV pages
@@ -638,15 +638,14 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert Excel to XML':
           return const ExcelToXmlPage();
         case 'Convert XML to JSON':
-          return const XmlToJsonPage();
+          return const XmlToJsonFromXmlCategoryPage();
         case 'Convert XML to CSV':
           return const XmlToCsvPage();
         case 'Convert XML to Excel':
           return const XmlToExcelPage();
         case 'Fix XML Escaping':
           return const XmlFixEscapingPage();
-        case 'Convert Excel XML to Excel XLSX':
-          return const ExcelXmlToXlsxPage();
+
         case 'XML/XSD Validator':
           return const XmlXsdValidatorPage();
         case 'Convert JSON to XML':
@@ -731,8 +730,7 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const XmlToCsvPage();
         case 'Convert XML to Excel':
           return const XmlToExcelPage();
-        case 'Convert Excel XML to Excel XLSX':
-          return const ExcelXmlToXlsxPage();
+
         case 'Convert PDF to CSV':
           return const PdfToCsvPage();
         case 'Convert PDF to Excel':

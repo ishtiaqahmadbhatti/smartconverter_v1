@@ -146,16 +146,7 @@ class XMLConversionService:
     def xml_to_csv(xml_content: str) -> str:
         """Convert XML to CSV."""
         try:
-            # Parse XML
-            root = ET.fromstring(xml_content)
-            
-            # Extract data
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
+            records = XMLConversionService._extract_records_from_xml(xml_content)
             
             if not records:
                 raise Exception("No records found in XML")
@@ -194,16 +185,7 @@ class XMLConversionService:
             # Ensure outputs directory exists
             os.makedirs("outputs", exist_ok=True)
             
-            # Parse XML
-            root = ET.fromstring(xml_content)
-            
-            # Extract data
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
+            records = XMLConversionService._extract_records_from_xml(xml_content)
             
             if not records:
                 raise Exception("No records found in XML")
@@ -217,6 +199,59 @@ class XMLConversionService:
         except Exception as e:
             logger.error(f"Error converting XML to Excel: {str(e)}")
             raise Exception(f"Failed to convert XML to Excel: {str(e)}")
+
+    @staticmethod
+    def _extract_records_from_xml(xml_content: str) -> List[Dict[str, Any]]:
+        """Extract flat records from XML content."""
+        root = ET.fromstring(xml_content)
+        records = []
+        
+        # Priority 1: explicitly named 'record' tags (as per original logic)
+        elements = root.findall('.//record')
+        
+        # Priority 2: direct children of root (generic XML behavior)
+        if not elements:
+            elements = list(root)
+            
+        for element in elements:
+            # Flatten the element into a dictionary
+            record = XMLConversionService._flatten_xml_element(element)
+            
+            # If flattening didn't yield anything (empty tags), check attributes or text
+            if not record:
+                 # Check for attributes
+                 if element.attrib:
+                     record.update(element.attrib)
+                 
+                 # Check for direct text
+                 if element.text and element.text.strip():
+                     # Assuming formatting like <item>Value</item> -> {'item': 'Value'} is desired for the row
+                     # But here 'element' IS the row. So column name?
+                     # Ideally mixed content isn't great for CSV. 
+                     # If the row element itself has value, what column name? 'value'? 'text'?
+                     # Or use the tag name if we are treating children as rows.
+                     pass 
+
+            if record:
+                records.append(record)
+                
+        return records
+
+    @staticmethod
+    def _flatten_xml_element(element, parent_key='', sep='_') -> Dict[str, str]:
+        """Recursive helper to flatten XML element."""
+        items = {}
+        for child in element:
+            new_key = f"{parent_key}{sep}{child.tag}" if parent_key else child.tag
+            
+            # If child has children, recurse
+            if len(list(child)) > 0:
+                items.update(XMLConversionService._flatten_xml_element(child, new_key, sep=sep))
+            else:
+                # Leaf node: get text
+                items[new_key] = child.text or ''
+                
+        return items
     
     @staticmethod
     def fix_xml_escaping(xml_content: str) -> str:
@@ -258,57 +293,7 @@ class XMLConversionService:
             logger.error(f"Error fixing XML escaping: {str(e)}")
             raise Exception(f"Failed to fix XML escaping: {str(e)}")
     
-    @staticmethod
-    def excel_xml_to_xlsx(file_content: bytes) -> str:
-        """Convert Excel XML to Excel XLSX file."""
-        try:
-            import uuid
-            from openpyxl import Workbook
-            
-            # Create unique filename
-            unique_id = str(uuid.uuid4())
-            filename = f"excel_xml_to_xlsx_{unique_id}.xlsx"
-            output_path = os.path.join("outputs", filename)
-            
-            # Ensure outputs directory exists
-            os.makedirs("outputs", exist_ok=True)
-            
-            # Parse XML content
-            xml_content = file_content.decode('utf-8')
-            root = ET.fromstring(xml_content)
-            
-            # Create new Excel workbook
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Sheet1"
-            
-            # Extract data from XML
-            records = []
-            for record in root.findall('.//record'):
-                record_data = {}
-                for child in record:
-                    record_data[child.tag] = child.text or ''
-                records.append(record_data)
-            
-            if records:
-                # Write headers
-                headers = list(records[0].keys())
-                for col, header in enumerate(headers, 1):
-                    ws.cell(row=1, column=col, value=header)
-                
-                # Write data
-                for row, record in enumerate(records, 2):
-                    for col, header in enumerate(headers, 1):
-                        ws.cell(row=row, column=col, value=record.get(header, ''))
-            
-            # Save workbook
-            wb.save(output_path)
-            
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Error converting Excel XML to XLSX: {str(e)}")
-            raise Exception(f"Failed to convert Excel XML to XLSX: {str(e)}")
+
     
     @staticmethod
     def xml_xsd_validator(xml_content: str, xsd_content: str = None) -> dict:

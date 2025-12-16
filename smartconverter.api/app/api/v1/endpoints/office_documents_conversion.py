@@ -518,30 +518,7 @@ async def convert_xml_to_excel(xml_content: str = Form(...)):
         return create_error_response("Failed to convert XML to Excel", str(e))
 
 
-@router.post("/excel-xml-to-xlsx", response_model=ConversionResponse)
-async def convert_excel_xml_to_xlsx(file: UploadFile = File(...)):
-    """Convert Excel XML to Excel XLSX file."""
-    try:
-        if not file.filename.lower().endswith('.xml'):
-            raise HTTPException(status_code=400, detail="File must be an XML file")
-        
-        file_content = await file.read()
-        output_path = OfficeDocumentsConversionService.excel_xml_to_xlsx(file_content)
-        
-        # Create download URL
-        filename = os.path.basename(output_path)
-        download_url = f"/api/v1/officedocumentsconversiontools/download/{filename}"
-        
-        return ConversionResponse(
-            success=True,
-            message="Excel XML converted to XLSX successfully",
-            converted_data=None,
-            download_url=download_url
-        )
-        
-    except Exception as e:
-        logger.error(f"Error converting Excel XML to XLSX: {str(e)}")
-        return create_error_response("Failed to convert Excel XML to XLSX", str(e))
+
 
 
 @router.post("/json-to-excel", response_model=ConversionResponse)
