@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import '../../../utils/file_manager.dart';
+import 'base_office_conversion_page.dart';
 
-class ExcelToOdsPage extends StatelessWidget {
-  const ExcelToOdsPage({super.key});
+class ExcelToOdsOfficePage extends StatelessWidget {
+  const ExcelToOdsOfficePage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'office_documents_conversion',
-    toolName: 'Convert Excel to OpenOffice Calc ODS',
-    categoryIcon: Icons.description_outlined,
-  );
+  Widget build(BuildContext context) {
+    return BaseOfficeConversionPage(
+      pageTitle: 'Excel to ODS',
+      description: 'Convert Excel spreadsheets to ODS (OpenDocument Spreadsheet).',
+      featureIcon: Icons.border_all_outlined,
+      allowedExtensions: const ['xls', 'xlsx'],
+      apiEndpoint: ApiConfig.officeExcelToOdsEndpoint,
+      targetDirectoryGetter: FileManager.getOfficeExcelToOdsDirectory,
+      outputExtension: '.ods',
+      conversionButtonLabel: 'Convert to ODS',
+      successMessage: 'Excel converted to ODS successfully!',
+    );
+  }
 }

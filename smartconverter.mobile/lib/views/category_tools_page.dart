@@ -55,6 +55,24 @@ import 'conversions/office_documents/excel_to_csv_page.dart';
 import 'conversions/office_documents/excel_to_ods_page.dart';
 import 'conversions/office_documents/ods_to_excel_page.dart';
 import 'conversions/office_documents/bson_to_excel_page.dart';
+import 'conversions/office_documents/pdf_to_csv_page.dart';
+import 'conversions/office_documents/pdf_to_excel_page.dart';
+import 'conversions/office_documents/word_to_html_page.dart';
+import 'conversions/office_documents/powerpoint_to_html_page.dart';
+import 'conversions/office_documents/powerpoint_to_text_page.dart';
+import 'conversions/office_documents/excel_to_xps_page.dart';
+import 'conversions/office_documents/excel_to_html_page.dart';
+import 'conversions/office_documents/ods_to_csv_page.dart';
+import 'conversions/office_documents/ods_to_pdf_page.dart';
+import 'conversions/office_documents/csv_to_excel_page.dart';
+import 'conversions/office_documents/excel_to_xml_page.dart';
+import 'conversions/office_documents/xml_to_csv_page.dart';
+import 'conversions/office_documents/xml_to_excel_page.dart';
+import 'conversions/office_documents/json_to_excel_page.dart';
+import 'conversions/office_documents/excel_to_json_page.dart';
+import 'conversions/office_documents/json_objects_to_excel_page.dart';
+import 'conversions/office_documents/srt_to_excel_page.dart';
+import 'conversions/office_documents/excel_to_srt_page.dart';
 // Website pages
 import 'conversions/website/website_to_pdf_page.dart';
 import 'conversions/website/html_to_pdf_page.dart';
@@ -614,9 +632,9 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert JSON to CSV':
           return const JsonToCsvPage();
         case 'Convert JSON to Excel':
-          return const JsonToExcelPage();
+          return const JsonToExcelOfficePage();
         case 'Convert Excel to JSON':
-          return const ExcelToJsonPage();
+          return const ExcelToJsonOfficePage();
         case 'Convert CSV to JSON':
           return const CsvToJsonPage();
         case 'Convert JSON to YAML':
@@ -636,13 +654,13 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert CSV to XML':
           return const CsvToXmlFromXmlCategoryPage();
         case 'Convert Excel to XML':
-          return const ExcelToXmlPage();
+          return const ExcelToXmlOfficePage();
         case 'Convert XML to JSON':
           return const XmlToJsonFromXmlCategoryPage();
         case 'Convert XML to CSV':
-          return const XmlToCsvPage();
+          return const XmlToCsvOfficePage();
         case 'Convert XML to Excel':
-          return const XmlToExcelPage();
+          return const XmlToExcelOfficePage();
         case 'Fix XML Escaping':
           return const XmlFixEscapingPage();
 
@@ -662,15 +680,15 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert Excel to CSV':
           return const ExcelToCsvFromCsvCategoryPage();
         case 'Convert OpenOffice Calc ODS to CSV':
-          return const OdsToCsvPage();
+          return const OdsToCsvOfficePage();
         case 'Convert CSV to Excel':
-          return const CsvToExcelPage();
+          return const CsvToExcelOfficePage();
         case 'Convert CSV to XML':
           return const CsvToXmlPage();
         case 'Convert XML to CSV':
           return const XmlToCsvFromCsvCategoryPage();
         case 'Convert PDF to CSV':
-          return const PdfToCsvPage();
+          return const PdfToCsvOfficePage();
         case 'Convert JSON to CSV':
           return const JsonToCsvFromCsvCategoryPage();
         case 'Convert CSV to JSON':
@@ -693,62 +711,62 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'AI: Convert PDF to Excel':
           return const AiPdfToExcelPage();
         case 'Convert Word to PDF':
-          return const WordToPdfPage();
+          return const WordToPdfOfficePage();
         case 'Convert Word to HTML':
-          return const WordToHtmlPage();
+          return const WordToHtmlOfficePage();
         case 'Convert PowerPoint to PDF':
-          return const PowerPointToPdfPage();
+          return const PowerPointToPdfOfficePage();
         case 'Convert PowerPoint to HTML':
-          return const PowerPointToHtmlPage();
+          return const PowerPointToHtmlOfficePage();
         case 'Convert OXPS to PDF':
           return const OxpsToPdfPage();
         case 'Convert Word to Text':
-          return const WordToTextPage();
+          return const WordToTextOfficePage();
         case 'Convert PowerPoint to Text':
-          return const PowerPointToTextPage();
+          return const PowerPointToTextOfficePage();
         case 'Convert Excel to PDF':
-          return const ExcelToPdfPage();
+          return const ExcelToPdfOfficePage();
         case 'Convert Excel to XPS':
-          return const ExcelToXpsPage();
+          return const ExcelToXpsOfficePage();
         case 'Convert Excel to HTML':
-          return const ExcelToHtmlWebPage();
+          return const ExcelToHtmlOfficePage();
         case 'Convert Excel to CSV':
-          return const ExcelToCsvPage();
+          return const ExcelToCsvOfficePage();
         case 'Convert Excel to OpenOffice Calc ODS':
-          return const ExcelToOdsPage();
+          return const ExcelToOdsOfficePage();
         case 'Convert OpenOffice Calc ODS to CSV':
-          return const OdsToCsvPage();
+          return const OdsToCsvOfficePage();
         case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfFromPdfCategoryPage();
+          return const OdsToPdfOfficePage();
         case 'Convert OpenOffice Calc ODS to Excel':
-          return const OdsToExcelPage();
+          return const OdsToExcelOfficePage();
         case 'Convert CSV to Excel':
-          return const CsvToExcelPage();
+          return const CsvToExcelOfficePage();
         case 'Convert Excel to XML':
-          return const ExcelToXmlPage();
+          return const ExcelToXmlOfficePage();
         case 'Convert XML to CSV':
-          return const XmlToCsvPage();
+          return const XmlToCsvOfficePage();
         case 'Convert XML to Excel':
-          return const XmlToExcelPage();
+          return const XmlToExcelOfficePage();
 
         case 'Convert PDF to CSV':
-          return const PdfToCsvPage();
+          return const PdfToCsvOfficePage();
         case 'Convert PDF to Excel':
-          return const PdfToExcelPage();
+          return const PdfToExcelOfficePage();
         case 'Convert PDF to Word':
           return const PdfToWordOfficePage();
         case 'Convert JSON to Excel':
-          return const JsonToExcelPage();
+          return const JsonToExcelOfficePage();
         case 'Convert Excel to JSON':
-          return const ExcelToJsonPage();
+          return const ExcelToJsonOfficePage();
         case 'Convert JSON objects to Excel':
-          return const JsonObjectsToExcelPage();
+          return const JsonObjectsToExcelOfficePage();
         case 'Convert BSON to Excel':
-          return const BsonToExcelPage();
+          return const BsonToExcelOfficePage();
         case 'Convert SRT to Excel':
-          return const SrtToExcelPage();
+          return const SrtToExcelOfficePage();
         case 'Convert Excel to SRT':
-          return const ExcelToSrtPage();
+          return const ExcelToSrtOfficePage();
       }
     }
 
@@ -793,9 +811,9 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert HTML to PDF':
           return const HtmlToPdfPage();
         case 'Convert Word to PDF':
-          return const WordToPdfPage();
+          return const WordToPdfOfficePage();
         case 'Convert PowerPoint to PDF':
-          return const PowerPointToPdfPage();
+          return const PowerPointToPdfOfficePage();
         case 'Convert OXPS to PDF':
           return const OxpsToPdfPage();
         case 'Convert JPG to PDF':
@@ -805,17 +823,17 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert Markdown to PDF':
           return const MarkdownToPdfPage();
         case 'Convert Excel to PDF':
-          return const ExcelToPdfPage();
+          return const ExcelToPdfOfficePage();
         case 'Convert Excel to XPS':
-          return const ExcelToXpsPage();
+          return const ExcelToXpsOfficePage();
         case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfFromPdfCategoryPage();
+          return const OdsToPdfOfficePage();
         case 'Convert PDF to CSV':
-          return const PdfToCsvPage();
+          return const PdfToCsvOfficePage();
         case 'Convert PDF to Excel':
-          return const PdfToExcelPage();
+          return const PdfToExcelOfficePage();
         case 'Convert PDF to Word':
-          return const PdfToWordPage();
+          return const PdfToWordOfficePage();
         case 'Convert PDF to JPG':
           return const PdfToJpgPage();
         case 'Convert PDF to PNG':
@@ -897,7 +915,7 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert SRT to CSV':
           return const SrtToCsvFromSubtitlePage();
         case 'Convert SRT to Excel':
-          return const SrtToExcelPage();
+          return const SrtToExcelOfficePage();
         case 'Convert SRT to Text':
           return const SrtToTextPage();
         case 'Convert SRT to VTT':

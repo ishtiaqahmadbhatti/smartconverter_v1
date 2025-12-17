@@ -85,6 +85,39 @@ class FileManager {
   static const String _csvToExcelSubFolder = 'csv-to-excel';
   static const String _csvToXmlSubFolder = 'csv-to-xml';
 
+  static const String _officeDocumentsConversionsFolder = 'OfficeDocumentsConversion';
+  static const String _officePdfToCsvSubFolder = 'pdf-to-csv';
+  static const String _officePdfToExcelSubFolder = 'pdf-to-excel';
+  static const String _officePdfToWordSubFolder = 'pdf-to-word';
+  static const String _officeWordToPdfSubFolder = 'word-to-pdf';
+  static const String _officeWordToHtmlSubFolder = 'word-to-html';
+  static const String _officeWordToTextSubFolder = 'word-to-text';
+  static const String _officePowerPointToPdfSubFolder = 'powerpoint-to-pdf';
+  static const String _officePowerPointToHtmlSubFolder = 'powerpoint-to-html';
+  static const String _officePowerPointToTextSubFolder = 'powerpoint-to-text';
+  static const String _officeExcelToPdfSubFolder = 'excel-to-pdf';
+  static const String _officeExcelToXpsSubFolder = 'excel-to-xps';
+  static const String _officeExcelToHtmlSubFolder = 'excel-to-html';
+  static const String _officeExcelToCsvSubFolder = 'excel-to-csv';
+  static const String _officeExcelToOdsSubFolder = 'excel-to-ods';
+  static const String _officeExcelToXmlSubFolder = 'excel-to-xml';
+  static const String _officeOdsToCsvSubFolder = 'ods-to-csv';
+  static const String _officeOdsToPdfSubFolder = 'ods-to-pdf';
+  static const String _officeOdsToExcelSubFolder = 'ods-to-excel';
+  static const String _officeCsvToExcelSubFolder = 'csv-to-excel';
+  static const String _officeXmlToCsvSubFolder = 'xml-to-csv';
+  static const String _officeXmlToExcelSubFolder = 'xml-to-excel';
+  static const String _officeJsonToExcelSubFolder = 'json-to-excel';
+  static const String _officeExcelToJsonSubFolder = 'excel-to-json';
+  static const String _officeJsonObjectsToExcelSubFolder = 'json-objects-to-excel';
+  static const String _officeBsonToExcelSubFolder = 'bson-to-excel';
+  static const String _officeSrtToExcelSubFolder = 'srt-to-excel';
+  static const String _officeSrtToXlsxSubFolder = 'srt-to-xlsx';
+  static const String _officeSrtToXlsSubFolder = 'srt-to-xls';
+  static const String _officeExcelToSrtSubFolder = 'excel-to-srt';
+  static const String _officeXlsxToSrtSubFolder = 'xlsx-to-srt';
+  static const String _officeXlsToSrtSubFolder = 'xls-to-srt';
+
   static const String _jsonToCsvSubFolder = 'json-to-csv';
   static const String _csvToJsonSubFolderLegacy = 'csv-to-json'; // Renamed to avoid conflict if any, utilizing consistent naming
 
@@ -157,6 +190,59 @@ class FileManager {
 
     return csvConversionsDir;
   }
+
+  /// Get or create the Office Documents Conversion folder
+  static Future<Directory> getOfficeDocumentsConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final officeDocsDir = Directory(
+      '${smartConverterDir.path}/$_officeDocumentsConversionsFolder',
+    );
+
+    if (!await officeDocsDir.exists()) {
+      await officeDocsDir.create(recursive: true);
+    }
+
+    return officeDocsDir;
+  }
+
+  static Future<Directory> _getOfficeSubDir(String subFolder) async {
+    final rootDir = await getOfficeDocumentsConversionsDirectory();
+    final dir = Directory('${rootDir.path}/$subFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static Future<Directory> getOfficePdfToCsvDirectory() => _getOfficeSubDir(_officePdfToCsvSubFolder);
+  static Future<Directory> getOfficePdfToExcelDirectory() => _getOfficeSubDir(_officePdfToExcelSubFolder);
+  static Future<Directory> getOfficePdfToWordDirectory() => _getOfficeSubDir(_officePdfToWordSubFolder);
+  static Future<Directory> getOfficeWordToPdfDirectory() => _getOfficeSubDir(_officeWordToPdfSubFolder);
+  static Future<Directory> getOfficeWordToHtmlDirectory() => _getOfficeSubDir(_officeWordToHtmlSubFolder);
+  static Future<Directory> getOfficeWordToTextDirectory() => _getOfficeSubDir(_officeWordToTextSubFolder);
+  static Future<Directory> getOfficePowerPointToPdfDirectory() => _getOfficeSubDir(_officePowerPointToPdfSubFolder);
+  static Future<Directory> getOfficePowerPointToHtmlDirectory() => _getOfficeSubDir(_officePowerPointToHtmlSubFolder);
+  static Future<Directory> getOfficePowerPointToTextDirectory() => _getOfficeSubDir(_officePowerPointToTextSubFolder);
+  static Future<Directory> getOfficeExcelToPdfDirectory() => _getOfficeSubDir(_officeExcelToPdfSubFolder);
+  static Future<Directory> getOfficeExcelToXpsDirectory() => _getOfficeSubDir(_officeExcelToXpsSubFolder);
+  static Future<Directory> getOfficeExcelToHtmlDirectory() => _getOfficeSubDir(_officeExcelToHtmlSubFolder);
+  static Future<Directory> getOfficeExcelToCsvDirectory() => _getOfficeSubDir(_officeExcelToCsvSubFolder);
+  static Future<Directory> getOfficeExcelToOdsDirectory() => _getOfficeSubDir(_officeExcelToOdsSubFolder);
+  static Future<Directory> getOfficeExcelToXmlDirectory() => _getOfficeSubDir(_officeExcelToXmlSubFolder);
+  static Future<Directory> getOfficeOdsToCsvDirectory() => _getOfficeSubDir(_officeOdsToCsvSubFolder);
+  static Future<Directory> getOfficeOdsToPdfDirectory() => _getOfficeSubDir(_officeOdsToPdfSubFolder);
+  static Future<Directory> getOfficeOdsToExcelDirectory() => _getOfficeSubDir(_officeOdsToExcelSubFolder);
+  static Future<Directory> getOfficeCsvToExcelDirectory() => _getOfficeSubDir(_officeCsvToExcelSubFolder);
+  static Future<Directory> getOfficeXmlToCsvDirectory() => _getOfficeSubDir(_officeXmlToCsvSubFolder);
+  static Future<Directory> getOfficeXmlToExcelDirectory() => _getOfficeSubDir(_officeXmlToExcelSubFolder);
+  static Future<Directory> getOfficeJsonToExcelDirectory() => _getOfficeSubDir(_officeJsonToExcelSubFolder);
+  static Future<Directory> getOfficeExcelToJsonDirectory() => _getOfficeSubDir(_officeExcelToJsonSubFolder);
+  static Future<Directory> getOfficeJsonObjectsToExcelDirectory() => _getOfficeSubDir(_officeJsonObjectsToExcelSubFolder);
+  static Future<Directory> getOfficeBsonToExcelDirectory() => _getOfficeSubDir(_officeBsonToExcelSubFolder);
+  static Future<Directory> getOfficeSrtToExcelDirectory() => _getOfficeSubDir(_officeSrtToExcelSubFolder);
+  static Future<Directory> getOfficeSrtToXlsxDirectory() => _getOfficeSubDir(_officeSrtToXlsxSubFolder);
+  static Future<Directory> getOfficeSrtToXlsDirectory() => _getOfficeSubDir(_officeSrtToXlsSubFolder);
+  static Future<Directory> getOfficeExcelToSrtDirectory() => _getOfficeSubDir(_officeExcelToSrtSubFolder);
+  static Future<Directory> getOfficeXlsxToSrtDirectory() => _getOfficeSubDir(_officeXlsxToSrtSubFolder);
+  static Future<Directory> getOfficeXlsToSrtDirectory() => _getOfficeSubDir(_officeXlsToSrtSubFolder);
 
   /// Get directory for HTML Table to CSV
   static Future<Directory> getHtmlTableToCsvDirectory() async {

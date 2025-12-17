@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.100';
+  static const String networkIp = '192.168.8.101';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -235,4 +235,37 @@ class ApiConfig {
   static const String statusCompleted = 'completed';
   static const String statusFailed = 'failed';
   static const String statusPending = 'pending';
+
+  // Office Document Conversion Endpoints
+  static const String officePdfToCsvEndpoint = '/api/v1/officedocumentsconversiontools/pdf-to-csv';
+  static const String officePdfToExcelEndpoint = '/api/v1/officedocumentsconversiontools/pdf-to-excel';
+  static const String officePdfToWordEndpoint = '/api/v1/officedocumentsconversiontools/pdf-to-word';
+  static const String officeWordToPdfEndpoint = '/api/v1/officedocumentsconversiontools/word-to-pdf';
+  static const String officeWordToHtmlEndpoint = '/api/v1/officedocumentsconversiontools/word-to-html';
+  static const String officeWordToTextEndpoint = '/api/v1/officedocumentsconversiontools/word-to-text';
+  static const String officePowerPointToPdfEndpoint = '/api/v1/officedocumentsconversiontools/powerpoint-to-pdf';
+  static const String officePowerPointToHtmlEndpoint = '/api/v1/officedocumentsconversiontools/powerpoint-to-html';
+  static const String officePowerPointToTextEndpoint = '/api/v1/officedocumentsconversiontools/powerpoint-to-text';
+  static const String officeExcelToPdfEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-pdf';
+  static const String officeExcelToXpsEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-xps';
+  static const String officeExcelToHtmlEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-html';
+  static const String officeExcelToCsvEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-csv';
+  static const String officeExcelToOdsEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-ods';
+  static const String officeExcelToXmlEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-xml';
+  static const String officeOdsToCsvEndpoint = '/api/v1/officedocumentsconversiontools/ods-to-csv';
+  static const String officeOdsToPdfEndpoint = '/api/v1/officedocumentsconversiontools/ods-to-pdf';
+  static const String officeOdsToExcelEndpoint = '/api/v1/officedocumentsconversiontools/ods-to-excel';
+  static const String officeCsvToExcelEndpoint = '/api/v1/officedocumentsconversiontools/csv-to-excel';
+  static const String officeXmlToCsvEndpoint = '/api/v1/officedocumentsconversiontools/xml-to-csv';
+  static const String officeXmlToExcelEndpoint = '/api/v1/officedocumentsconversiontools/xml-to-excel';
+  static const String officeJsonToExcelEndpoint = '/api/v1/officedocumentsconversiontools/json-to-excel';
+  static const String officeExcelToJsonEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-json';
+  static const String officeJsonObjectsToExcelEndpoint = '/api/v1/officedocumentsconversiontools/json-objects-to-excel';
+  static const String officeBsonToExcelEndpoint = '/api/v1/officedocumentsconversiontools/bson-to-excel';
+  static const String officeSrtToExcelEndpoint = '/api/v1/officedocumentsconversiontools/srt-to-excel';
+  static const String officeSrtToXlsxEndpoint = '/api/v1/officedocumentsconversiontools/srt-to-xlsx';
+  static const String officeSrtToXlsEndpoint = '/api/v1/officedocumentsconversiontools/srt-to-xls';
+  static const String officeExcelToSrtEndpoint = '/api/v1/officedocumentsconversiontools/excel-to-srt';
+  static const String officeXlsxToSrtEndpoint = '/api/v1/officedocumentsconversiontools/xlsx-to-srt';
+  static const String officeXlsToSrtEndpoint = '/api/v1/officedocumentsconversiontools/xls-to-srt';
 }

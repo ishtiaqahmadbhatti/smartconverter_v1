@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import '../../../utils/file_manager.dart';
+import 'base_office_conversion_page.dart';
 
-class WordToPdfPage extends StatelessWidget {
-  const WordToPdfPage({super.key});
+class WordToPdfOfficePage extends StatelessWidget {
+  const WordToPdfOfficePage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'office_documents_conversion',
-    toolName: 'Word To PDF',
-    categoryIcon: Icons.description_outlined,
-  );
+  Widget build(BuildContext context) {
+    return BaseOfficeConversionPage(
+      pageTitle: 'Word to PDF',
+      description: 'Convert Word documents to PDF.',
+      featureIcon: Icons.picture_as_pdf_outlined,
+      allowedExtensions: const ['doc', 'docx'],
+      apiEndpoint: ApiConfig.officeWordToPdfEndpoint,
+      targetDirectoryGetter: FileManager.getOfficeWordToPdfDirectory,
+      outputExtension: '.pdf',
+      conversionButtonLabel: 'Convert to PDF',
+      successMessage: 'Word converted to PDF successfully!',
+    );
+  }
 }
