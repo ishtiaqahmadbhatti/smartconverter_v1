@@ -176,9 +176,7 @@ import 'conversions/pdf/compare_pdfs_page.dart';
 import 'conversions/pdf/pdf_metadata_page.dart';
 import 'conversions/image/ai_jpg_to_json_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
-import 'conversions/image/pdf_to_png_page.dart';
-import 'conversions/image/pdf_to_tiff_page.dart';
-import 'conversions/image/pdf_to_svg_page.dart';
+import 'conversions/image/pdf_to_image_page.dart'; // Handles PNG, TIFF, SVG
 import 'conversions/image/ai_to_svg_page.dart';
 // Reuse website converters for site/html to images (already imported above)
 // OCR pages
@@ -1003,9 +1001,9 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
     if (categoryId == 'image_conversion') {
       switch (toolName) {
         case 'AI: Convert PNG to JSON':
-          return const AiPngToJsonImagePage();
+          return const AiPngToJsonPage();
         case 'AI: Convert JPG to JSON':
-          return const AiJpgToJsonImagePage();
+          return const AiJpgToJsonPage();
         case 'Convert JPG to PDF':
           return const JpgToPdfPage();
         case 'Convert PNG to PDF':
@@ -1021,13 +1019,13 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
         case 'Convert PDF to JPG':
           return const PdfToJpgImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to PNG':
-          return const PdfToPngImagePage(useImageCategoryStorage: true);
+          return const PdfToImagePage(initialFormat: 'PNG');
         case 'Convert PDF to TIFF':
-          return const PdfToTiffImagePage(useImageCategoryStorage: true);
+          return const PdfToImagePage(initialFormat: 'TIFF');
         case 'Convert PDF to SVG':
-          return const PdfToSvgImagePage(useImageCategoryStorage: true);
+          return const PdfToImagePage(initialFormat: 'SVG');
         case 'Convert AI to SVG':
-          return const AiToSvgImagePage();
+          return const AiToSvgPage();
         // Remaining format conversions can initially route to generic ToolActionPage
         default:
           return ToolActionPage(
