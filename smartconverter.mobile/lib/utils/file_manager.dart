@@ -78,6 +78,20 @@ class FileManager {
   static const String _jsonConversionsFolder = 'JSONConversion';
   static const String _jsonPdfToJsonSubFolder = 'pdf-to-json';
 
+  static const String _csvConversionsFolder = 'CSVConversion';
+  static const String _htmlTableToCsvSubFolder = 'html-table-to-csv';
+  static const String _excelToCsvSubFolder = 'excel-to-csv';
+  static const String _odsToCsvSubFolder = 'ods-to-csv';
+  static const String _csvToExcelSubFolder = 'csv-to-excel';
+  static const String _csvToXmlSubFolder = 'csv-to-xml';
+
+  static const String _jsonToCsvSubFolder = 'json-to-csv';
+  static const String _csvToJsonSubFolderLegacy = 'csv-to-json'; // Renamed to avoid conflict if any, utilizing consistent naming
+
+  static const String _bsonToCsvSubFolder = 'bson-to-csv';
+  static const String _srtToCsvSubFolder = 'srt-to-csv';
+  static const String _csvToSrtSubFolder = 'csv-to-srt';
+
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
     if (Platform.isAndroid) {
@@ -128,6 +142,104 @@ class FileManager {
     }
 
     return jsonConversionsDir;
+  }
+
+  /// Get or create the CSVConversion folder
+  static Future<Directory> getCsvConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final csvConversionsDir = Directory(
+      '${smartConverterDir.path}/$_csvConversionsFolder',
+    );
+
+    if (!await csvConversionsDir.exists()) {
+      await csvConversionsDir.create(recursive: true);
+    }
+
+    return csvConversionsDir;
+  }
+
+  /// Get directory for HTML Table to CSV
+  static Future<Directory> getHtmlTableToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_htmlTableToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for Excel to CSV
+  static Future<Directory> getExcelToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_excelToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for ODS to CSV
+  static Future<Directory> getOdsToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_odsToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for CSV to Excel
+  static Future<Directory> getCsvToExcelDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvToExcelSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for CSV to XML
+  static Future<Directory> getCsvToXmlDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvToXmlSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+
+
+  /// Get directory for JSON to CSV
+  static Future<Directory> getJsonToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_jsonToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for CSV to JSON
+  static Future<Directory> getCsvToJsonConversionDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvToJsonSubFolderLegacy');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+
+
+  /// Get directory for BSON to CSV
+  static Future<Directory> getBsonToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_bsonToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for SRT to CSV
+  static Future<Directory> getSrtToCsvDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_srtToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for CSV to SRT
+  static Future<Directory> getCsvToSrtDirectory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvToSrtSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for JSON PDF to JSON outputs (under JSONConversion)
@@ -1108,7 +1220,7 @@ class FileManager {
   }
 
   static const String _xmlConversionsFolder = 'XMLConversion';
-  static const String _csvToXmlSubFolder = 'csv-to-xml';
+
   static const String _excelToXmlSubFolder = 'excel-to-xml';
   static const String _xmlToJsonSubFolder = 'xml-to-json';
   static const String _xmlToCsvSubFolder = 'xml-to-csv';
@@ -1130,15 +1242,7 @@ class FileManager {
     return xmlConversionsDir;
   }
 
-  /// Get directory for CSV to XML outputs
-  static Future<Directory> getCsvToXmlDirectory() async {
-    final xmlDir = await getXmlConversionsDirectory();
-    final dir = Directory('${xmlDir.path}/$_csvToXmlSubFolder');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    return dir;
-  }
+
 
   /// Get directory for Excel to XML outputs
   static Future<Directory> getExcelToXmlDirectory() async {

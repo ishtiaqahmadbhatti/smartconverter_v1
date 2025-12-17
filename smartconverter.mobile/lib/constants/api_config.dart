@@ -209,6 +209,21 @@ class ApiConfig {
   static const String xmlXsdValidatorEndpoint = '/api/v1/xmlconversiontools/xml-xsd-validator';
   static const String jsonToXmlXmlToolsEndpoint = '/api/v1/xmlconversiontools/json-to-xml';
 
+  // CSV Conversion Endpoints
+  static const String csvHtmlTableToCsvEndpoint = '/api/v1/csvconversiontools/html-table-to-csv';
+  static const String csvExcelToCsvEndpoint = '/api/v1/csvconversiontools/excel-to-csv';
+  static const String csvOdsToCsvEndpoint = '/api/v1/csvconversiontools/ods-to-csv';
+  static const String csvCsvToExcelEndpoint = '/api/v1/csvconversiontools/csv-to-excel';
+  static const String csvCsvToXmlEndpoint = '/api/v1/csvconversiontools/csv-to-xml';
+  static const String csvXmlToCsvEndpoint = '/api/v1/csvconversiontools/xml-to-csv';
+  static const String csvPdfToCsvEndpoint = '/api/v1/csvconversiontools/pdf-to-csv';
+  static const String csvJsonToCsvEndpoint = '/api/v1/csvconversiontools/json-to-csv';
+  static const String csvCsvToJsonEndpoint = '/api/v1/csvconversiontools/csv-to-json';
+  static const String csvJsonObjectsToCsvEndpoint = '/api/v1/csvconversiontools/json-objects-to-csv';
+  static const String csvBsonToCsvEndpoint = '/api/v1/csvconversiontools/bson-to-csv';
+  static const String csvSrtToCsvEndpoint = '/api/v1/csvconversiontools/srt-to-csv';
+  static const String csvCsvToSrtEndpoint = '/api/v1/csvconversiontools/csv-to-srt';
+
   // Response Configuration
   static const String downloadUrlKey = 'download_url';
   static const String statusKey = 'status';
