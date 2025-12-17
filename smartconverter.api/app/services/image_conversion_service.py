@@ -25,6 +25,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from app.core.exceptions import FileProcessingError
 from app.services.file_service import FileService
+from app.services.request_logging_service import RequestLoggingService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ImageConversionService:
@@ -528,3 +532,18 @@ class ImageConversionService:
         """Clean up temporary files."""
         for file_path in file_paths:
             FileService.cleanup_file(file_path)
+
+    @staticmethod
+    def log_conversion(conversion_type: str, input_data: str, output_data: str, success: bool, error_message: str = None, user_id: int = None):
+        """Log conversion operation to database."""
+        try:
+            RequestLoggingService.log_conversion_request(
+                conversion_type=conversion_type,
+                input_data=input_data,
+                output_data=output_data,
+                success=success,
+                error_message=error_message,
+                user_id=user_id
+            )
+        except Exception as e:
+            logger.error(f"Error logging conversion: {str(e)}")
