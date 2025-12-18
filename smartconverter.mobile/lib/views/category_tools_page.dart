@@ -122,8 +122,14 @@ import 'conversions/text/pdf_to_text_text_page.dart';
 import 'conversions/text/srt_to_text_from_text_page.dart';
 import 'conversions/text/vtt_to_text_from_text_page.dart';
 // File Formatter pages
-import 'conversions/file_formatter/json_formatter_tool_page.dart';
-import 'conversions/file_formatter/json_validator_page.dart';
+import 'conversions/file_formatter/json_formatter_tool_page.dart' as ff_json_format;
+import 'conversions/file_formatter/json_validator_page.dart' as ff_json_validate;
+import 'conversions/file_formatter/xml_validator_page.dart' as ff_xml_validate;
+import 'conversions/file_formatter/xsd_validator_page.dart' as ff_xsd_validate;
+import 'conversions/file_formatter/minify_json_page.dart' as ff_json_minify;
+import 'conversions/file_formatter/format_xml_page.dart' as ff_xml_format;
+import 'conversions/file_formatter/json_schema_info_page.dart' as ff_json_schema;
+import 'conversions/file_formatter/supported_file_formats_page.dart' as ff_formats;
 // Reuse XML validator (already imported above in XML pages section)
 // eBook pages
 import 'conversions/ebook/epub_to_pdf_page.dart';
@@ -1013,16 +1019,7 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
       }
     }
 
-    if (categoryId == 'file_formatter') {
-      switch (toolName) {
-        case 'JSON Formatter':
-          return const JsonFormatterToolPage();
-        case 'JSON Validator':
-          return const JsonValidatorPage();
-        case 'XML/XSD Validator':
-          return const XmlXsdValidatorPage();
-      }
-    }
+
 
     if (categoryId == 'ebook_conversion') {
       switch (toolName) {
@@ -1275,6 +1272,27 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const GetAudioInfoPage();
         case 'Supported Audio Formats':
           return const SupportedAudioFormatsPage();
+      }
+    }
+
+    if (categoryId == 'file_formatter') {
+      switch (toolName) {
+        case 'Format JSON':
+          return const ff_json_format.JsonFormatterPage();
+        case 'Validate JSON':
+          return const ff_json_validate.JsonValidationPage();
+        case 'Validate XML':
+          return const ff_xml_validate.XmlValidatorPage();
+        case 'Validate XSD':
+          return const ff_xsd_validate.XsdValidatorPage();
+        case 'Minify JSON':
+          return const ff_json_minify.JsonMinifierPage();
+        case 'Format XML':
+          return const ff_xml_format.XmlFormatterPage();
+        case 'Get JSON Schema Info':
+          return const ff_json_schema.JsonSchemaInfoPage();
+        case 'Supported File Formats':
+          return const ff_formats.SupportedFileFormatsPage();
       }
     }
 

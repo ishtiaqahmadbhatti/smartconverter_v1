@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import '../../../constants/api_config.dart';
 import 'file_validator_common_page.dart';
 
-class JsonValidationPage extends StatelessWidget {
-  const JsonValidationPage({super.key});
+class JsonSchemaInfoPage extends StatelessWidget {
+  const JsonSchemaInfoPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const FileValidatorCommonPage(
-      toolName: 'Validate JSON',
+      toolName: 'Get JSON Schema Info',
       inputExtension: 'json',
-      schemaExtension: 'json', // Optional schema file also JSON usually
-      apiEndpoint: ApiConfig.fileValidateJsonEndpoint,
+      schemaExtension: null,
+      apiEndpoint: ApiConfig.fileJsonSchemaInfoEndpoint,
     );
   }
 }

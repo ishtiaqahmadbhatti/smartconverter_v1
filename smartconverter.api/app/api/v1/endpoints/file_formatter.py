@@ -12,34 +12,64 @@ from app.core.exceptions import (
 )
 from app.services.file_service import FileService
 
+import shutil
+from app.core.config import settings
+
 router = APIRouter()
+
+def _determine_output_filename(original_filename: str, provided_filename: Optional[str], target_extension: str) -> str:
+    """
+    Determine the final output filename.
+    """
+    target_extension = target_extension.lstrip('.')
+    
+    if provided_filename and provided_filename.strip():
+        filename = provided_filename.strip()
+        if not filename.lower().endswith(f".{target_extension}"):
+            filename += f".{target_extension}"
+        return filename
+    
+    # Fallback to original filename with new extension
+    # specific logic for formatted/minified files to avoid overwrite if same extension
+    base_name = os.path.splitext(original_filename)[0]
+    
+    # If suffix is not already present, we might want to add one if the input/output extension is same
+    # But usually custom filename implies user wants that specific name.
+    # For auto-generated, we usually append _formatted or _minified in the service, 
+    # but here we want to control the final name in the endpoint for consistency.
+    
+    return f"{base_name}_formatted.{target_extension}"
 
 
 @router.post("/format-json", response_model=ConversionResponse)
 async def format_json(
     file: UploadFile = File(...),
     indent: int = Form(2),
-    sort_keys: bool = Form(False)
+    sort_keys: bool = Form(False),
+    filename: Optional[str] = Form(None)
 ):
     """Format JSON file with proper indentation and sorting."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file)
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Format JSON
-        output_path = FileFormatterService.format_json(input_path, indent, sort_keys)
+        output_filename = _determine_output_filename(file.filename, filename, "json")
+        # Service returns a temp path usually
+        temp_output_path = FileFormatterService.format_json(input_path, indent, sort_keys)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="JSON file formatted successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/fileformattertools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -56,7 +86,6 @@ async def format_json(
             status_code=500
         )
     finally:
-        # Cleanup temporary files
         if input_path:
             FileFormatterService.cleanup_temp_files(input_path)
 
@@ -204,26 +233,37 @@ async def validate_xsd(file: UploadFile = File(...)):
 
 
 @router.post("/minify-json", response_model=ConversionResponse)
-async def minify_json(file: UploadFile = File(...)):
+async def minify_json(
+    file: UploadFile = File(...),
+    filename: Optional[str] = Form(None)
+):
     """Minify JSON file by removing unnecessary whitespace."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file)
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Minify JSON
-        output_path = FileFormatterService.minify_json(input_path)
+        # Override default formatter behavior for minification suffix
+        if filename:
+             output_filename = _determine_output_filename(file.filename, filename, "json")
+        else:
+             base_name = os.path.splitext(file.filename)[0]
+             output_filename = f"{base_name}_minified.json"
+
+        temp_output_path = FileFormatterService.minify_json(input_path)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="JSON file minified successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/fileformattertools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -240,7 +280,6 @@ async def minify_json(file: UploadFile = File(...)):
             status_code=500
         )
     finally:
-        # Cleanup temporary files
         if input_path:
             FileFormatterService.cleanup_temp_files(input_path)
 
@@ -248,27 +287,30 @@ async def minify_json(file: UploadFile = File(...)):
 @router.post("/format-xml", response_model=ConversionResponse)
 async def format_xml(
     file: UploadFile = File(...),
-    indent: int = Form(2)
+    indent: int = Form(2),
+    filename: Optional[str] = Form(None)
 ):
     """Format XML file with proper indentation."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file)
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Format XML
-        output_path = FileFormatterService.format_xml(input_path, indent)
+        output_filename = _determine_output_filename(file.filename, filename, "xml")
+        temp_output_path = FileFormatterService.format_xml(input_path, indent)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="XML file formatted successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/fileformattertools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -285,7 +327,6 @@ async def format_xml(
             status_code=500
         )
     finally:
-        # Cleanup temporary files
         if input_path:
             FileFormatterService.cleanup_temp_files(input_path)
 

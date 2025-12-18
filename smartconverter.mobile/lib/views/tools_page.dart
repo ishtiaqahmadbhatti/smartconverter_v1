@@ -369,14 +369,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert VTT to Text',
         ],
       },
-      {
-        'id': 'file_formatter',
-        'name': 'File Formatter',
-        'description': 'Format and beautify various file types',
-        'icon': Icons.format_align_left,
-        'category': 'File Processing',
-        'tools': ['JSON Formatter', 'JSON Validator', 'XML/XSD Validator'],
-      },
+
       {
         'id': 'ebook_conversion',
         'name': 'eBook Conversion',
@@ -403,6 +396,24 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert PDF to AZW3',
           'Convert PDF to FB2',
           'Convert PDF to FBZ',
+        ],
+      },
+
+      {
+        'id': 'file_formatter',
+        'name': 'File Formatter',
+        'description': 'Format, Validate, Minify code files',
+        'icon': Icons.code,
+        'category': 'Developer Tools',
+        'tools': [
+          'Format JSON',
+          'Validate JSON',
+          'Validate XML',
+          'Validate XSD',
+          'Minify JSON',
+          'Format XML',
+          'Get JSON Schema Info',
+          'Supported File Formats',
         ],
       },
     ]);

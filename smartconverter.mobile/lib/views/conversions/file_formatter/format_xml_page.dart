@@ -4,28 +4,26 @@ import '../../../constants/api_config.dart';
 import '../../../constants/app_colors.dart';
 import 'file_formatter_common_page.dart';
 
-class JsonFormatterPage extends StatefulWidget {
-  const JsonFormatterPage({super.key});
+class XmlFormatterPage extends StatefulWidget {
+  const XmlFormatterPage({super.key});
 
   @override
-  State<JsonFormatterPage> createState() => _JsonFormatterPageState();
+  State<XmlFormatterPage> createState() => _XmlFormatterPageState();
 }
 
-class _JsonFormatterPageState extends State<JsonFormatterPage> {
+class _XmlFormatterPageState extends State<XmlFormatterPage> {
   int _indent = 2;
-  bool _sortKeys = false;
 
   @override
   Widget build(BuildContext context) {
     return FileFormatterCommonPage(
-      toolName: 'Format JSON',
-      inputExtension: 'json',
-      outputExtension: 'json',
-      apiEndpoint: ApiConfig.fileFormatJsonEndpoint,
-      outputFolder: 'formatted_json',
+      toolName: 'Format XML',
+      inputExtension: 'xml',
+      outputExtension: 'xml',
+      apiEndpoint: ApiConfig.fileFormatXmlEndpoint,
+      outputFolder: 'formatted_xml',
       extraParamsBuilder: () => {
         'indent': _indent.toString(),
-        'sort_keys': _sortKeys.toString(),
       },
       extraWidgetsBuilder: (context, setStateInternal) {
         return [
@@ -62,26 +60,6 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
                   },
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Sort Keys Checkbox
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-            ),
-            child: CheckboxListTile(
-              title: const Text('Sort Keys', style: TextStyle(color: AppColors.textPrimary)),
-              value: _sortKeys,
-              activeColor: AppColors.primaryBlue,
-              checkColor: AppColors.textPrimary,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              onChanged: (val) {
-                if (val != null) setStateInternal(() => _sortKeys = val);
-              },
             ),
           ),
         ];

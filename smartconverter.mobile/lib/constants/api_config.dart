@@ -371,4 +371,14 @@ class ApiConfig {
   static const String audioTrimEndpoint = '/api/v1/audioconversiontools/trim-audio';
   static const String audioInfoEndpoint = '/api/v1/audioconversiontools/audio-info';
   static const String audioSupportedFormatsEndpoint = '/api/v1/audioconversiontools/supported-formats';
+
+  // File Formatter Endpoints
+  static const String fileFormatJsonEndpoint = '/api/v1/fileformattertools/format-json';
+  static const String fileValidateJsonEndpoint = '/api/v1/fileformattertools/validate-json';
+  static const String fileValidateXmlEndpoint = '/api/v1/fileformattertools/validate-xml';
+  static const String fileValidateXsdEndpoint = '/api/v1/fileformattertools/validate-xsd';
+  static const String fileMinifyJsonEndpoint = '/api/v1/fileformattertools/minify-json';
+  static const String fileFormatXmlEndpoint = '/api/v1/fileformattertools/format-xml';
+  static const String fileJsonSchemaInfoEndpoint = '/api/v1/fileformattertools/json-schema-info';
+  static const String fileSupportedFormatsEndpoint = '/api/v1/fileformattertools/supported-formats';
 }
