@@ -307,6 +307,13 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert MKV to MP4',
           'Convert AVI to MP4',
           'Convert MP4 to MP3',
+          'Convert Video Format',
+          'Video To Audio',
+          'Extract Audio',
+          'Resize Video',
+          'Compress Video',
+          'Get Video Info',
+          'Supported Formats',
         ],
       },
       {

@@ -248,6 +248,8 @@ import 'conversions/video/video_to_audio_page.dart';
 import 'conversions/video/extract_audio_page.dart';
 import 'conversions/video/resize_video_page.dart';
 import 'conversions/video/compress_video_page.dart';
+import 'conversions/video/get_video_info_page.dart';
+import 'conversions/video/supported_formats_page.dart';
 
 class CategoryToolsPage extends StatefulWidget {
   final String id;
@@ -1237,6 +1239,10 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const ResizeVideoPage();
         case 'Compress Video':
           return const CompressVideoPage();
+        case 'Get Video Info':
+          return const GetVideoInfoPage();
+        case 'Supported Formats':
+          return const SupportedFormatsPage();
       }
     }
 
