@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import 'home_page.dart';
 import 'tools_page.dart';
 import 'profile_page.dart';
+import 'settings_page.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -17,7 +18,8 @@ class MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [
     const HomePage(),
     const ToolsPage(),
-    const ProfilePage(), // Professional Profile page
+    const ProfilePage(),
+    const SettingsPage(),
   ];
 
   @override
@@ -67,6 +69,11 @@ class MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

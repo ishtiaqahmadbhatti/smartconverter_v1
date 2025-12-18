@@ -4,6 +4,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../services/conversion_service.dart';
 import '../views/my_files_page.dart';
+import '../views/settings_page.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -102,6 +103,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   icon: Icons.favorite_outline,
                   title: AppStrings.favorites,
                   onTap: () => _closeDrawer(context),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_outlined,
+                  title: 'Settings',
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsPage(),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(color: AppColors.textTertiary),
                 _buildApiHealthItem(),
