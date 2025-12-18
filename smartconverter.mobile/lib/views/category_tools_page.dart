@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../constants/app_colors.dart';
+import '../constants/api_config.dart';
 import 'tool_action_page.dart';
 // JSON pages
 import 'conversions/json/json_to_xml_page.dart';
@@ -178,6 +179,37 @@ import 'conversions/image/ai_jpg_to_json_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
 import 'conversions/image/pdf_to_image_page.dart'; // Handles PNG, TIFF, SVG
 import 'conversions/image/ai_to_svg_page.dart';
+import 'conversions/image/image_format_conversion_page.dart';
+import 'conversions/image/remove_exif_page.dart';
+import 'conversions/image/png_to_svg_page.dart';
+import 'conversions/image/png_to_avif_page.dart';
+import 'conversions/image/jpg_to_avif_page.dart';
+import 'conversions/image/webp_to_avif_page.dart';
+import 'conversions/image/avif_to_png_page.dart';
+import 'conversions/image/avif_to_jpeg_page.dart';
+import 'conversions/image/avif_to_webp_page.dart';
+import 'conversions/image/png_to_webp_page.dart';
+import 'conversions/image/jpg_to_webp_page.dart';
+import 'conversions/image/tiff_to_webp_page.dart';
+import 'conversions/image/gif_to_webp_page.dart';
+import 'conversions/image/webp_to_png_page.dart';
+import 'conversions/image/webp_to_jpeg_page.dart';
+import 'conversions/image/webp_to_tiff_page.dart';
+import 'conversions/image/webp_to_bmp_page.dart';
+import 'conversions/image/webp_to_yuv_page.dart';
+import 'conversions/image/webp_to_pam_page.dart';
+import 'conversions/image/webp_to_pgm_page.dart';
+import 'conversions/image/webp_to_ppm_page.dart';
+import 'conversions/image/png_to_jpg_page.dart';
+import 'conversions/image/png_to_pgm_page.dart';
+import 'conversions/image/png_to_ppm_page.dart';
+import 'conversions/image/jpg_to_png_page.dart';
+import 'conversions/image/jpeg_to_pgm_page.dart';
+import 'conversions/image/jpeg_to_ppm_page.dart';
+import 'conversions/image/heic_to_png_page.dart';
+import 'conversions/image/heic_to_jpg_page.dart';
+import 'conversions/image/svg_to_png_page.dart';
+import 'conversions/image/svg_to_jpg_page.dart';
 // Reuse website converters for site/html to images (already imported above)
 // OCR pages
 import 'conversions/ocr/png_to_text_page.dart';
@@ -1026,7 +1058,66 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const PdfToImagePage(initialFormat: 'SVG');
         case 'Convert AI to SVG':
           return const AiToSvgPage();
-        // Remaining format conversions can initially route to generic ToolActionPage
+        case 'Convert PNG to SVG':
+          return const PngToSvgPage();
+        case 'Convert PNG to AVIF':
+          return const PngToAvifPage();
+        case 'Convert JPG to AVIF':
+          return const JpgToAvifPage();
+        case 'Convert WebP to AVIF':
+          return const WebpToAvifPage();
+        case 'Convert AVIF to PNG':
+          return const AvifToPngPage();
+        case 'Convert AVIF to JPEG':
+           return const AvifToJpegPage();
+        case 'Convert AVIF to WebP':
+           return const AvifToWebpPage();
+        case 'Convert PNG to WebP':
+          return const PngToWebpPage();
+        case 'Convert JPG to WebP':
+          return const JpgToWebpPage();
+        case 'Convert TIFF to WebP':
+          return const TiffToWebpPage();
+        case 'Convert GIF to WebP':
+          return const GifToWebpPage();
+        case 'Convert WebP to PNG':
+          return const WebpToPngPage();
+        case 'Convert WebP to JPEG':
+          return const WebpToJpegPage();
+        case 'Convert WebP to TIFF':
+          return const WebpToTiffPage();
+        case 'Convert WebP to BMP':
+          return const WebpToBmpPage();
+        case 'Convert WebP to YUV':
+           return const WebpToYuvPage();
+        case 'Convert WebP to PAM':
+           return const WebpToPamPage();
+        case 'Convert WebP to PGM':
+           return const WebpToPgmPage();
+        case 'Convert WebP to PPM':
+           return const WebpToPpmPage();
+        case 'Convert PNG to JPG':
+           return const PngToJpgPage();
+        case 'Convert PNG to PGM':
+           return const PngToPgmPage();
+        case 'Convert PNG to PPM':
+           return const PngToPpmPage();
+        case 'Convert JPG to PNG':
+           return const JpgToPngPage();
+        case 'Convert JPEG to PGM':
+           return const JpegToPgmPage();
+        case 'Convert JPEG to PPM':
+           return const JpegToPpmPage();
+        case 'Convert HEIC to PNG':
+           return const HeicToPngPage();
+        case 'Convert HEIC to JPG':
+           return const HeicToJpgPage();
+        case 'Convert SVG to PNG':
+           return const SvgToPngPage();
+        case 'Convert SVG to JPG':
+           return const SvgToJpgPage();
+        case 'Remove EXIF Data':
+          return const RemoveExifPage();
         default:
           return ToolActionPage(
             categoryId: categoryId,

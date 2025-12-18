@@ -13,40 +13,25 @@ import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
-class ImageFormatConversionPage extends StatefulWidget {
-  final String toolName;
-  final String sourceFormat; // e.g., 'PNG'
-  final String targetFormat; // e.g., 'JPG'
-  final String sourceExtension; // e.g., 'png'
-  final String targetExtension; // e.g., 'jpg'
-  final String apiEndpoint;
-
-  const ImageFormatConversionPage({
-    super.key,
-    required this.toolName,
-    required this.sourceFormat,
-    required this.targetFormat,
-    required this.sourceExtension,
-    required this.targetExtension,
-    required this.apiEndpoint,
-  });
+class RemoveExifPage extends StatefulWidget {
+  const RemoveExifPage({super.key});
 
   @override
-  State<ImageFormatConversionPage> createState() => _ImageFormatConversionPageState();
+  State<RemoveExifPage> createState() => _RemoveExifPageState();
 }
 
-class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
+class _RemoveExifPageState extends State<RemoveExifPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
-  File? _convertedFile;
+  File? _processedFile;
   String? _downloadUrl;
-  bool _isConverting = false;
+  bool _isProcessing = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = '';
+  String _statusMessage = 'Select an image to remove EXIF data.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -55,7 +40,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
   @override
   void initState() {
     super.initState();
-    _statusMessage = 'Select a ${widget.sourceFormat} file to begin.';
     _fileNameController.addListener(_handleFileNameChange);
     _admobService.preloadAd();
     _loadBannerAd();
@@ -111,15 +95,10 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
     ad.load();
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickImage() async {
     try {
-      final allowed = widget.sourceExtension.toLowerCase() == 'image' 
-          ? null 
-          : [widget.sourceExtension.toLowerCase()];
-
       final file = await _service.pickFile(
-        allowedExtensions: allowed,
-        type: 'custom',
+        type: 'image',
       );
 
       if (file == null) {
@@ -129,47 +108,17 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
         return;
       }
 
-      final extension = p.extension(file.path).toLowerCase().replaceAll('.', '');
-      
-      // Strict check unless source is generic "image"
-      if (widget.sourceExtension.toLowerCase() != 'image' && 
-          !widget.sourceExtension.toLowerCase().contains(extension)) {
-        // Simple check failed, but sometimes jpg/jpeg issue
-         bool valid = false;
-         if ((extension == 'jpg' || extension == 'jpeg') && 
-             (widget.sourceExtension.toLowerCase().contains('jpg') || widget.sourceExtension.toLowerCase().contains('jpeg'))) {
-            valid = true;
-         }
-         
-         if (!valid && widget.sourceExtension.toLowerCase() != extension) {
-            if (mounted) {
-              setState(
-                () => _statusMessage = 'Please select a ${widget.sourceFormat} file.',
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Only ${widget.sourceFormat} files are supported.',
-                  ),
-                  backgroundColor: AppColors.warning,
-                ),
-              );
-            }
-            return;
-         }
-      }
-
       setState(() {
         _selectedFile = file;
-        _convertedFile = null;
+        _processedFile = null;
         _downloadUrl = null;
         _savedFilePath = null;
-        _statusMessage = '${widget.sourceFormat} file selected: ${p.basename(file.path)}';
+        _statusMessage = 'Image selected: ${p.basename(file.path)}';
       });
 
       _updateSuggestedFileName();
     } catch (e) {
-      final message = 'Failed to select file: $e';
+      final message = 'Failed to select image: $e';
       if (mounted) {
         setState(() => _statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -179,11 +128,11 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
     }
   }
 
-  Future<void> _convertFile() async {
+  Future<void> _removeExifData() async {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please select a ${widget.sourceFormat} file first.'),
+        const SnackBar(
+          content: Text('Please select an image first.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -191,9 +140,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
     }
 
     setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting to ${widget.targetFormat}...';
-      _convertedFile = null;
+      _isProcessing = true;
+      _statusMessage = 'Removing EXIF data...';
+      _processedFile = null;
       _downloadUrl = null;
       _savedFilePath = null;
     });
@@ -216,31 +165,21 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       });
 
       final response = await dio.post(
-        widget.apiEndpoint,
+        ApiConfig.imageRemoveExifEndpoint,
         data: formData,
       );
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        // Some endpoints return 'success': true, others might just return the data
-        // Checking for common patterns
         final data = response.data;
-        String outputFilename = '';
-        String downloadUrl = '';
+        String outputFilename = data['output_filename'] ?? 'cleaned_image.jpg';
+        String downloadUrl = data['download_url'] ?? '';
 
-        if (data is Map<String, dynamic>) {
-            outputFilename = data['output_filename'] ?? 'converted_file.${widget.targetExtension}';
-            downloadUrl = data['download_url'] ?? '';
-        } else {
-             throw Exception('Invalid server response format');
-        }
-
-        // Download the file immediately to temp
+        // Download to temp
         final tempDir = await FileManager.getTempDirectory();
         final savePath = p.join(tempDir.path, outputFilename);
         
-        // Construct full download URL
         String fullDownloadUrl = downloadUrl;
         if (!downloadUrl.startsWith('http')) {
              if (downloadUrl.startsWith('/')) {
@@ -253,53 +192,50 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
         await dio.download(fullDownloadUrl, savePath);
 
         setState(() {
-          _convertedFile = File(savePath);
+          _processedFile = File(savePath);
           _downloadUrl = fullDownloadUrl;
-          _statusMessage = 'Converted to ${widget.targetFormat} successfully!';
+          _statusMessage = 'EXIF data removed successfully!';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${widget.targetFormat} file ready: $outputFilename'),
+            content: Text('Image processed: $outputFilename'),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
-        throw Exception(response.data['message'] ?? 'Conversion failed');
+        throw Exception(response.data['message'] ?? 'Processing failed');
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
+      setState(() => _statusMessage = 'Failed to remove EXIF: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) {
-        setState(() => _isConverting = false);
+        setState(() => _isProcessing = false);
       }
     }
   }
 
   Future<void> _saveFile() async {
-    if (_convertedFile == null) return;
+    if (_processedFile == null) return;
 
     setState(() => _isSaving = true);
 
     try {
-      // Use structured path: SmartConverter/ImageConversion/abc-to-xyz
       final root = await FileManager.getSmartConverterDirectory();
       final imageRoot = Directory('${root.path}/ImageConversions');
       if (!await imageRoot.exists()) {
         await imageRoot.create(recursive: true);
       }
-      
-      final subFolder = '${widget.sourceExtension}-to-${widget.targetExtension}';
-      final targetDir = Directory('${imageRoot.path}/$subFolder');
+      final targetDir = Directory('${imageRoot.path}/remove-exif');
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
       }
 
-      String targetFileName = p.basename(_convertedFile!.path);
+      String targetFileName = p.basename(_processedFile!.path);
       File destinationFile = File(p.join(targetDir.path, targetFileName));
 
       if (await destinationFile.exists()) {
@@ -311,7 +247,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
         destinationFile = File(p.join(targetDir.path, targetFileName));
       }
 
-      await _convertedFile!.copy(destinationFile.path);
+      await _processedFile!.copy(destinationFile.path);
 
       if (!mounted) return;
 
@@ -339,11 +275,11 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
   }
 
   Future<void> _shareFile() async {
-    if (_convertedFile == null) return;
-    final pathToShare = _savedFilePath ?? _convertedFile!.path;
+    if (_processedFile == null) return;
+    final pathToShare = _savedFilePath ?? _processedFile!.path;
     await Share.shareXFiles([
       XFile(pathToShare),
-    ], text: 'Converted ${widget.targetFormat} file');
+    ], text: 'Image with EXIF removed');
   }
 
   void _updateSuggestedFileName() {
@@ -370,33 +306,14 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    // Remove extension if somehow captured
-    if (base.toLowerCase().endsWith('.${widget.sourceExtension}')) {
-      base = base.substring(0, base.length - (widget.sourceExtension.length + 1));
-    }
+    // try to remove validation suffix if existing
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
      if (base.isEmpty) {
-      base = 'converted_image';
+      base = 'clean_image';
     }
     return base.substring(0, min(base.length, 80));
-  }
-
-  void _resetForNewConversion() {
-    setState(() {
-      _selectedFile = null;
-      _convertedFile = null;
-      _downloadUrl = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
-      _statusMessage = 'Select a ${widget.sourceFormat} file to begin.';
-      _fileNameController.clear();
-    });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -415,9 +332,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          widget.toolName,
-          style: const TextStyle(
+        title: const Text(
+          'Remove EXIF Data',
+          style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
           ),
@@ -446,7 +363,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
                 _buildConvertButton(),
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
-                if (_convertedFile != null) ...[
+                if (_processedFile != null) ...[
                   const SizedBox(height: 20),
                   _buildResultCard(),
                 ],
@@ -496,7 +413,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
               ),
             ),
             child: const Icon(
-              Icons.transform,
+              Icons.cleaning_services,
               size: 32,
               color: AppColors.textPrimary,
             ),
@@ -505,19 +422,19 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: const [
                 Text(
-                  widget.toolName,
-                  style: const TextStyle(
+                  'Remove EXIF Data',
+                  style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
-                  'Convert ${widget.sourceFormat} to ${widget.targetFormat}.',
-                  style: const TextStyle(
+                  'Strip metadata like location, camera details, and date from your images.',
+                  style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
                     height: 1.4,
@@ -536,10 +453,10 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickFile,
+            onPressed: _isProcessing ? null : _pickImage,
             icon: const Icon(Icons.file_open_outlined),
             label: Text(
-              _selectedFile == null ? 'Select ${widget.sourceFormat} File' : 'Change File',
+              _selectedFile == null ? 'Select Image' : 'Change Image',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -556,7 +473,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
           SizedBox(
             width: 56,
             child: ElevatedButton(
-              onPressed: _isConverting ? null : _resetForNewConversion,
+              onPressed: _isProcessing ? null : _updateSuggestedFileName, // Resetting re-trigger logic ideally
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.textPrimary,
@@ -580,17 +497,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
 
     final file = _selectedFile!;
     final fileName = p.basename(file.path);
-    
-    String fileSize;
-    try {
-      if (file.existsSync()) {
-        fileSize = _formatBytes(file.lengthSync());
-      } else {
-        fileSize = 'File no longer available';
-      }
-    } catch (e) {
-      fileSize = 'Unknown size';
-    }
+    final fileSize = _formatBytes(file.existsSync() ? file.lengthSync() : 0);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -649,7 +556,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       return const SizedBox.shrink();
     }
 
-    final hintText = _suggestedBaseName ?? 'converted_file';
+    final hintText = _suggestedBaseName ?? 'clean_image';
 
     return TextField(
       controller: _fileNameController,
@@ -661,7 +568,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.${widget.targetExtension} extension is added automatically',
+        helperText: 'Original extension preserved',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -669,12 +576,12 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
   }
 
   Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
+    final canProcess = _selectedFile != null && !_isProcessing;
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertFile : null,
+        onPressed: canProcess ? _removeExifData : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -684,7 +591,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
           ),
           elevation: 4,
         ),
-        child: _isConverting
+        child: _isProcessing
             ? const SizedBox(
                 height: 20,
                 width: 20,
@@ -695,9 +602,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
                   ),
                 ),
               )
-            : Text(
-                'Convert to ${widget.targetFormat}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            : const Text(
+                'Remove Metadata',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -713,14 +620,14 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       child: Row(
         children: [
           Icon(
-            _isConverting
+            _isProcessing
                 ? Icons.hourglass_empty
-                : _convertedFile != null
+                : _processedFile != null
                 ? Icons.check_circle
                 : Icons.info_outline,
-            color: _isConverting
+            color: _isProcessing
                 ? AppColors.warning
-                : _convertedFile != null
+                : _processedFile != null
                 ? AppColors.success
                 : AppColors.textSecondary,
             size: 20,
@@ -730,9 +637,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
             child: Text(
               _statusMessage,
               style: TextStyle(
-                color: _isConverting
+                color: _isProcessing
                     ? AppColors.warning
-                    : _convertedFile != null
+                    : _processedFile != null
                     ? AppColors.success
                     : AppColors.textSecondary,
                 fontSize: 13,
@@ -780,16 +687,16 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${widget.targetFormat} Ready',
-                      style: const TextStyle(
+                    const Text(
+                      'Clean Image Ready',
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      _convertedFile != null ? p.basename(_convertedFile!.path) : '',
+                      _processedFile != null ? p.basename(_processedFile!.path) : '',
                       style: TextStyle(
                         color: AppColors.textPrimary.withOpacity(0.8),
                         fontSize: 12,
