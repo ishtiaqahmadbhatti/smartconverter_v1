@@ -1,12 +1,15 @@
 import os
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+import shutil
+from typing import Optional
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
-from typing import Optional, List
+
+from app.core.config import settings
 from app.models.schemas import ConversionResponse
 from app.services.audio_conversion_service import AudioConversionService
 from app.core.exceptions import (
-    FileProcessingError, 
-    UnsupportedFileTypeError, 
+    FileProcessingError,
+    UnsupportedFileTypeError,
     FileSizeExceededError,
     create_error_response
 )
@@ -14,32 +17,56 @@ from app.services.file_service import FileService
 
 router = APIRouter()
 
+def _determine_output_filename(original_filename: str, provided_filename: Optional[str], target_extension: str) -> str:
+    """
+    Determine the final output filename.
+    If provided_filename is given, use it (ensuring extension).
+    Otherwise, use the original filename with the new extension.
+    """
+    target_extension = target_extension.lstrip('.')
+    
+    if provided_filename and provided_filename.strip():
+        filename = provided_filename.strip()
+        if not filename.lower().endswith(f".{target_extension}"):
+            filename += f".{target_extension}"
+        return filename
+    
+    # Fallback to original filename with new extension
+    base_name = os.path.splitext(original_filename)[0]
+    return f"{base_name}.{target_extension}"
+
 
 @router.post("/mp4-to-mp3", response_model=ConversionResponse)
 async def convert_mp4_to_mp3(
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
-    quality: str = Form("medium")
+    quality: str = Form("medium"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert MP4 file to MP3 format."""
     input_path = None
     output_path = None
     
     try:
-        # Validate file - MP4 is a video file, so use "video" validation
+        # MP4 is video, but we allow it here for audio extraction
         FileService.validate_file(file, "video")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert MP4 to MP3
-        output_path = AudioConversionService.mp4_to_mp3(input_path, bitrate, quality)
+        output_filename = _determine_output_filename(file.filename, filename, "mp3")
+        temp_output_path = AudioConversionService.mp4_to_mp3(input_path, bitrate, quality)
         
+        # Move/Rename to final filename in output directory
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
+
         return ConversionResponse(
             success=True,
             message="MP4 file converted to MP3 successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -56,7 +83,6 @@ async def convert_mp4_to_mp3(
             status_code=500
         )
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -65,44 +91,35 @@ async def convert_mp4_to_mp3(
 async def convert_wav_to_mp3(
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
-    quality: str = Form("medium")
+    quality: str = Form("medium"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert WAV file to MP3 format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert WAV to MP3
-        output_path = AudioConversionService.wav_to_mp3(input_path, bitrate, quality)
+        output_filename = _determine_output_filename(file.filename, filename, "mp3")
+        temp_output_path = AudioConversionService.wav_to_mp3(input_path, bitrate, quality)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="WAV file converted to MP3 successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -111,44 +128,35 @@ async def convert_wav_to_mp3(
 async def convert_flac_to_mp3(
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
-    quality: str = Form("medium")
+    quality: str = Form("medium"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert FLAC file to MP3 format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert FLAC to MP3
-        output_path = AudioConversionService.flac_to_mp3(input_path, bitrate, quality)
+        output_filename = _determine_output_filename(file.filename, filename, "mp3")
+        temp_output_path = AudioConversionService.flac_to_mp3(input_path, bitrate, quality)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="FLAC file converted to MP3 successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -157,44 +165,35 @@ async def convert_flac_to_mp3(
 async def convert_mp3_to_wav(
     file: UploadFile = File(...),
     sample_rate: int = Form(44100),
-    channels: int = Form(2)
+    channels: int = Form(2),
+    filename: Optional[str] = Form(None)
 ):
     """Convert MP3 file to WAV format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert MP3 to WAV
-        output_path = AudioConversionService.mp3_to_wav(input_path, sample_rate, channels)
+        output_filename = _determine_output_filename(file.filename, filename, "wav")
+        temp_output_path = AudioConversionService.mp3_to_wav(input_path, sample_rate, channels)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="MP3 file converted to WAV successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -203,44 +202,35 @@ async def convert_mp3_to_wav(
 async def convert_flac_to_wav(
     file: UploadFile = File(...),
     sample_rate: int = Form(44100),
-    channels: int = Form(2)
+    channels: int = Form(2),
+    filename: Optional[str] = Form(None)
 ):
     """Convert FLAC file to WAV format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert FLAC to WAV
-        output_path = AudioConversionService.flac_to_wav(input_path, sample_rate, channels)
+        output_filename = _determine_output_filename(file.filename, filename, "wav")
+        temp_output_path = AudioConversionService.flac_to_wav(input_path, sample_rate, channels)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="FLAC file converted to WAV successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -248,44 +238,35 @@ async def convert_flac_to_wav(
 @router.post("/wav-to-flac", response_model=ConversionResponse)
 async def convert_wav_to_flac(
     file: UploadFile = File(...),
-    compression_level: int = Form(5)
+    compression_level: int = Form(5),
+    filename: Optional[str] = Form(None)
 ):
     """Convert WAV file to FLAC format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert WAV to FLAC
-        output_path = AudioConversionService.wav_to_flac(input_path, compression_level)
+        output_filename = _determine_output_filename(file.filename, filename, "flac")
+        temp_output_path = AudioConversionService.wav_to_flac(input_path, compression_level)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="WAV file converted to FLAC successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -295,44 +276,35 @@ async def convert_audio_format(
     file: UploadFile = File(...),
     output_format: str = Form(...),
     bitrate: str = Form("192k"),
-    quality: str = Form("medium")
+    quality: str = Form("medium"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert audio to any supported format."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert audio format
-        output_path = AudioConversionService.convert_audio_format(input_path, output_format, bitrate, quality)
+        output_filename = _determine_output_filename(file.filename, filename, output_format)
+        temp_output_path = AudioConversionService.convert_audio_format(input_path, output_format, bitrate, quality)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message=f"Audio converted to {output_format.upper()} successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -340,44 +312,36 @@ async def convert_audio_format(
 @router.post("/normalize-audio", response_model=ConversionResponse)
 async def normalize_audio(
     file: UploadFile = File(...),
-    target_dBFS: float = Form(-20.0)
+    target_dBFS: float = Form(-20.0),
+    filename: Optional[str] = Form(None)
 ):
     """Normalize audio to target dBFS level."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Normalize audio
-        output_path = AudioConversionService.normalize_audio(input_path, target_dBFS)
+        # Output format is WAV for normalize
+        output_filename = _determine_output_filename(file.filename, filename, "wav")
+        temp_output_path = AudioConversionService.normalize_audio(input_path, target_dBFS)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="Audio normalized successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -386,44 +350,36 @@ async def normalize_audio(
 async def trim_audio(
     file: UploadFile = File(...),
     start_time: float = Form(...),
-    end_time: float = Form(...)
+    end_time: float = Form(...),
+    filename: Optional[str] = Form(None)
 ):
     """Trim audio to specified time range."""
     input_path = None
-    output_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Trim audio
-        output_path = AudioConversionService.trim_audio(input_path, start_time, end_time)
+        # Output format is WAV for trim
+        output_filename = _determine_output_filename(file.filename, filename, "wav")
+        temp_output_path = AudioConversionService.trim_audio(input_path, start_time, end_time)
+        
+        final_output_path = os.path.join(settings.output_dir, output_filename)
+        if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
+             if os.path.exists(final_output_path):
+                 os.remove(final_output_path)
+             shutil.move(temp_output_path, final_output_path)
         
         return ConversionResponse(
             success=True,
             message="Audio trimmed successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            output_filename=output_filename,
+            download_url=f"/api/v1/audioconversiontools/download/{output_filename}"
         )
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -434,13 +390,9 @@ async def get_audio_info(file: UploadFile = File(...)):
     input_path = None
     
     try:
-        # Validate file
         FileService.validate_file(file, "audio")
-        
-        # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
-        # Get audio info
         audio_info = AudioConversionService.get_audio_info(input_path)
         
         return {
@@ -449,21 +401,9 @@ async def get_audio_info(file: UploadFile = File(...)):
             "audio_info": audio_info
         }
         
-    except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("ProcessingError", str(e), 500)
     finally:
-        # Cleanup temporary files
         if input_path:
             AudioConversionService.cleanup_temp_files(input_path)
 
@@ -479,20 +419,12 @@ async def get_supported_formats():
             "message": "Supported formats retrieved successfully"
         }
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="Failed to retrieve supported formats",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("InternalServerError", "Failed to retrieve supported formats", 500)
 
 
 @router.get("/download/{filename}")
 async def download_file(filename: str):
     """Download converted file."""
-    from app.core.config import settings
-    import os
-    
     file_path = os.path.join(settings.output_dir, filename)
     
     if not os.path.exists(file_path):

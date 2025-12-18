@@ -323,13 +323,19 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
         'icon': Icons.audiotrack_outlined,
         'category': 'Media Conversion',
         'tools': [
-          'Convert MP4 to MP3',
+          'Convert MP4 to MP3', // This refers to audio_conversion id tool, so routing will use audio category id.
           'Convert WAV to MP3',
           'Convert FLAC to MP3',
           'Convert MP3 to WAV',
           'Convert FLAC to WAV',
           'Convert WAV to FLAC',
+          'Convert Audio Format',
+          'Normalize Audio',
+          'Trim Audio',
+          'Get Audio Info',
+          'Supported Audio Formats',
         ],
+
       },
       {
         'id': 'subtitle_conversion',

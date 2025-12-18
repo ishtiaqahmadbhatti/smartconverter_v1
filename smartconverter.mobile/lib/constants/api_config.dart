@@ -358,4 +358,17 @@ class ApiConfig {
   static const String videoCompressEndpoint = '/api/v1/videoconversiontools/compress-video';
   static const String videoInfoEndpoint = '/api/v1/videoconversiontools/video-info';
   static const String videoSupportedFormatsEndpoint = '/api/v1/videoconversiontools/supported-formats';
+
+  // Audio Conversion Endpoints
+  static const String audioMp4ToMp3Endpoint = '/api/v1/audioconversiontools/mp4-to-mp3';
+  static const String audioWavToMp3Endpoint = '/api/v1/audioconversiontools/wav-to-mp3';
+  static const String audioFlacToMp3Endpoint = '/api/v1/audioconversiontools/flac-to-mp3';
+  static const String audioMp3ToWavEndpoint = '/api/v1/audioconversiontools/mp3-to-wav';
+  static const String audioFlacToWavEndpoint = '/api/v1/audioconversiontools/flac-to-wav';
+  static const String audioWavToFlacEndpoint = '/api/v1/audioconversiontools/wav-to-flac';
+  static const String audioConvertFormatEndpoint = '/api/v1/audioconversiontools/convert-audio-format';
+  static const String audioNormalizeEndpoint = '/api/v1/audioconversiontools/normalize-audio';
+  static const String audioTrimEndpoint = '/api/v1/audioconversiontools/trim-audio';
+  static const String audioInfoEndpoint = '/api/v1/audioconversiontools/audio-info';
+  static const String audioSupportedFormatsEndpoint = '/api/v1/audioconversiontools/supported-formats';
 }

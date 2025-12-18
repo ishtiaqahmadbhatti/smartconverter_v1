@@ -1,12 +1,19 @@
+
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'audio_common_page.dart';
 
 class Mp3ToWavPage extends StatelessWidget {
   const Mp3ToWavPage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'audio_conversion',
-    toolName: 'Convert MP3 to WAV',
-    categoryIcon: Icons.audiotrack_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const AudioCommonPage(
+      toolName: 'Convert MP3 to WAV',
+      inputExtension: 'mp3',
+      outputExtension: 'wav',
+      apiEndpoint: ApiConfig.audioMp3ToWavEndpoint,
+      outputFolder: 'mp3-to-wav',
+    );
+  }
 }

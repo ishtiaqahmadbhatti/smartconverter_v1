@@ -100,6 +100,11 @@ import 'conversions/audio/flac_to_mp3_page.dart';
 import 'conversions/audio/mp3_to_wav_page.dart';
 import 'conversions/audio/flac_to_wav_page.dart';
 import 'conversions/audio/wav_to_flac_page.dart';
+import 'conversions/audio/convert_audio_format_page.dart';
+import 'conversions/audio/normalize_audio_page.dart';
+import 'conversions/audio/trim_audio_page.dart';
+import 'conversions/audio/get_audio_info_page.dart';
+import 'conversions/audio/supported_audio_formats_page.dart';
 // Subtitle pages
 import 'conversions/subtitle/ai_translate_srt_page.dart';
 import 'conversions/subtitle/srt_to_csv_from_subtitle_page.dart';
@@ -1243,6 +1248,33 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const GetVideoInfoPage();
         case 'Supported Formats':
           return const SupportedFormatsPage();
+      }
+    }
+
+    if (categoryId == 'audio_conversion') {
+      switch (toolName) {
+        case 'Convert MP4 to MP3':
+          return const Mp4ToMp3FromAudioPage();
+        case 'Convert WAV to MP3':
+          return const WavToMp3Page();
+        case 'Convert FLAC to MP3':
+          return const FlacToMp3Page();
+        case 'Convert MP3 to WAV':
+          return const Mp3ToWavPage();
+        case 'Convert FLAC to WAV':
+          return const FlacToWavPage();
+        case 'Convert WAV to FLAC':
+          return const WavToFlacPage();
+        case 'Convert Audio Format':
+          return const ConvertAudioFormatPage();
+        case 'Normalize Audio':
+          return const NormalizeAudioPage();
+        case 'Trim Audio':
+          return const TrimAudioPage();
+        case 'Get Audio Info':
+          return const GetAudioInfoPage();
+        case 'Supported Audio Formats':
+          return const SupportedAudioFormatsPage();
       }
     }
 
