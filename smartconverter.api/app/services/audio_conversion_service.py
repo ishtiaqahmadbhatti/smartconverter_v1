@@ -8,6 +8,20 @@ import numpy as np
 from app.core.exceptions import FileProcessingError
 from app.services.file_service import FileService
 
+# Configure pydub to use ffmpeg from imageio-ffmpeg if available
+try:
+    import imageio_ffmpeg
+    ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+    AudioSegment.converter = ffmpeg_path
+    
+    # Add ffmpeg directory to PATH so pydub can find it (and potentially ffprobe if it's there)
+    ffmpeg_dir = os.path.dirname(ffmpeg_path)
+    os.environ["PATH"] += os.pathsep + ffmpeg_dir
+    
+    # print(f"AudioConversionService: configured ffmpeg at {ffmpeg_path}")
+except ImportError:
+    pass
+
 
 class AudioConversionService:
     """Service for handling audio conversions between various formats."""
