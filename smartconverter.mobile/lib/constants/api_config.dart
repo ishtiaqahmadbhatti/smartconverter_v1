@@ -345,4 +345,17 @@ class ApiConfig {
   static const String ebookPdfToFb2Endpoint = '/api/v1/ebookconversiontools/pdf-to-fb2';
   static const String ebookPdfToFbzEndpoint = '/api/v1/ebookconversiontools/pdf-to-fbz';
   static const String ebookSupportedFormatsEndpoint = '/api/v1/ebookconversiontools/supported-formats';
+
+  // Video Conversion Endpoints
+  static const String videoMovToMp4Endpoint = '/api/v1/videoconversiontools/mov-to-mp4';
+  static const String videoMkvToMp4Endpoint = '/api/v1/videoconversiontools/mkv-to-mp4';
+  static const String videoAviToMp4Endpoint = '/api/v1/videoconversiontools/avi-to-mp4';
+  static const String videoMp4ToMp3Endpoint = '/api/v1/videoconversiontools/mp4-to-mp3';
+  static const String videoConvertFormatEndpoint = '/api/v1/videoconversiontools/convert-video-format';
+  static const String videoToAudioEndpointNew = '/api/v1/videoconversiontools/video-to-audio';
+  static const String videoExtractAudioEndpoint = '/api/v1/videoconversiontools/extract-audio';
+  static const String videoResizeEndpoint = '/api/v1/videoconversiontools/resize-video';
+  static const String videoCompressEndpoint = '/api/v1/videoconversiontools/compress-video';
+  static const String videoInfoEndpoint = '/api/v1/videoconversiontools/video-info';
+  static const String videoSupportedFormatsEndpoint = '/api/v1/videoconversiontools/supported-formats';
 }

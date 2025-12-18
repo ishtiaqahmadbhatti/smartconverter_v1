@@ -239,6 +239,16 @@ import 'conversions/ebook/pdf_to_azw3_page.dart';
 import 'conversions/ebook/pdf_to_fb2_page.dart';
 import 'conversions/ebook/pdf_to_fbz_page.dart';
 
+import 'conversions/video/mov_to_mp4_page.dart';
+import 'conversions/video/mkv_to_mp4_page.dart';
+import 'conversions/video/avi_to_mp4_page.dart';
+import 'conversions/video/mp4_to_mp3_page.dart';
+import 'conversions/video/convert_video_format_page.dart';
+import 'conversions/video/video_to_audio_page.dart';
+import 'conversions/video/extract_audio_page.dart';
+import 'conversions/video/resize_video_page.dart';
+import 'conversions/video/compress_video_page.dart';
+
 class CategoryToolsPage extends StatefulWidget {
   final String id;
   final String name;
@@ -1204,6 +1214,29 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const PdfToFb2Page();
         case 'Convert Pdf To Fbz':
           return const PdfToFbzPage();
+      }
+    }
+
+    if (categoryId == 'video_conversion') {
+      switch (toolName) {
+        case 'Convert Mov To Mp4':
+          return const MovToMp4Page();
+        case 'Convert Mkv To Mp4':
+          return const MkvToMp4Page();
+        case 'Convert Avi To Mp4':
+          return const AviToMp4Page();
+        case 'Convert Mp4 To Mp3':
+          return const Mp4ToMp3Page();
+        case 'Convert Video Format':
+          return const ConvertVideoFormatPage();
+        case 'Video To Audio':
+          return const VideoToAudioPage();
+        case 'Extract Audio':
+          return const ExtractAudioPage();
+        case 'Resize Video':
+          return const ResizeVideoPage();
+        case 'Compress Video':
+          return const CompressVideoPage();
       }
     }
 

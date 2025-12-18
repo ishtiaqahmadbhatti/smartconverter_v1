@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'video_common_page.dart';
 
 class AviToMp4Page extends StatelessWidget {
   const AviToMp4Page({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'video_conversion',
-    toolName: 'Convert AVI to MP4',
-    categoryIcon: Icons.movie_creation_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const VideoCommonPage(
+      toolName: 'Convert AVI to MP4',
+      inputExtension: 'avi',
+      outputExtension: 'mp4',
+      apiEndpoint: ApiConfig.videoAviToMp4Endpoint,
+      outputFolder: 'avi-to-mp4',
+    );
+  }
 }

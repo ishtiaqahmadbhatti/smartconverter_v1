@@ -75,6 +75,14 @@ class FileService:
             allowed_types = [".fb2"]
         elif file_type == "fbz":
             allowed_types = [".fbz"]
+        elif file_type == "mov":
+            allowed_types = [".mov"]
+        elif file_type == "mkv":
+            allowed_types = [".mkv"]
+        elif file_type == "avi":
+            allowed_types = [".avi"]
+        elif file_type == "mp4":
+            allowed_types = [".mp4"]
         else:  # general/default
             allowed_types = [
                 ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", 
