@@ -1,60 +1,97 @@
+
 import os
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
-from fastapi.responses import FileResponse
+import shutil
+import logging
 from typing import Optional
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi.responses import FileResponse, JSONResponse
 from app.models.schemas import ConversionResponse
 from app.services.ocr_conversion_service import OCRConversionService
+from app.services.file_service import FileService
+from app.core.config import settings
 from app.core.exceptions import (
     FileProcessingError, 
     UnsupportedFileTypeError, 
     FileSizeExceededError,
     create_error_response
 )
-from app.services.file_service import FileService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Helper utilities
+# ---------------------------------------------------------------------------
+
+def _determine_output_filename(
+    user_filename: Optional[str],
+    input_file: Optional[UploadFile],
+    default_base: str,
+    extension: str
+) -> str:
+    """
+    Determine the output filename based on user input, uploaded file, or default.
+    Ensures correct extension.
+    """
+    # Ensure extension starts with dot
+    if not extension.startswith('.'):
+        extension = f'.{extension}'
+
+    if user_filename and user_filename.strip() and user_filename.lower() != "string":
+        # Use user provided filename
+        filename = user_filename.strip()
+        if not filename.lower().endswith(extension.lower()):
+            filename += extension
+        return filename
+    else:
+        # Fallback to input file name or default
+        base_name = default_base
+        if input_file and input_file.filename:
+            # Strip input extension
+            base_name = os.path.splitext(input_file.filename)[0]
+        
+        return f"{base_name}{extension}"
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @router.post("/png-to-text", response_model=ConversionResponse)
 async def convert_png_to_text(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert PNG image to text using OCR."""
     input_path = None
-    
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "png")
         input_path = FileService.save_uploaded_file(file)
         
-        # Extract text using OCR
         extracted_text = OCRConversionService.extract_text_from_image(input_path, language, ocr_engine)
         
+        # Save to file
+        output_filename = _determine_output_filename(filename, file, "png_to_text", ".txt")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
+            
         return ConversionResponse(
             success=True,
-            message="PNG image converted to text successfully",
-            extracted_text=extracted_text
+            message="PNG converted to text successfully",
+            extracted_text=extracted_text,
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting PNG to text: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -63,42 +100,38 @@ async def convert_png_to_text(
 async def convert_jpg_to_text(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert JPG image to text using OCR."""
     input_path = None
-    
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "jpg")
         input_path = FileService.save_uploaded_file(file)
         
-        # Extract text using OCR
         extracted_text = OCRConversionService.extract_text_from_image(input_path, language, ocr_engine)
         
+        # Save to file
+        output_filename = _determine_output_filename(filename, file, "jpg_to_text", ".txt")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
+            
         return ConversionResponse(
             success=True,
-            message="JPG image converted to text successfully",
-            extracted_text=extracted_text
+            message="JPG converted to text successfully",
+            extracted_text=extracted_text,
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting JPG to text: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -107,44 +140,38 @@ async def convert_jpg_to_text(
 async def convert_png_to_pdf(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert PNG image to PDF with OCR text layer."""
     input_path = None
-    output_path = None
+    service_output_path = None
     
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "png")
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert PNG to PDF with OCR
-        output_path = OCRConversionService.image_to_pdf_with_ocr(input_path, language, ocr_engine)
+        service_output_path = OCRConversionService.image_to_pdf_with_ocr(input_path, language, ocr_engine)
+        
+        output_filename = _determine_output_filename(filename, file, "png_to_pdf", ".pdf")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        if os.path.abspath(service_output_path) != os.path.abspath(output_path):
+            shutil.move(service_output_path, output_path)
         
         return ConversionResponse(
             success=True,
-            message="PNG image converted to PDF with OCR successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            message="PNG converted to PDF with OCR successfully",
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting PNG to PDF: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -153,44 +180,38 @@ async def convert_png_to_pdf(
 async def convert_jpg_to_pdf(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert JPG image to PDF with OCR text layer."""
     input_path = None
-    output_path = None
+    service_output_path = None
     
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "jpg")
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert JPG to PDF with OCR
-        output_path = OCRConversionService.image_to_pdf_with_ocr(input_path, language, ocr_engine)
+        service_output_path = OCRConversionService.image_to_pdf_with_ocr(input_path, language, ocr_engine)
         
+        output_filename = _determine_output_filename(filename, file, "jpg_to_pdf", ".pdf")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        if os.path.abspath(service_output_path) != os.path.abspath(output_path):
+            shutil.move(service_output_path, output_path)
+            
         return ConversionResponse(
             success=True,
-            message="JPG image converted to PDF with OCR successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            message="JPG converted to PDF with OCR successfully",
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting JPG to PDF: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -199,42 +220,37 @@ async def convert_jpg_to_pdf(
 async def convert_pdf_to_text(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert PDF to text using OCR."""
     input_path = None
-    
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Extract text from PDF using OCR
         extracted_text = OCRConversionService.pdf_to_text_with_ocr(input_path, language, ocr_engine)
         
+        output_filename = _determine_output_filename(filename, file, "pdf_to_text", ".txt")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
+            
         return ConversionResponse(
             success=True,
-            message="PDF converted to text using OCR successfully",
-            extracted_text=extracted_text
+            message="PDF converted to text successfully",
+            extracted_text=extracted_text,
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting PDF to text: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -243,44 +259,38 @@ async def convert_pdf_to_text(
 async def convert_pdf_image_to_pdf_text(
     file: UploadFile = File(...),
     language: str = Form("eng"),
-    ocr_engine: str = Form("tesseract")
+    ocr_engine: str = Form("tesseract"),
+    filename: Optional[str] = Form(None)
 ):
     """Convert PDF with images to PDF with searchable text."""
     input_path = None
-    output_path = None
+    service_output_path = None
     
     try:
-        # Validate file
-        FileService.validate_file(file)
-        
-        # Save uploaded file
+        FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
-        # Convert PDF image to PDF text
-        output_path = OCRConversionService.pdf_image_to_pdf_text(input_path, language, ocr_engine)
+        service_output_path = OCRConversionService.pdf_image_to_pdf_text(input_path, language, ocr_engine)
         
+        output_filename = _determine_output_filename(filename, file, "searchable", ".pdf")
+        output_path = os.path.join(settings.output_dir, output_filename)
+        
+        if os.path.abspath(service_output_path) != os.path.abspath(output_path):
+            shutil.move(service_output_path, output_path)
+            
         return ConversionResponse(
             success=True,
-            message="PDF image converted to PDF text successfully",
-            output_filename=os.path.basename(output_path),
-            download_url=f"/download/{os.path.basename(output_path)}"
+            message="PDF image converted to searchable PDF successfully",
+            output_filename=output_filename,
+            download_url=f"/api/v1/ocrconversiontools/download/{output_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        raise create_error_response(
-            error_type=type(e).__name__,
-            message=str(e),
-            status_code=400
-        )
+        raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="An unexpected error occurred",
-            details={"error": str(e)},
-            status_code=500
-        )
+        logger.error(f"Error converting PDF image to text PDF: {str(e)}")
+        raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
-        # Cleanup temporary files
         if input_path:
             OCRConversionService.cleanup_temp_files(input_path)
 
@@ -296,12 +306,7 @@ async def get_supported_languages():
             "message": "Supported languages retrieved successfully"
         }
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="Failed to retrieve supported languages",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("InternalServerError", "Failed to retrieve supported languages", 500, {"error": str(e)})
 
 
 @router.get("/supported-ocr-engines")
@@ -315,20 +320,12 @@ async def get_supported_ocr_engines():
             "message": "Supported OCR engines retrieved successfully"
         }
     except Exception as e:
-        raise create_error_response(
-            error_type="InternalServerError",
-            message="Failed to retrieve supported OCR engines",
-            details={"error": str(e)},
-            status_code=500
-        )
+        raise create_error_response("InternalServerError", "Failed to retrieve supported OCR engines", 500, {"error": str(e)})
 
 
 @router.get("/download/{filename}")
 async def download_file(filename: str):
     """Download converted file."""
-    from app.core.config import settings
-    import os
-    
     file_path = os.path.join(settings.output_dir, filename)
     
     if not os.path.exists(file_path):
