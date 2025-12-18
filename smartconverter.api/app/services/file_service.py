@@ -63,6 +63,18 @@ class FileService:
             allowed_types = [
                 ".srt", ".vtt"
             ]
+        elif file_type == "epub":
+            allowed_types = [".epub"]
+        elif file_type == "mobi":
+            allowed_types = [".mobi"]
+        elif file_type == "azw":
+            allowed_types = [".azw"]
+        elif file_type == "azw3":
+            allowed_types = [".azw3"]
+        elif file_type == "fb2":
+            allowed_types = [".fb2"]
+        elif file_type == "fbz":
+            allowed_types = [".fbz"]
         else:  # general/default
             allowed_types = [
                 ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", 
