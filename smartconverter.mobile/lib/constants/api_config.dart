@@ -323,4 +323,26 @@ class ApiConfig {
   static const String ocrPdfImageToPdfTextEndpoint = '/api/v1/ocrconversiontools/pdf-image-to-pdf-text';
   static const String ocrSupportedLanguagesEndpoint = '/api/v1/ocrconversiontools/supported-languages';
   static const String ocrSupportedOcrEnginesEndpoint = '/api/v1/ocrconversiontools/supported-ocr-engines';
+
+  // eBook Conversion Endpoints
+  static const String ebookMarkdownToEpubEndpoint = '/api/v1/ebookconversiontools/markdown-to-epub';
+  static const String ebookEpubToMobiEndpoint = '/api/v1/ebookconversiontools/epub-to-mobi';
+  static const String ebookEpubToAzwEndpoint = '/api/v1/ebookconversiontools/epub-to-azw';
+  static const String ebookMobiToEpubEndpoint = '/api/v1/ebookconversiontools/mobi-to-epub';
+  static const String ebookMobiToAzwEndpoint = '/api/v1/ebookconversiontools/mobi-to-azw';
+  static const String ebookAzwToEpubEndpoint = '/api/v1/ebookconversiontools/azw-to-epub';
+  static const String ebookAzwToMobiEndpoint = '/api/v1/ebookconversiontools/azw-to-mobi';
+  static const String ebookEpubToPdfEndpoint = '/api/v1/ebookconversiontools/epub-to-pdf';
+  static const String ebookMobiToPdfEndpoint = '/api/v1/ebookconversiontools/mobi-to-pdf';
+  static const String ebookAzwToPdfEndpoint = '/api/v1/ebookconversiontools/azw-to-pdf';
+  static const String ebookAzw3ToPdfEndpoint = '/api/v1/ebookconversiontools/azw3-to-pdf';
+  static const String ebookFb2ToPdfEndpoint = '/api/v1/ebookconversiontools/fb2-to-pdf';
+  static const String ebookFbzToPdfEndpoint = '/api/v1/ebookconversiontools/fbz-to-pdf';
+  static const String ebookPdfToEpubEndpoint = '/api/v1/ebookconversiontools/pdf-to-epub';
+  static const String ebookPdfToMobiEndpoint = '/api/v1/ebookconversiontools/pdf-to-mobi';
+  static const String ebookPdfToAzwEndpoint = '/api/v1/ebookconversiontools/pdf-to-azw';
+  static const String ebookPdfToAzw3Endpoint = '/api/v1/ebookconversiontools/pdf-to-azw3';
+  static const String ebookPdfToFb2Endpoint = '/api/v1/ebookconversiontools/pdf-to-fb2';
+  static const String ebookPdfToFbzEndpoint = '/api/v1/ebookconversiontools/pdf-to-fbz';
+  static const String ebookSupportedFormatsEndpoint = '/api/v1/ebookconversiontools/supported-formats';
 }

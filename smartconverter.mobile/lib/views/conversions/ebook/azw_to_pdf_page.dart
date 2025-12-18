@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'ebook_common_page.dart';
 
 class AzwToPdfPage extends StatelessWidget {
   const AzwToPdfPage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'ebook_conversion',
-    toolName: 'AZW To PDF',
-    categoryIcon: Icons.menu_book_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const EbookCommonPage(
+      toolName: 'Convert Azw To Pdf',
+      inputExtension: 'azw',
+      outputExtension: 'pdf',
+      apiEndpoint: ApiConfig.ebookAzwToPdfEndpoint,
+      outputFolder: 'azw-to-pdf',
+    );
+  }
 }

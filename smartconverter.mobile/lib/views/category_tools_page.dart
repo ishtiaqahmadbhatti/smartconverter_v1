@@ -219,6 +219,26 @@ import 'conversions/ocr/jpg_to_pdf_page.dart';
 import 'conversions/ocr/pdf_to_text_page.dart';
 import 'conversions/ocr/pdf_image_to_pdf_text_page.dart';
 
+import 'conversions/ebook/markdown_to_epub_page.dart';
+import 'conversions/ebook/epub_to_mobi_page.dart';
+import 'conversions/ebook/epub_to_azw_page.dart';
+import 'conversions/ebook/mobi_to_epub_page.dart';
+import 'conversions/ebook/mobi_to_azw_page.dart';
+import 'conversions/ebook/azw_to_epub_page.dart';
+import 'conversions/ebook/azw_to_mobi_page.dart';
+import 'conversions/ebook/epub_to_pdf_page.dart';
+import 'conversions/ebook/mobi_to_pdf_page.dart';
+import 'conversions/ebook/azw_to_pdf_page.dart';
+import 'conversions/ebook/azw3_to_pdf_page.dart';
+import 'conversions/ebook/fb2_to_pdf_page.dart';
+import 'conversions/ebook/fbz_to_pdf_page.dart';
+import 'conversions/ebook/pdf_to_epub_page.dart';
+import 'conversions/ebook/pdf_to_mobi_page.dart';
+import 'conversions/ebook/pdf_to_azw_page.dart';
+import 'conversions/ebook/pdf_to_azw3_page.dart';
+import 'conversions/ebook/pdf_to_fb2_page.dart';
+import 'conversions/ebook/pdf_to_fbz_page.dart';
+
 class CategoryToolsPage extends StatefulWidget {
   final String id;
   final String name;
@@ -1141,6 +1161,49 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           return const OcrPdfToTextPage();
         case 'OCR: Convert PDF Image to PDF Text':
           return const OcrPdfImageToPdfTextPage();
+      }
+    }
+
+    if (categoryId == 'ebook_conversion') {
+      switch (toolName) {
+        case 'Convert Markdown To Epub':
+          return const MarkdownToEpubPage();
+        case 'Convert Epub To Mobi':
+          return const EpubToMobiPage();
+        case 'Convert Epub To Azw':
+          return const EpubToAzwPage();
+        case 'Convert Mobi To Epub':
+          return const MobiToEpubPage();
+        case 'Convert Mobi To Azw':
+          return const MobiToAzwPage();
+        case 'Convert Azw To Epub':
+          return const AzwToEpubPage();
+        case 'Convert Azw To Mobi':
+          return const AzwToMobiPage();
+        case 'Convert Epub To Pdf':
+          return const EpubToPdfPage();
+        case 'Convert Mobi To Pdf':
+          return const MobiToPdfPage();
+        case 'Convert Azw To Pdf':
+          return const AzwToPdfPage();
+        case 'Convert Azw3 To Pdf':
+          return const Azw3ToPdfPage();
+        case 'Convert Fb2 To Pdf':
+          return const Fb2ToPdfPage();
+        case 'Convert Fbz To Pdf':
+          return const FbzToPdfPage();
+        case 'Convert Pdf To Epub':
+          return const PdfToEpubPage();
+        case 'Convert Pdf To Mobi':
+          return const PdfToMobiPage();
+        case 'Convert Pdf To Azw':
+          return const PdfToAzwPage();
+        case 'Convert Pdf To Azw3':
+          return const PdfToAzw3Page();
+        case 'Convert Pdf To Fb2':
+          return const PdfToFb2Page();
+        case 'Convert Pdf To Fbz':
+          return const PdfToFbzPage();
       }
     }
 

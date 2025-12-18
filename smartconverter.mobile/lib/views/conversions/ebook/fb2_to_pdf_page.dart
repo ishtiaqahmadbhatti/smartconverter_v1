@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'ebook_common_page.dart';
 
 class Fb2ToPdfPage extends StatelessWidget {
   const Fb2ToPdfPage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'ebook_conversion',
-    toolName: 'Convert FB2 to PDF',
-    categoryIcon: Icons.menu_book_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const EbookCommonPage(
+      toolName: 'Convert Fb2 To Pdf',
+      inputExtension: 'fb2',
+      outputExtension: 'pdf',
+      apiEndpoint: ApiConfig.ebookFb2ToPdfEndpoint,
+      outputFolder: 'fb2-to-pdf',
+    );
+  }
 }

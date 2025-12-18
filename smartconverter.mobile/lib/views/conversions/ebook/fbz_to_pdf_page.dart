@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'ebook_common_page.dart';
 
 class FbzToPdfPage extends StatelessWidget {
   const FbzToPdfPage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'ebook_conversion',
-    toolName: 'Convert FBZ to PDF',
-    categoryIcon: Icons.menu_book_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const EbookCommonPage(
+      toolName: 'Convert Fbz To Pdf',
+      inputExtension: 'fbz',
+      outputExtension: 'pdf',
+      apiEndpoint: ApiConfig.ebookFbzToPdfEndpoint,
+      outputFolder: 'fbz-to-pdf',
+    );
+  }
 }
