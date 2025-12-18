@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../tool_action_page.dart';
+import '../../../constants/api_config.dart';
+import 'ocr_common_page.dart';
 
 class OcrPdfToTextPage extends StatelessWidget {
   const OcrPdfToTextPage({super.key});
+
   @override
-  Widget build(BuildContext context) => const ToolActionPage(
-    categoryId: 'ocr_conversion',
-    toolName: 'OCR: Convert PDF to Text',
-    categoryIcon: Icons.document_scanner_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const OcrCommonPage(
+      toolName: 'OCR: Convert PDF to Text',
+      inputExtension: 'pdf',
+      outputExtension: 'txt',
+      apiEndpoint: ApiConfig.ocrPdfToTextEndpoint,
+      outputFolder: 'pdf-to-text',
+    );
+  }
 }

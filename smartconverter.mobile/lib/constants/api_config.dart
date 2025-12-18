@@ -313,4 +313,14 @@ class ApiConfig {
   static const String imageSvgToPngEndpoint = '/api/v1/imageconversiontools/svg-to-png';
   static const String imageSvgToJpgEndpoint = '/api/v1/imageconversiontools/svg-to-jpg';
   static const String imageRemoveExifEndpoint = '/api/v1/imageconversiontools/remove-exif';
+
+  // OCR Conversion Endpoints
+  static const String ocrPngToTextEndpoint = '/api/v1/ocrconversiontools/png-to-text';
+  static const String ocrJpgToTextEndpoint = '/api/v1/ocrconversiontools/jpg-to-text';
+  static const String ocrPngToPdfEndpoint = '/api/v1/ocrconversiontools/png-to-pdf';
+  static const String ocrJpgToPdfEndpoint = '/api/v1/ocrconversiontools/jpg-to-pdf';
+  static const String ocrPdfToTextEndpoint = '/api/v1/ocrconversiontools/pdf-to-text';
+  static const String ocrPdfImageToPdfTextEndpoint = '/api/v1/ocrconversiontools/pdf-image-to-pdf-text';
+  static const String ocrSupportedLanguagesEndpoint = '/api/v1/ocrconversiontools/supported-languages';
+  static const String ocrSupportedOcrEnginesEndpoint = '/api/v1/ocrconversiontools/supported-ocr-engines';
 }
