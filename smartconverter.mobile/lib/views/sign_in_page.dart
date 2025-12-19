@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
@@ -51,7 +52,7 @@ class _SignInPageState extends State<SignInPage> {
             padding: const EdgeInsets.all(16),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(maxWidth: 520),
                 child: Card(
                   color: AppColors.backgroundCard,
                   shape: RoundedRectangleBorder(
@@ -68,36 +69,61 @@ class _SignInPageState extends State<SignInPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: AppColors.primaryGradient,
-                                ),
-                                child: const Icon(
-                                  Icons.lock_open,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Welcome back',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Sign in to continue',
-                            style: TextStyle(
-                              color: AppColors.textSecondary.withOpacity(0.9),
+                          Center(
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: AppColors.primaryGradient,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primaryBlue
+                                            .withOpacity(0.4),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.lock_open_rounded,
+                                    color: AppColors.textPrimary,
+                                    size: 40,
+                                  ),
+                                )
+                                    .animate(
+                                        onPlay: (controller) =>
+                                            controller.repeat())
+                                    .shimmer(
+                                        duration: 2000.ms,
+                                        color: AppColors.textPrimary
+                                            .withOpacity(0.3))
+                                    .animate()
+                                    .scale(
+                                        delay: 200.ms,
+                                        duration: 600.ms,
+                                        curve: Curves.elasticOut),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Welcome Back',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: 1,
+                                  ),
+                                ).animate().fadeIn(delay: 400.ms).slideY(
+                                    begin: 0.3, curve: Curves.easeOutCubic),
+                                const Text(
+                                  'Sign in to your account to continue',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ).animate().fadeIn(delay: 500.ms),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -115,7 +141,10 @@ class _SignInPageState extends State<SignInPage> {
                                 return 'Enter a valid email';
                               return null;
                             },
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 600.ms)
+                              .slideX(begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _passwordController,
@@ -139,39 +168,104 @@ class _SignInPageState extends State<SignInPage> {
                               if (v.length < 6) return 'Minimum 6 characters';
                               return null;
                             },
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: AppColors.primaryBlue,
-                              foregroundColor: AppColors.textPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  )
-                                : const Text('Sign In'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SignUpPage(),
+                          )
+                              .animate()
+                              .fadeIn(delay: 700.ms)
+                              .slideX(begin: -0.2, curve: Curves.easeOutCubic),
+                          const SizedBox(height: 32),
+                          Container(
+                            height: 54,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
-                              );
-                            },
-                            child: const Text("Don't have an account? Sign Up"),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'SIGN IN',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                            ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 800.ms)
+                              .scale(duration: 400.ms, curve: Curves.easeOut),
+                          const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Don't have an account?",
+                                style: TextStyle(
+                                  color: AppColors.textTertiary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const SignUpPage(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: AppColors.primaryGradient,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primaryBlue
+                                            .withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

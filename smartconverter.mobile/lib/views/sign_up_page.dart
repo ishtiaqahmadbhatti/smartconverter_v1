@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import 'sign_in_page.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -75,7 +76,7 @@ class _SignUpPageState extends State<SignUpPage> {
             padding: const EdgeInsets.all(16),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(maxWidth: 520),
                 child: Card(
                   color: AppColors.backgroundCard,
                   shape: RoundedRectangleBorder(
@@ -86,68 +87,99 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: AppColors.primaryGradient,
-                                ),
-                                child: const Icon(
-                                  Icons.person_add,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Create account',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
+                          Center(
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: AppColors.primaryGradient,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primaryBlue
+                                            .withOpacity(0.4),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.person_add_rounded,
+                                    color: AppColors.textPrimary,
+                                    size: 40,
+                                  ),
+                                )
+                                    .animate(
+                                        onPlay: (controller) =>
+                                            controller.repeat())
+                                    .shimmer(
+                                        duration: 2000.ms,
+                                        color: AppColors.textPrimary
+                                            .withOpacity(0.3))
+                                    .animate()
+                                    .scale(
+                                        delay: 200.ms,
+                                        duration: 600.ms,
+                                        curve: Curves.elasticOut),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Join Smart Converter',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: 1,
+                                  ),
+                                ).animate().fadeIn(delay: 400.ms).slideY(
+                                    begin: 0.3, curve: Curves.easeOutCubic),
+                                const Text(
+                                  'Create your account to get started',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ).animate().fadeIn(delay: 500.ms),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 24),
                           // First & Last Name Row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _firstNameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'First Name',
-                                    prefixIcon: Icon(Icons.person_outline),
-                                  ),
-                                  validator: (v) => v == null || v.isEmpty
-                                      ? 'Required'
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _lastNameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Last Name',
-                                    prefixIcon: Icon(Icons.person_outline),
-                                  ),
-                                  validator: (v) => v == null || v.isEmpty
-                                      ? 'Required'
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          ),
+                          // First Name
+                          TextFormField(
+                            controller: _firstNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'First Name',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Required' : null,
+                          )
+                              .animate()
+                              .fadeIn(delay: 600.ms)
+                              .slideX(begin: -0.2, curve: Curves.easeOutCubic),
+                          const SizedBox(height: 12),
+
+                          // Last Name
+                          TextFormField(
+                            controller: _lastNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Last Name',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (v) =>
+                                v == null || v.isEmpty ? 'Required' : null,
+                          )
+                              .animate()
+                              .fadeIn(delay: 650.ms)
+                              .slideX(begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
 
                           // Gender Dropdown
@@ -169,7 +201,11 @@ class _SignUpPageState extends State<SignUpPage> {
                             onChanged: (v) => setState(() => _gender = v),
                             validator: (v) =>
                                 v == null ? 'Gender is required' : null,
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 700.ms)
+                              .slideX(
+                                  begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
 
                           // Phone Number
@@ -182,7 +218,6 @@ class _SignUpPageState extends State<SignUpPage> {
                                 const TextStyle(color: AppColors.textPrimary),
                             decoration: const InputDecoration(
                               labelText: 'Phone Number',
-                              border: OutlineInputBorder(),
                             ),
                             languageCode: "en",
                             onChanged: (phone) {
@@ -193,7 +228,11 @@ class _SignUpPageState extends State<SignUpPage> {
                                 return 'Phone number is required';
                               return null;
                             },
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 800.ms)
+                              .slideX(
+                                  begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
 
                           // Email
@@ -211,7 +250,11 @@ class _SignUpPageState extends State<SignUpPage> {
                                 return 'Enter a valid email';
                               return null;
                             },
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 900.ms)
+                              .slideX(
+                                  begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
 
                           // Password
@@ -242,7 +285,11 @@ class _SignUpPageState extends State<SignUpPage> {
                                 return 'Password is not strong enough';
                               return null;
                             },
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 1000.ms)
+                              .slideX(
+                                  begin: -0.2, curve: Curves.easeOutCubic),
                           const SizedBox(height: 12),
 
                           // Confirm Password
@@ -269,29 +316,56 @@ class _SignUpPageState extends State<SignUpPage> {
                                 return 'Passwords do not match';
                               return null;
                             },
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: AppColors.primaryBlue,
-                              foregroundColor: AppColors.textPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 1100.ms)
+                              .slideX(
+                                  begin: -0.2, curve: Curves.easeOutCubic),
+                          const SizedBox(height: 32),
+                          Container(
+                            height: 54,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                             ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.textPrimary,
+                            child: ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'CREATE ACCOUNT',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
                                     ),
-                                  )
-                                : const Text('Create account'),
-                          ),
+                            ),
+                          )
+                              .animate()
+                              .fadeIn(delay: 1100.ms)
+                              .scale(duration: 400.ms, curve: Curves.easeOut),
                           const SizedBox(height: 12),
                           const SizedBox(height: 12),
                           Row(
@@ -315,22 +389,25 @@ class _SignUpPageState extends State<SignUpPage> {
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
+                                    horizontal: 16,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        AppColors.primaryBlue.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: AppColors.primaryBlue
-                                          .withOpacity(0.5),
-                                    ),
+                                    gradient: AppColors.primaryGradient,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primaryBlue
+                                            .withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
                                   child: const Text(
                                     'Sign In',
                                     style: TextStyle(
-                                      color: AppColors.primaryBlue,
+                                      color: AppColors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
