@@ -5,6 +5,7 @@ import '../constants/app_strings.dart';
 import '../services/conversion_service.dart';
 import '../views/my_files_page.dart';
 import '../views/settings_page.dart';
+import '../views/history_page.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -97,7 +98,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 _buildDrawerItem(
                   icon: Icons.history_outlined,
                   title: AppStrings.conversionHistory,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const HistoryPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.favorite_outline,

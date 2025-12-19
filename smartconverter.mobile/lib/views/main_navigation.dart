@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import 'home_page.dart';
 import 'tools_page.dart';
 import 'profile_page.dart';
+import 'history_page.dart';
 import 'settings_page.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -14,13 +15,19 @@ class MainNavigation extends StatefulWidget {
 
 class MainNavigationState extends State<MainNavigation> {
   int selectedIndex = 0;
+  late List<Widget> _pages;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ToolsPage(),
-    const ProfilePage(),
-    const SettingsPage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomePage(),
+      const ToolsPage(),
+      const ProfilePage(),
+      const HistoryPage(),
+      const SettingsPage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +76,11 @@ class MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'History',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

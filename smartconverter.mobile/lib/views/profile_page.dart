@@ -10,51 +10,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeAnimations();
-    _startAnimations();
-  }
-
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-      ),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
-  }
-
-  void _startAnimations() {
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,18 +20,10 @@ class _ProfilePageState extends State<ProfilePage>
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: _buildBody(),
-                ),
-              );
-            },
-          ),
+          child: _buildBody()
+              .animate()
+              .fadeIn(duration: 800.ms)
+              .slideY(begin: 0.1, duration: 800.ms),
         ),
       ),
     );
@@ -279,7 +227,7 @@ class _ProfilePageState extends State<ProfilePage>
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.3, duration: 800.ms);
+    );
   }
 
   Widget _buildStatsSection() {
@@ -343,10 +291,7 @@ class _ProfilePageState extends State<ProfilePage>
               ],
             ),
           ],
-        )
-        .animate()
-        .fadeIn(duration: 800.ms, delay: 200.ms)
-        .slideY(begin: 0.3, duration: 800.ms, delay: 200.ms);
+        );
   }
 
   Widget _buildStatCard(
@@ -452,10 +397,7 @@ class _ProfilePageState extends State<ProfilePage>
               ),
             ]),
           ],
-        )
-        .animate()
-        .fadeIn(duration: 800.ms, delay: 400.ms)
-        .slideY(begin: 0.3, duration: 800.ms, delay: 400.ms);
+        );
   }
 
 
