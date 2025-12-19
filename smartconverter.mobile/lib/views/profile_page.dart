@@ -13,20 +13,10 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(),
-      drawer: const CustomDrawer(),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: _buildBody()
-              .animate()
-              .fadeIn(duration: 800.ms)
-              .slideY(begin: 0.1, duration: 800.ms),
-        ),
-      ),
-    );
+    return _buildBody()
+          .animate()
+          .fadeIn(duration: 800.ms)
+          .slideY(begin: 0.1, duration: 800.ms);
   }
 
   PreferredSizeWidget _buildAppBar() {

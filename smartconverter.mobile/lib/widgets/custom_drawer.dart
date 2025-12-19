@@ -157,9 +157,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   Widget _buildDrawerHeader() {
     return Container(
-          height: 200,
           decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
           child: SafeArea(
+            bottom: false,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(

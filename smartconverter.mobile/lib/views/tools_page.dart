@@ -449,28 +449,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(),
-      drawer: const CustomDrawer(),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: _buildBody(),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
+    return _buildBody();
   }
 
   PreferredSizeWidget _buildAppBar() {
