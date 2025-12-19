@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../constants/app_colors.dart';
 import 'sign_in_page.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,18 +13,39 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  String? _gender;
   bool _isObscure = true;
+  bool _isConfirmObscure = true;
   bool _isSubmitting = false;
+
+  final List<String> _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  bool _isStrongPassword(String password) {
+    if (password.length < 8) return false;
+    if (!password.contains(RegExp(r'[A-Z]'))) return false;
+    if (!password.contains(RegExp(r'[a-z]'))) return false;
+    if (!password.contains(RegExp(r'[0-9]'))) return false;
+    if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) return false;
+    return true;
   }
 
   Future<void> _submit() async {
@@ -95,19 +118,85 @@ class _SignUpPageState extends State<SignUpPage> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          TextFormField(
-                            controller: _nameController,
+                          // First & Last Name Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _firstNameController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'First Name',
+                                    prefixIcon: Icon(Icons.person_outline),
+                                  ),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _lastNameController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Last Name',
+                                    prefixIcon: Icon(Icons.person_outline),
+                                  ),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Required'
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Gender Dropdown
+                          DropdownButtonFormField<String>(
+                            value: _gender,
+                            dropdownColor: AppColors.backgroundCard,
                             decoration: const InputDecoration(
-                              labelText: 'Full name',
-                              prefixIcon: Icon(Icons.person_outline),
+                              labelText: 'Gender',
+                              prefixIcon: Icon(Icons.wc),
                             ),
+                            items: _genders.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value,
+                                    style: const TextStyle(
+                                        color: AppColors.textPrimary)),
+                              );
+                            }).toList(),
+                            onChanged: (v) => setState(() => _gender = v),
+                            validator: (v) =>
+                                v == null ? 'Gender is required' : null,
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Phone Number
+                          IntlPhoneField(
+                            controller: _phoneController,
+                            initialCountryCode: 'PK',
+                            dropdownTextStyle:
+                                const TextStyle(color: AppColors.textPrimary),
+                            style:
+                                const TextStyle(color: AppColors.textPrimary),
+                            decoration: const InputDecoration(
+                              labelText: 'Phone Number',
+                              border: OutlineInputBorder(),
+                            ),
+                            languageCode: "en",
+                            onChanged: (phone) {
+                              print(phone.completeNumber);
+                            },
                             validator: (v) {
-                              if (v == null || v.isEmpty)
-                                return 'Name is required';
+                              if (v == null || v.number.isEmpty)
+                                return 'Phone number is required';
                               return null;
                             },
                           ),
                           const SizedBox(height: 12),
+
+                          // Email
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -124,11 +213,17 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           const SizedBox(height: 12),
+
+                          // Password
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _isObscure,
                             decoration: InputDecoration(
                               labelText: 'Password',
+                              helperText:
+                                  'Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Special',
+                              helperStyle: const TextStyle(
+                                  fontSize: 10, color: AppColors.textTertiary),
                               prefixIcon: const Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -143,7 +238,35 @@ class _SignUpPageState extends State<SignUpPage> {
                             validator: (v) {
                               if (v == null || v.isEmpty)
                                 return 'Password is required';
-                              if (v.length < 6) return 'Minimum 6 characters';
+                              if (!_isStrongPassword(v))
+                                return 'Password is not strong enough';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Confirm Password
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            obscureText: _isConfirmObscure,
+                            decoration: InputDecoration(
+                              labelText: 'Confirm Password',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isConfirmObscure
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(() =>
+                                    _isConfirmObscure = !_isConfirmObscure),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty)
+                                return 'Please confirm password';
+                              if (v != _passwordController.text)
+                                return 'Passwords do not match';
                               return null;
                             },
                           ),
@@ -170,17 +293,51 @@ class _SignUpPageState extends State<SignUpPage> {
                                 : const Text('Create account'),
                           ),
                           const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => const SignInPage(),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Already have an account?',
+                                style: TextStyle(
+                                  color: AppColors.textTertiary,
+                                  fontSize: 14,
                                 ),
-                              );
-                            },
-                            child: const Text(
-                              'Already have an account? Sign In',
-                            ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const SignInPage(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.primaryBlue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.primaryBlue
+                                          .withOpacity(0.5),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      color: AppColors.primaryBlue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
