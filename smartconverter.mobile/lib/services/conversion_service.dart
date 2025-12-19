@@ -182,16 +182,16 @@ class ConversionService {
         _debugLog('✅ PDF converted to Word successfully!');
         _debugLog('📥 Downloading Word document: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'PdfToWord',
+          extension: 'docx',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -219,7 +219,12 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_document.pdf';
-        return await _tryDownloadFile(fileName, downloadUrl);
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'WordToPdf',
+          extension: 'pdf',
+        );
       }
 
       return null;
@@ -252,7 +257,12 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_document.pdf';
-        return await _tryDownloadFile(fileName, downloadUrl);
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ImageToPdf',
+          extension: 'pdf',
+        );
       }
 
       return null;
@@ -328,14 +338,16 @@ class ConversionService {
             response.data['output_filename'] ??
             '${p.basenameWithoutExtension(wordFile.path)}.txt';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'WordToText',
+          extension: 'txt',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -381,14 +393,16 @@ class ConversionService {
             response.data['output_filename'] ??
             '${p.basenameWithoutExtension(srtFile.path)}.csv';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -434,14 +448,16 @@ class ConversionService {
             response.data['output_filename'] ??
             '${p.basenameWithoutExtension(srtFile.path)}.xlsx';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtToExcel',
+          extension: 'xlsx',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -503,16 +519,16 @@ class ConversionService {
         _debugLog('✅ HTML/URL converted to PDF successfully!');
         _debugLog('📥 Downloading PDF: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'HtmlToPdf',
+          extension: 'pdf',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -571,16 +587,16 @@ class ConversionService {
         _debugLog('✅ HTML Table converted to CSV successfully!');
         _debugLog('📥 Downloading CSV: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'HtmlTableToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -630,16 +646,16 @@ class ConversionService {
         _debugLog('✅ Excel converted to HTML successfully!');
         _debugLog('📥 Downloading HTML: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToHtml',
+          extension: 'html',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -684,14 +700,16 @@ class ConversionService {
         final fileName = response.data['output_filename'] ??
             '${p.basenameWithoutExtension(wordFile.path)}.html';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'WordToHtml',
+          extension: 'html',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -735,14 +753,16 @@ class ConversionService {
         final fileName = response.data['output_filename'] ??
             '${p.basenameWithoutExtension(pptFile.path)}.html';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'PowerPointToHtml',
+          extension: 'html',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -786,14 +806,16 @@ class ConversionService {
         final fileName = response.data['output_filename'] ??
             '${p.basenameWithoutExtension(mdFile.path)}.html';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'MarkdownToHtml',
+          extension: 'html',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -1112,8 +1134,13 @@ class ConversionService {
         _debugLog('✅ PDFs merged successfully!');
         _debugLog('📥 Downloading merged PDF: $fileName');
 
-        // Try multiple download endpoints
-        final file = await _tryDownloadFile(fileName, downloadUrl);
+        final file = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'MergePdf',
+          extension: 'pdf',
+        );
+        
         if (file == null) {
           return null;
         }
@@ -3049,7 +3076,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'repaired_document.pdf';
-        return await _tryDownloadFile(fileName, downloadUrl);
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExtractTable',
+          extension: 'csv',
+        );
       }
       return null;
     } catch (e) {
@@ -3086,7 +3118,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName = response.data['output_filename'] ?? 'comparison.txt';
-        return await _tryDownloadFile(fileName, downloadUrl);
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'PdfToImage',
+          extension: 'jpg',
+        );
       }
       return null;
     } catch (e) {
@@ -3120,7 +3157,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ?? 'metadata.json';
         if (downloadUrl != null) {
-          return await _tryDownloadFile(fileName, downloadUrl);
+          return await _tryDownloadFile(
+            fileName,
+            downloadUrl,
+            toolName: 'MetadataPDF',
+            extension: 'json',
+          );
         }
       }
       return null;
@@ -3317,7 +3359,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
   }
 
   // Helper method to try multiple download endpoints
-  Future<File?> _tryDownloadFile(String fileName, String originalUrl) async {
+  Future<File?> _tryDownloadFile(
+    String fileName,
+    String originalUrl, {
+    String? toolName,
+    String? extension,
+  }) async {
     final apiBaseUrl = _baseUrl ?? await ApiConfig.baseUrl;
     List<String> possibleUrls = [
       '$apiBaseUrl${ApiConfig.downloadEndpoint}/$fileName', // Your actual endpoint!
@@ -3331,12 +3378,13 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       originalUrl, // Try the original URL as last resort
     ];
 
+    File? result;
     for (String url in possibleUrls) {
       try {
         _debugLog('Trying download URL: $url');
-        final result = await _downloadFile(url, fileName);
+        result = await _downloadFile(url, fileName);
         _debugLog('✅ Successfully downloaded from: $url');
-        return result;
+        break;
       } catch (e) {
         _debugLog('❌ Failed to download from $url: $e');
         continue;
@@ -3344,10 +3392,32 @@ Future<ImageToPdfResult?> convertJsonToExcel(
     }
 
     // If all download attempts fail, create a placeholder file with success message
-    _debugLog(
-      'All download endpoints failed. Creating success notification file.',
-    );
-    return await _createSuccessPlaceholderFile(fileName);
+    if (result == null) {
+      _debugLog(
+        'All download endpoints failed. Creating success notification file.',
+      );
+      result = await _createSuccessPlaceholderFile(fileName);
+    }
+
+    // If toolName is provided, save to organized directory
+    if (result != null && toolName != null) {
+      try {
+        final finalExtension =
+            extension ?? p.extension(fileName).replaceFirst('.', '');
+        final savedFile = await saveFileToOrganizedDirectory(
+          result,
+          toolName,
+          finalExtension,
+        );
+        return savedFile;
+      } catch (e) {
+        _debugLog('⚠️ Error saving to organized directory: $e');
+        // Return the temp file if saving fails
+        return result;
+      }
+    }
+
+    return result;
   }
 
   // Create a placeholder file when download fails but processing succeeded
@@ -3497,7 +3567,12 @@ async def download_file(filename: str):
           normalizedFolderUrl,
           fileName,
         );
-        final fileResult = await _tryDownloadFile(fileName, originalUrl);
+        final fileResult = await _tryDownloadFile(
+          fileName,
+          originalUrl,
+          toolName: endpoint.contains('png') ? 'PdfToPng' : 'PdfToJpg',
+          extension: imageExtension,
+        );
         if (fileResult != null) {
           downloadedFiles.add(fileResult);
           downloadedNames.add(fileName);
@@ -4172,14 +4247,16 @@ async def download_file(filename: str):
             response.data['output_filename'] ??
             '${p.basenameWithoutExtension(srtFile.path)}_$targetLanguage.srt';
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) return null;
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtTranslate',
+          extension: 'srt',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
       return null;
     } catch (e) {
@@ -4229,16 +4306,16 @@ async def download_file(filename: str):
         _debugLog('✅ JSON converted to YAML successfully!');
         _debugLog('📥 Downloading YAML: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'YamlConversion',
+          extension: 'yaml',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -4291,16 +4368,16 @@ async def download_file(filename: str):
         _debugLog('✅ JSON successfully converted to CSV!');
         _debugLog('📥 Downloading CSV: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JsonToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -4351,16 +4428,16 @@ async def download_file(filename: str):
         _debugLog('✅ JSON successfully converted to Excel!');
         _debugLog('📥 Downloading Excel: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JsonToExcel',
+          extension: 'xlsx',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -4411,16 +4488,16 @@ async def download_file(filename: str):
         _debugLog('✅ YAML successfully converted to JSON!');
         _debugLog('📥 Downloading JSON: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'YamlToJson',
+          extension: 'json',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;
@@ -4473,16 +4550,16 @@ async def download_file(filename: str):
         _debugLog('✅ JSON file formatted successfully!');
         _debugLog('📥 Downloading formatted JSON: $fileName');
 
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JsonFormatter',
+          extension: 'json',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
           fileName: fileName,
           downloadUrl: downloadUrl,
-        );
+        ) : null);
       }
 
       return null;

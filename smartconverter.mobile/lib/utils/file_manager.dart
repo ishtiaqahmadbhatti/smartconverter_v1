@@ -157,7 +157,16 @@ class FileManager {
     );
 
     if (!await smartConverterDir.exists()) {
+      print('DEBUG: Creating SmartConverter directory at ${smartConverterDir.path}');
       await smartConverterDir.create(recursive: true);
+    }
+
+    try {
+      final canRead = await Directory(smartConverterDir.path).exists();
+      print('DEBUG: SmartConverter dir accessibility - Path: ${smartConverterDir.path}');
+      print('DEBUG: SmartConverter dir accessibility - Exists: $canRead');
+    } catch (e) {
+      print('DEBUG: Error checking SmartConverter dir accessibility: $e');
     }
 
     return smartConverterDir;
@@ -489,7 +498,15 @@ class FileManager {
     final toolDir = Directory('${smartConverterDir.path}/$toolName');
 
     if (!await toolDir.exists()) {
+      print('DEBUG: Creating tool directory: ${toolDir.path}');
       await toolDir.create(recursive: true);
+    }
+
+    try {
+      final exists = await toolDir.exists();
+      print('DEBUG: Tool directory $toolName accessibility - Exists: $exists');
+    } catch (e) {
+      print('DEBUG: Error checking tool dir $toolName accessibility: $e');
     }
 
     return toolDir;

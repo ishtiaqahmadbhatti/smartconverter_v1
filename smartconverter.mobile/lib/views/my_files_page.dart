@@ -3,6 +3,7 @@ import 'dart:io';
 import '../constants/app_colors.dart';
 import '../widgets/futuristic_card.dart';
 import '../utils/file_manager.dart';
+import '../utils/permission_manager.dart';
 import 'package:path/path.dart' as path;
 
 class MyFilesPage extends StatefulWidget {
@@ -12,17 +13,48 @@ class MyFilesPage extends StatefulWidget {
   State<MyFilesPage> createState() => _MyFilesPageState();
 }
 
-class _MyFilesPageState extends State<MyFilesPage> {
+class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
   Directory? _currentDirectory;
   List<FileSystemEntity> _currentItems = [];
   bool _isLoading = false;
+  bool _permissionsGranted = true;
   String _currentPath = '';
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  List<FileSystemEntity> _filteredItems = [];
 
   @override
   void initState() {
     super.initState();
-    _loadSmartConverterDirectory();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPermissionsAndLoad();
     _checkExistingFiles(); // Check for existing files on startup
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh permissions and directory when returning to app
+      _checkPermissionsAndLoad();
+    }
+  }
+
+  Future<void> _checkPermissionsAndLoad() async {
+    final granted = await PermissionManager.isStoragePermissionGranted();
+    setState(() {
+      _permissionsGranted = granted;
+    });
+
+    if (granted) {
+      await _loadSmartConverterDirectory();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSmartConverterDirectory() async {
@@ -78,30 +110,35 @@ class _MyFilesPageState extends State<MyFilesPage> {
         return;
       }
 
-      // Use async listing for better error handling
-      List<FileSystemEntity> items = await directory.list().toList();
-      print('DEBUG: Found ${items.length} items in directory');
+      // Use a more robust listing approach combining methods
+      final Set<String> seenPaths = {};
+      final List<FileSystemEntity> items = [];
 
-      // If no items found, try alternative methods
-      if (items.isEmpty) {
-        print('DEBUG: No items found with async list(), trying sync method...');
-        try {
-          items = directory.listSync();
-          print('DEBUG: Sync method found ${items.length} items');
-        } catch (e) {
-          print('DEBUG: Sync method also failed: $e');
+      try {
+        // Method 1: Async stream listing
+        await for (final entity in directory.list(recursive: false, followLinks: false)) {
+          if (seenPaths.add(entity.path)) {
+            items.add(entity);
+          }
         }
+        print('DEBUG: Async listing found ${items.length} items');
+      } catch (e) {
+        print('DEBUG: Async listing error: $e');
       }
 
-      // If still no items, try with different options
-      if (items.isEmpty) {
-        print('DEBUG: Still no items, trying with explicit options...');
-        try {
-          items = directory.listSync(recursive: false, followLinks: false);
-          print('DEBUG: Explicit options found ${items.length} items');
-        } catch (e) {
-          print('DEBUG: Explicit options also failed: $e');
+      // Method 2: Sync listing fallback (or supplement)
+      try {
+        final syncItems = directory.listSync(recursive: false, followLinks: false);
+        int added = 0;
+        for (final entity in syncItems) {
+          if (seenPaths.add(entity.path)) {
+            items.add(entity);
+            added++;
+          }
         }
+        print('DEBUG: Sync listing added $added more items');
+      } catch (e) {
+        print('DEBUG: Sync listing error: $e');
       }
 
       // Log each item for debugging
@@ -127,10 +164,12 @@ class _MyFilesPageState extends State<MyFilesPage> {
         }
       }
 
-      // Sort: directories first, then files, alphabetically
+      // Sort: directories first, then others, alphabetically
       items.sort((a, b) {
-        if (a is Directory && b is File) return -1;
-        if (a is File && b is Directory) return 1;
+        final aIsDir = a is Directory;
+        final bIsDir = b is Directory;
+        if (aIsDir && !bIsDir) return -1;
+        if (!aIsDir && bIsDir) return 1;
         return a.path.toLowerCase().compareTo(b.path.toLowerCase());
       });
 
@@ -141,6 +180,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
         _currentItems = items;
         _currentDirectory = directory;
         _currentPath = computedPath;
+        _filterItems(_searchController.text);
       });
 
       print('DEBUG: State updated successfully');
@@ -157,6 +197,21 @@ class _MyFilesPageState extends State<MyFilesPage> {
     }
   }
 
+  void _filterItems(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = List.from(_currentItems);
+      } else {
+        _filteredItems = _currentItems
+            .where((item) => path
+                .basename(item.path)
+                .toLowerCase()
+                .contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
   Future<String> _getRelativePath(String fullPath) async {
     final smartConverterDir = await FileManager.getSmartConverterDirectory();
     final relativePath = path.relative(fullPath, from: smartConverterDir.path);
@@ -168,13 +223,22 @@ class _MyFilesPageState extends State<MyFilesPage> {
 
   void _navigateToParent() async {
     if (_currentDirectory != null) {
-      final parent = _currentDirectory!.parent;
       final smartConverterDir = await FileManager.getSmartConverterDirectory();
-
+      
       // Don't go beyond SmartConverter directory
-      if (parent.path != smartConverterDir.parent.path) {
+      if (_currentDirectory!.path != smartConverterDir.path) {
+        final parent = _currentDirectory!.parent;
         await _loadDirectoryContents(parent);
       }
+    }
+  }
+
+  void _handleBack() async {
+    final smartConverterDir = await FileManager.getSmartConverterDirectory();
+    if (_currentDirectory != null && _currentDirectory!.path != smartConverterDir.path) {
+      _navigateToParent();
+    } else {
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
@@ -289,14 +353,6 @@ class _MyFilesPageState extends State<MyFilesPage> {
 
       // Also run the existing files check
       await _checkExistingFiles();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Directory refreshed'),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
-        ),
-      );
     } catch (e) {
       print('DEBUG: Force refresh failed: $e');
       _showErrorDialog('Refresh Error', 'Failed to refresh directory: $e');
@@ -491,7 +547,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
     );
   }
 
-  void _showFileOptions(File file) {
+  void _showFileOptions(FileSystemEntity entity) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.backgroundCard,
@@ -510,7 +566,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              path.basename(file.path),
+              path.basename(entity.path),
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 18,
@@ -530,7 +586,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
               ),
               onTap: () {
                 Navigator.pop(context);
-                _showFileInfo(file);
+                _showFileInfo(entity);
               },
             ),
             ListTile(
@@ -541,7 +597,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
               ),
               onTap: () {
                 Navigator.pop(context);
-                _deleteFile(file);
+                _deleteFile(entity);
               },
             ),
           ],
@@ -550,41 +606,43 @@ class _MyFilesPageState extends State<MyFilesPage> {
     );
   }
 
-  void _showFileInfo(File file) async {
+  void _showFileInfo(FileSystemEntity entity) async {
     try {
-      final stat = await file.stat();
+      final stat = await entity.stat();
       final size = _formatFileSize(stat.size);
       final modified = stat.modified.toString().split('.')[0];
 
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: AppColors.backgroundCard,
-          title: const Text(
-            'File Information',
-            style: TextStyle(color: AppColors.textPrimary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoRow('Name', path.basename(file.path)),
-              _buildInfoRow('Size', size),
-              _buildInfoRow('Modified', modified),
-              _buildInfoRow('Type', _getFileType(path.extension(file.path))),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.backgroundCard,
+            title: const Text(
+              'File Information',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow('Name', path.basename(entity.path)),
+                _buildInfoRow('Size', size),
+                _buildInfoRow('Modified', modified),
+                _buildInfoRow('Type', _getFileType(path.extension(entity.path))),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: AppColors.primaryBlue),
+                ),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Close',
-                style: TextStyle(color: AppColors.primaryBlue),
-              ),
-            ),
-          ],
-        ),
-      );
+        );
+      }
     } catch (e) {
       _showErrorDialog('Error', 'Could not get file information');
     }
@@ -617,17 +675,17 @@ class _MyFilesPageState extends State<MyFilesPage> {
     );
   }
 
-  Future<void> _deleteFile(File file) async {
+  Future<void> _deleteFile(FileSystemEntity entity) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundCard,
         title: const Text(
-          'Delete File',
+          'Delete Item',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          'Are you sure you want to delete "${path.basename(file.path)}"?',
+          'Are you sure you want to delete "${path.basename(entity.path)}"?',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -651,19 +709,21 @@ class _MyFilesPageState extends State<MyFilesPage> {
 
     if (confirmed == true) {
       try {
-        await file.delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${path.basename(file.path)} deleted'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        await entity.delete(recursive: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${path.basename(entity.path)} deleted'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
         // Refresh the current directory
         if (_currentDirectory != null) {
           await _loadDirectoryContents(_currentDirectory!);
         }
       } catch (e) {
-        _showErrorDialog('Delete Error', 'Could not delete file: $e');
+        _showErrorDialog('Delete Error', 'Could not delete item: $e');
       }
     }
   }
@@ -683,6 +743,10 @@ class _MyFilesPageState extends State<MyFilesPage> {
       case '.docx':
       case '.doc':
         return 'Word Document';
+      case '.xlsx':
+      case '.xls':
+      case '.csv':
+        return 'Excel/CSV Sheet';
       case '.txt':
         return 'Text File';
       case '.png':
@@ -690,7 +754,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
       case '.jpeg':
         return 'Image File';
       default:
-        return 'Unknown File';
+        return 'File';
     }
   }
 
@@ -714,6 +778,10 @@ class _MyFilesPageState extends State<MyFilesPage> {
       case '.docx':
       case '.doc':
         return Icons.description;
+      case '.xlsx':
+      case '.xls':
+      case '.csv':
+        return Icons.table_chart;
       case '.txt':
         return Icons.text_snippet;
       case '.png':
@@ -774,7 +842,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
                   },
                 )
               : FutureBuilder<FileStat>(
-                  future: (item as File).stat(),
+                  future: item.stat(),
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
                       return Text(
@@ -783,7 +851,7 @@ class _MyFilesPageState extends State<MyFilesPage> {
                       );
                     } else if (snapshot.hasError) {
                       return const Text(
-                        'Error loading file info',
+                        'File info unavailable',
                         style: TextStyle(color: AppColors.error),
                       );
                     }
@@ -800,16 +868,14 @@ class _MyFilesPageState extends State<MyFilesPage> {
                     Icons.more_vert,
                     color: AppColors.textSecondary,
                   ),
-                  onPressed: () {
-                    if (item is File) _showFileOptions(item);
-                  },
+                  onPressed: () => _showFileOptions(item),
                 ),
           onTap: () {
-            if (item is Directory) {
+            if (isDirectory) {
               print('DEBUG: Tapping on directory: ${item.path}');
-              _navigateToDirectory(item);
-            } else if (item is File) {
-              print('DEBUG: Tapping on file: ${item.path}');
+              _navigateToDirectory(item as Directory);
+            } else {
+              print('DEBUG: Tapping on file/item: ${item.path}');
               _showFileOptions(item);
             }
           },
@@ -820,40 +886,65 @@ class _MyFilesPageState extends State<MyFilesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.backgroundCard,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'My Files',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: _deepScanFiles,
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, color: AppColors.textPrimary),
-            onPressed: _createTestFile,
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.create_new_folder,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        appBar: AppBar(
+          backgroundColor: AppColors.backgroundCard,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.arrow_back,
               color: AppColors.textPrimary,
             ),
-            onPressed: _createTestDirectory,
+            onPressed: () {
+              if (_isSearching) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                  _filterItems('');
+                });
+              } else {
+                _handleBack();
+              }
+            },
           ),
-          IconButton(
+          title: _isSearching
+              ? TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: 'Search files...',
+                    hintStyle: TextStyle(color: AppColors.textTertiary),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: _filterItems,
+                )
+              : const Text(
+                  'My Files',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+          actions: [
+            if (!_isSearching)
+              IconButton(
+                icon: const Icon(Icons.search, color: AppColors.textPrimary),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = true;
+                  });
+                },
+              ),
+            IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
             onPressed: () async {
               print('DEBUG: Manual refresh triggered');
@@ -862,130 +953,164 @@ class _MyFilesPageState extends State<MyFilesPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Path Breadcrumb
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: AppColors.backgroundCard,
-            child: Row(
+      body: !_permissionsGranted
+          ? _buildPermissionRequiredUI()
+          : Column(
               children: [
-                Icon(Icons.folder, color: AppColors.primaryBlue, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _currentPath,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                // Path Breadcrumb
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  color: AppColors.backgroundCard,
+                  child: Row(
+                    children: [
+                      Icon(Icons.folder, color: AppColors.primaryBlue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _currentPath,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+
+                // Content
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primaryBlue,
+                            ),
+                          ),
+                        )
+                      : _filteredItems.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isSearching
+                                        ? Icons.search_off
+                                        : Icons.folder_open,
+                                    size: 64,
+                                    color:
+                                        AppColors.textSecondary.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _isSearching
+                                        ? 'No results found'
+                                        : _currentPath == 'SmartConverter'
+                                            ? 'No files saved yet'
+                                            : 'This folder is empty',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _currentPath == 'SmartConverter'
+                                        ? 'Start converting files to see them here'
+                                        : 'Files will appear here when you save them',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary
+                                          .withOpacity(0.7),
+                                      fontSize: 14,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredItems.length,
+                              itemBuilder: (context, index) {
+                                return _buildItem(_filteredItems[index]);
+                              },
+                            ),
                 ),
               ],
             ),
+    ),
+  );
+}
+
+Widget _buildPermissionRequiredUI() {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.security_update_warning,
+            size: 80,
+            color: AppColors.primaryBlue.withOpacity(0.8),
           ),
-
-          // Content
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primaryBlue,
-                      ),
-                    ),
-                  )
-                : _currentItems.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.folder_open,
-                          size: 64,
-                          color: AppColors.textSecondary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _currentPath == 'SmartConverter'
-                              ? 'No files saved yet'
-                              : 'This folder is empty',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _currentPath == 'SmartConverter'
-                              ? 'Start converting files to see them here'
-                              : 'Files will appear here when you save them',
-                          style: TextStyle(
-                            color: AppColors.textSecondary.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount:
-                        _currentItems.length +
-                        (_currentPath != 'SmartConverter' ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // Add "Up" button if not in root
-                      if (_currentPath != 'SmartConverter' && index == 0) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: FuturisticCard(
-                            child: ListTile(
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.textSecondary.withOpacity(
-                                    0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_upward,
-                                  color: AppColors.textSecondary,
-                                  size: 24,
-                                ),
-                              ),
-                              title: const Text(
-                                '..',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              subtitle: const Text(
-                                'Go up one level',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              onTap: _navigateToParent,
-                            ),
-                          ),
-                        );
-                      }
-
-                      final itemIndex = _currentPath != 'SmartConverter'
-                          ? index - 1
-                          : index;
-                      return _buildItem(_currentItems[itemIndex]);
-                    },
-                  ),
+          const SizedBox(height: 24),
+          const Text(
+            'Storage Access Required',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'To show your converted files and folders, SmartConverter needs "All Files Access" on Android 11+.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () async {
+              final granted = await PermissionManager.requestStoragePermission();
+              if (granted) {
+                _checkPermissionsAndLoad();
+              } else {
+                // If standard request failed, might need settings
+                await PermissionManager.openAppSettingsIfDenied();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Grant Permission',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => PermissionManager.openAppSettingsIfDenied(),
+            child: const Text(
+              'Open System Settings',
+              style: TextStyle(color: AppColors.primaryBlue),
+            ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -18,7 +18,6 @@ from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 import secrets
-
 router = APIRouter()
 
 # OAuth client setup
@@ -65,7 +64,7 @@ def _upsert_user(db: Session, email: str, name: str | None) -> User:
     return user
 
 
-@router.get("/auth/signupwithgoogle")
+@router.get("/signupwithgoogle")
 async def signup_with_google(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
@@ -73,7 +72,7 @@ async def signup_with_google(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri, state=state)
 
 
-@router.get("/auth/google/callback", name="google_callback")
+@router.get("/google/callback", name="google_callback")
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     token = await oauth.google.authorize_access_token(request)
     # Get userinfo (OIDC)
@@ -86,7 +85,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"success": True, "provider": "google", "email": user.email, "name": user.full_name})
 
 
-@router.get("/auth/signupwithfacebook")
+@router.get("/signupwithfacebook")
 async def signup_with_facebook(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
@@ -94,7 +93,7 @@ async def signup_with_facebook(request: Request):
     return await oauth.facebook.authorize_redirect(request, redirect_uri, state=state)
 
 
-@router.get("/auth/facebook/callback", name="facebook_callback")
+@router.get("/facebook/callback", name="facebook_callback")
 async def facebook_callback(request: Request, db: Session = Depends(get_db)):
     token = await oauth.facebook.authorize_access_token(request)
     resp = await oauth.facebook.get("me?fields=id,name,email", token=token)
@@ -107,7 +106,7 @@ async def facebook_callback(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"success": True, "provider": "facebook", "email": user.email, "name": user.full_name})
 
 
-@router.get("/auth/google/url")
+@router.get("/google/url")
 async def get_google_auth_url(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
@@ -118,7 +117,7 @@ async def get_google_auth_url(request: Request):
     return {"auth_url": url}
 
 
-@router.get("/auth/facebook/url")
+@router.get("/facebook/url")
 async def get_facebook_auth_url(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
