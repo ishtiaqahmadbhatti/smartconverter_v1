@@ -5,6 +5,8 @@ import '../widgets/futuristic_card.dart';
 import '../utils/file_manager.dart';
 import '../utils/permission_manager.dart';
 import 'package:path/path.dart' as path;
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 
 class MyFilesPage extends StatefulWidget {
   const MyFilesPage({super.key});
@@ -576,6 +578,28 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 16),
             ListTile(
+              leading: const Icon(Icons.file_open, color: AppColors.success),
+              title: const Text(
+                'Open File',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _openFile(entity.path);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share, color: AppColors.primaryBlue),
+              title: const Text(
+                'Share File',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _shareFile(entity);
+              },
+            ),
+            ListTile(
               leading: const Icon(
                 Icons.info_outline,
                 color: AppColors.primaryBlue,
@@ -604,6 +628,25 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  Future<void> _openFile(String filePath) async {
+    try {
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done) {
+        _showErrorDialog('Could Not Open File', 'Status: ${result.message}');
+      }
+    } catch (e) {
+      _showErrorDialog('Error Opening File', e.toString());
+    }
+  }
+
+  Future<void> _shareFile(FileSystemEntity entity) async {
+    try {
+      await Share.shareXFiles([XFile(entity.path)]);
+    } catch (e) {
+      _showErrorDialog('Error Sharing File', e.toString());
+    }
   }
 
   void _showFileInfo(FileSystemEntity entity) async {
@@ -876,7 +919,7 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
               _navigateToDirectory(item as Directory);
             } else {
               print('DEBUG: Tapping on file/item: ${item.path}');
-              _showFileOptions(item);
+              _openFile(item.path);
             }
           },
         ),

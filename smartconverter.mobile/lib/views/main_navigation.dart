@@ -10,6 +10,14 @@ import '../widgets/custom_drawer.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
+  static MainNavigationState of(BuildContext context) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    if (state == null) {
+      throw Exception('MainNavigationState not found in context');
+    }
+    return state;
+  }
+
   @override
   State<MainNavigation> createState() => MainNavigationState();
 }
@@ -17,6 +25,12 @@ class MainNavigation extends StatefulWidget {
 class MainNavigationState extends State<MainNavigation> {
   int selectedIndex = 0;
   late List<Widget> _pages;
+
+  void setSelectedIndex(int index) {
+    setState(() {
+      selectedIndex = index;
+    });
+  }
 
   @override
   void initState() {
