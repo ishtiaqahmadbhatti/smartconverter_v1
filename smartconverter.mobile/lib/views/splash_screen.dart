@@ -272,8 +272,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _buildLogo() {
     return Container(
-      width: 120,
-      height: 120,
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: AppColors.primaryGradient,
@@ -285,10 +284,23 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ],
       ),
-      child: const Icon(
-        Icons.auto_awesome,
-        size: 60,
-        color: AppColors.textPrimary,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Icon(
+            Icons.folder_outlined,
+            size: 110,
+            color: Colors.white,
+          ),
+          Positioned(
+            top: 40,
+            child: const Icon(
+              Icons.sync,
+              size: 40,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }

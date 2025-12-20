@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_drawer.dart';
+import 'about_page.dart';
+import 'privacy_policy_page.dart';
+import 'terms_service_page.dart';
+import 'help_support_page.dart';
+import 'notification_settings_page.dart';
+import 'language_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -336,11 +342,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Dialog methods preserved from profile_page.dart
   void _showNotificationsDialog() {
-    _showSimpleDialog('Notifications', 'Notification settings coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NotificationSettingsPage()),
+    );
   }
 
   void _showLanguageDialog() {
-    _showSimpleDialog('Language', 'Language selection coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const LanguageSettingsPage()),
+    );
   }
 
   void _showThemeDialog() {
@@ -348,11 +358,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showHelpDialog() {
-    _showSimpleDialog('Help Center', 'Help center coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const HelpSupportPage()),
+    );
   }
 
   void _showContactDialog() {
-    _showSimpleDialog('Contact Us', 'Contact form coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const HelpSupportPage()),
+    );
   }
 
   void _showRateDialog() {
@@ -360,15 +374,21 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showVersionDialog() {
-    _showSimpleDialog('App Version', 'SmartConverter v1.0.0\n\nBuilt with Flutter\n© 2024 SmartConverter');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const AboutPage()),
+    );
   }
 
   void _showPrivacyDialog() {
-    _showSimpleDialog('Privacy Policy', 'Privacy policy coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+    );
   }
 
   void _showTermsDialog() {
-    _showSimpleDialog('Terms of Service', 'Terms of service coming soon!');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const TermsServicePage()),
+    );
   }
 
   void _showSimpleDialog(String title, String content) {
