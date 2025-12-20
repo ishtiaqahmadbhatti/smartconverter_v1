@@ -5,6 +5,7 @@ import 'constants/app_strings.dart';
 import 'constants/app_theme.dart';
 import 'services/conversion_service.dart';
 import 'services/admob_service.dart';
+import 'services/favorites_provider.dart';
 import 'views/splash_screen.dart';
 import 'views/sign_in_page.dart';
 import 'views/sign_up_page.dart';
@@ -42,7 +43,10 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [Provider<ConversionService>.value(value: conversionService)],
+      providers: [
+        Provider<ConversionService>.value(value: conversionService),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
+      ],
       child: const SmartConverterApp(),
     ),
   );

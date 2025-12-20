@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:provider/provider.dart';
+import '../services/favorites_provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/api_config.dart';
 import 'tool_action_page.dart';
@@ -280,6 +282,629 @@ class CategoryToolsPage extends StatefulWidget {
 
   @override
   State<CategoryToolsPage> createState() => _CategoryToolsPageState();
+
+  static Widget resolveToolPage(
+    BuildContext context,
+    String categoryId,
+    String toolName,
+    IconData categoryIcon,
+  ) {
+    // JSON category mappings
+    if (categoryId == 'json_conversion') {
+      switch (toolName) {
+        case 'AI: Convert PDF to JSON':
+          return const AiConvertPdfToJsonPage();
+        case 'AI: Convert PNG to JSON':
+          return const AiConvertPngToJsonPage();
+        case 'AI: Convert JPG to JSON':
+          return const AiConvertJpgToJsonPage();
+        case 'Convert XML to JSON':
+          return const json_xml.XmlToJsonPage();
+        case 'JSON Formatter':
+          return const JsonFormatterPage();
+        case 'JSON Validator':
+          return const JsonValidationPage();
+        case 'Convert JSON to XML':
+          return const JsonToXmlPage();
+        case 'Convert JSON to CSV':
+          return const JsonToCsvPage();
+        case 'Convert JSON to Excel':
+          return const JsonToExcelOfficePage();
+        case 'Convert Excel to JSON':
+          return const ExcelToJsonOfficePage();
+        case 'Convert CSV to JSON':
+          return const CsvToJsonPage();
+        case 'Convert JSON to YAML':
+          return const JsonToYamlPage();
+        case 'Convert JSON objects to CSV':
+          return const JsonObjectsToCsvPage();
+        case 'Convert JSON objects to Excel':
+          return const JsonObjectsToExcelPage();
+        case 'Convert YAML to JSON':
+          return const YamlToJsonPage();
+      }
+    }
+
+    // XML category mappings
+    if (categoryId == 'xml_conversion') {
+      switch (toolName) {
+        case 'Convert CSV to XML':
+          return const CsvToXmlFromXmlCategoryPage();
+        case 'Convert Excel to XML':
+          return const ExcelToXmlOfficePage();
+        case 'Convert XML to JSON':
+          return const XmlToJsonFromXmlCategoryPage();
+        case 'Convert XML to CSV':
+          return const XmlToCsvOfficePage();
+        case 'Convert XML to Excel':
+          return const XmlToExcelOfficePage();
+        case 'Fix XML Escaping':
+          return const XmlFixEscapingPage();
+
+        case 'XML/XSD Validator':
+          return const XmlXsdValidatorPage();
+        case 'Convert JSON to XML':
+          return const JsonToXmlFromXmlCategoryPage();
+      }
+    }
+
+    if (categoryId == 'csv_conversion') {
+      switch (toolName) {
+        case 'AI: Convert PDF to CSV':
+          return const AiConvertPdfToCsvPage();
+        case 'Convert HTML Table to CSV':
+          return const HtmlTableToCsvPage();
+        case 'Convert Excel to CSV':
+          return const ExcelToCsvFromCsvCategoryPage();
+        case 'Convert OpenOffice Calc ODS to CSV':
+          return const OdsToCsvOfficePage();
+        case 'Convert CSV to Excel':
+          return const CsvToExcelOfficePage();
+        case 'Convert CSV to XML':
+          return const CsvToXmlPage();
+        case 'Convert XML to CSV':
+          return const XmlToCsvFromCsvCategoryPage();
+        case 'Convert PDF to CSV':
+          return const PdfToCsvOfficePage();
+        case 'Convert JSON to CSV':
+          return const JsonToCsvFromCsvCategoryPage();
+        case 'Convert CSV to JSON':
+          return const CsvToJsonPage();
+        case 'Convert JSON objects to CSV':
+          return const JsonObjectsToCsvFromCsvCategoryPage();
+        case 'Convert BSON to CSV':
+          return const BsonToCsvPage();
+        case 'Convert SRT to CSV':
+          return const SrtToCsvPage();
+        case 'Convert CSV to SRT':
+          return const CsvToSrtPage();
+      }
+    }
+
+    if (categoryId == 'office_documents_conversion') {
+      switch (toolName) {
+        case 'AI: Convert PDF to CSV':
+          return const AiConvertPdfToCsvPage();
+        case 'AI: Convert PDF to Excel':
+          return const AiPdfToExcelPage();
+        case 'Convert Word to PDF':
+          return const WordToPdfOfficePage();
+        case 'Convert Word to HTML':
+          return const WordToHtmlOfficePage();
+        case 'Convert PowerPoint to PDF':
+          return const PowerPointToPdfOfficePage();
+        case 'Convert PowerPoint to HTML':
+          return const PowerPointToHtmlOfficePage();
+        case 'Convert OXPS to PDF':
+          return const OxpsToPdfPage();
+        case 'Convert Word to Text':
+          return const WordToTextOfficePage();
+        case 'Convert PowerPoint to Text':
+          return const PowerPointToTextOfficePage();
+        case 'Convert Excel to PDF':
+          return const ExcelToPdfOfficePage();
+        case 'Convert Excel to XPS':
+          return const ExcelToXpsOfficePage();
+        case 'Convert Excel to HTML':
+          return const ExcelToHtmlOfficePage();
+        case 'Convert Excel to CSV':
+          return const ExcelToCsvOfficePage();
+        case 'Convert Excel to OpenOffice Calc ODS':
+          return const ExcelToOdsOfficePage();
+        case 'Convert OpenOffice Calc ODS to CSV':
+          return const OdsToCsvOfficePage();
+        case 'Convert OpenOffice Calc ODS to PDF':
+          return const OdsToPdfOfficePage();
+        case 'Convert OpenOffice Calc ODS to Excel':
+          return const OdsToExcelOfficePage();
+        case 'Convert CSV to Excel':
+          return const CsvToExcelOfficePage();
+        case 'Convert Excel to XML':
+          return const ExcelToXmlOfficePage();
+        case 'Convert XML to CSV':
+          return const XmlToCsvOfficePage();
+        case 'Convert XML to Excel':
+          return const XmlToExcelOfficePage();
+
+        case 'Convert PDF to CSV':
+          return const PdfToCsvOfficePage();
+        case 'Convert PDF to Excel':
+          return const PdfToExcelOfficePage();
+        case 'Convert PDF to Word':
+          return const PdfToWordOfficePage();
+        case 'Convert JSON to Excel':
+          return const JsonToExcelOfficePage();
+        case 'Convert Excel to JSON':
+          return const ExcelToJsonOfficePage();
+        case 'Convert JSON objects to Excel':
+          return const JsonObjectsToExcelOfficePage();
+        case 'Convert BSON to Excel':
+          return const BsonToExcelOfficePage();
+        case 'Convert SRT to Excel':
+          return const SrtToExcelOfficePage();
+        case 'Convert Excel to SRT':
+          return const ExcelToSrtOfficePage();
+      }
+    }
+
+    if (categoryId == 'pdf_conversion') {
+      switch (toolName) {
+        case 'Merge PDF':
+          return const MergePdfPage();
+        case 'Split PDF':
+          return const PdfSplitPage();
+        case 'Compress PDF':
+          return const PdfCompressPage();
+        case 'Remove Pages':
+          return const RemovePagesPage();
+        case 'Extract Pages':
+          return const ExtractPagesPage();
+        case 'Rotate PDF':
+          return const RotatePdfPage();
+        case 'Add Page Numbers':
+          return const AddPageNumbersPage();
+        case 'Crop PDF':
+          return const CropPdfPage();
+        case 'Protect PDF':
+          return const ProtectPdfPage();
+        case 'Unlock PDF':
+          return const UnlockPdfPage();
+        case 'Repair PDF':
+          return const RepairPdfPage();
+        case 'Compare PDFs':
+          return const ComparePdfsPage();
+        case 'Get PDF Metadata':
+          return const PdfMetadataPage();
+        case 'Add Watermark':
+          return const WatermarkPdfPage();
+        case 'AI: Convert PDF to JSON':
+          return AiPdfToJsonPage(categoryId: categoryId);
+        case 'AI: Convert PDF to Markdown':
+          return const AiPdfToMarkdownPage();
+        case 'AI: Convert PDF to CSV':
+          return const AiPdfToCsvPage();
+        case 'AI: Convert PDF to Excel':
+          return const AiPdfToExcelPage();
+        case 'Convert HTML to PDF':
+          return const HtmlToPdfPage();
+        case 'Convert Word to PDF':
+          return const WordToPdfOfficePage();
+        case 'Convert PowerPoint to PDF':
+          return const PowerPointToPdfOfficePage();
+        case 'Convert OXPS to PDF':
+          return const OxpsToPdfPage();
+        case 'Convert JPG to PDF':
+          return const JpgToPdfPage();
+        case 'Convert PNG to PDF':
+          return const PngToPdfPage();
+        case 'Convert Markdown to PDF':
+          return const MarkdownToPdfPage();
+        case 'Convert Excel to PDF':
+          return const ExcelToPdfOfficePage();
+        case 'Convert Excel to XPS':
+          return const ExcelToXpsOfficePage();
+        case 'Convert OpenOffice Calc ODS to PDF':
+          return const OdsToPdfOfficePage();
+        case 'Convert PDF to CSV':
+          return const PdfToCsvOfficePage();
+        case 'Convert PDF to Excel':
+          return const PdfToExcelOfficePage();
+        case 'Convert PDF to Word':
+          return const PdfToWordOfficePage();
+        case 'Convert PDF to JPG':
+          return const PdfToJpgPage();
+        case 'Convert PDF to PNG':
+          return const PdfToPngPage();
+        case 'Convert PDF to TIFF':
+          return const PdfToTiffPage();
+        case 'Convert PDF to SVG':
+          return const PdfToSvgPage();
+        case 'Convert PDF to HTML':
+          return const PdfToHtmlPage();
+        case 'Convert PDF to Text':
+          return const PdfToTextPage();
+      }
+    }
+
+    if (categoryId == 'website_conversion') {
+      switch (toolName) {
+        case 'Convert Website to PDF':
+          return const WebsiteToPdfPage();
+        case 'Convert HTML to PDF':
+          return HtmlToPdfPage(categoryId: categoryId);
+        case 'Convert Word to HTML':
+          return const WordToHtmlPage();
+        case 'Convert PowerPoint to HTML':
+          return const PowerPointToHtmlPage();
+        case 'Convert Markdown to HTML':
+          return const MarkdownToHtmlPage();
+        case 'Convert Website to JPG':
+          return const WebsiteToJpgPage();
+        case 'Convert HTML to JPG':
+          return const HtmlToJpgPage();
+        case 'Convert Website to PNG':
+          return const WebsiteToPngPage();
+        case 'Convert HTML to PNG':
+          return const HtmlToPngPage();
+        case 'Convert HTML Table to CSV':
+          return const HtmlTableToCsvPage();
+        case 'Convert Excel to HTML':
+          return const ExcelToHtmlWebPage();
+        case 'Convert PDF to HTML':
+          return const PdfToHtmlWebPage();
+      }
+    }
+
+    if (categoryId == 'video_conversion') {
+      switch (toolName) {
+        case 'Convert MOV to MP4':
+          return const MovToMp4Page();
+        case 'Convert MKV to MP4':
+          return const MkvToMp4Page();
+        case 'Convert AVI to MP4':
+          return const AviToMp4Page();
+        case 'Convert MP4 to MP3':
+          return const Mp4ToMp3Page();
+      }
+    }
+
+    if (categoryId == 'audio_conversion') {
+      switch (toolName) {
+        case 'Convert MP4 to MP3':
+          return const Mp4ToMp3FromAudioPage();
+        case 'Convert WAV to MP3':
+          return const WavToMp3Page();
+        case 'Convert FLAC to MP3':
+          return const FlacToMp3Page();
+        case 'Convert MP3 to WAV':
+          return const Mp3ToWavPage();
+        case 'Convert FLAC to WAV':
+          return const FlacToWavPage();
+        case 'Convert WAV to FLAC':
+          return const WavToFlacPage();
+      }
+    }
+
+    if (categoryId == 'subtitle_conversion') {
+      switch (toolName) {
+        case 'AI: Translate SRT':
+          return const AiTranslateSrtPage();
+        case 'Convert SRT to CSV':
+          return const SrtToCsvFromSubtitlePage();
+        case 'Convert SRT to Excel':
+          return const SrtToExcelOfficePage();
+        case 'Convert SRT to Text':
+          return const SrtToTextPage();
+        case 'Convert SRT to VTT':
+          return const SrtToVttPage();
+        case 'Convert VTT to Text':
+          return const VttToTextPage();
+        case 'Convert VTT to SRT':
+          return const VttToSrtPage();
+        case 'Convert CSV to SRT':
+          return const CsvToSrtFromSubtitlePage();
+        case 'Convert Excel to SRT':
+          return const ExcelToSrtPage();
+      }
+    }
+
+    if (categoryId == 'text_conversion') {
+      switch (toolName) {
+        case 'Convert Word to Text':
+          return const WordToTextTextPage();
+        case 'Convert PowerPoint to Text':
+          return const PowerPointToTextPage();
+        case 'Convert PDF to Text':
+          return const PdfToTextTextPage();
+        case 'Convert SRT to Text':
+          return const SrtToTextFromTextPage();
+        case 'Convert VTT to Text':
+          return const VttToTextFromTextPage();
+      }
+    }
+
+    if (categoryId == 'ebook_conversion') {
+      switch (toolName) {
+        case 'Convert Markdown to ePUB':
+          return const MarkdownToEpubPage();
+        case 'Convert ePUB to MOBI':
+          return const EpubToMobiPage();
+        case 'Convert ePUB to AZW':
+          return const EpubToAzwPage();
+        case 'Convert MOBI to ePUB':
+          return const MobiToEpubPage();
+        case 'Convert MOBI to AZW':
+          return const MobiToAzwPage();
+        case 'Convert AZW to ePUB':
+          return const AzwToEpubPage();
+        case 'Convert AZW to MOBI':
+          return const AzwToMobiPage();
+        case 'Convert ePUB to PDF':
+          return const EpubToPdfPage();
+        case 'Convert MOBI to PDF':
+          return const MobiToPdfPage();
+        case 'Convert AZW to PDF':
+          return const AzwToPdfPage();
+        case 'Convert AZW3 to PDF':
+          return const Azw3ToPdfPage();
+        case 'Convert FB2 to PDF':
+          return const Fb2ToPdfPage();
+        case 'Convert FBZ to PDF':
+          return const FbzToPdfPage();
+        case 'Convert PDF to ePUB':
+          return const PdfToEpubPage();
+        case 'Convert PDF to MOBI':
+          return const PdfToMobiPage();
+        case 'Convert PDF to AZW':
+          return const PdfToAzwPage();
+        case 'Convert PDF to AZW3':
+          return const PdfToAzw3Page();
+        case 'Convert PDF to FB2':
+          return const PdfToFb2Page();
+        case 'Convert PDF to FBZ':
+          return const PdfToFbzPage();
+      }
+    }
+
+    if (categoryId == 'image_conversion') {
+      switch (toolName) {
+        case 'AI: Convert PNG to JSON':
+          return const AiPngToJsonPage();
+        case 'AI: Convert JPG to JSON':
+          return const AiJpgToJsonPage();
+        case 'Convert JPG to PDF':
+          return const JpgToPdfPage();
+        case 'Convert PNG to PDF':
+          return const PngToPdfPage();
+        case 'Convert Website to JPG':
+          return const WebsiteToJpgPage();
+        case 'Convert HTML to JPG':
+          return const HtmlToJpgPage();
+        case 'Convert Website to PNG':
+          return const WebsiteToPngPage();
+        case 'Convert HTML to PNG':
+          return const HtmlToPngPage();
+        case 'Convert PDF to JPG':
+          return const PdfToJpgImagePage(useImageCategoryStorage: true);
+        case 'Convert PDF to PNG':
+          return const PdfToImagePage(initialFormat: 'PNG');
+        case 'Convert PDF to TIFF':
+          return const PdfToImagePage(initialFormat: 'TIFF');
+        case 'Convert PDF to SVG':
+          return const PdfToImagePage(initialFormat: 'SVG');
+        case 'Convert AI to SVG':
+          return const AiToSvgPage();
+        case 'Convert PNG to SVG':
+          return const PngToSvgPage();
+        case 'Convert PNG to AVIF':
+          return const PngToAvifPage();
+        case 'Convert JPG to AVIF':
+          return const JpgToAvifPage();
+        case 'Convert WebP to AVIF':
+          return const WebpToAvifPage();
+        case 'Convert AVIF to PNG':
+          return const AvifToPngPage();
+        case 'Convert AVIF to JPEG':
+           return const AvifToJpegPage();
+        case 'Convert AVIF to WebP':
+           return const AvifToWebpPage();
+        case 'Convert PNG to WebP':
+          return const PngToWebpPage();
+        case 'Convert JPG to WebP':
+          return const JpgToWebpPage();
+        case 'Convert TIFF to WebP':
+          return const TiffToWebpPage();
+        case 'Convert GIF to WebP':
+          return const GifToWebpPage();
+        case 'Convert WebP to PNG':
+          return const WebpToPngPage();
+        case 'Convert WebP to JPEG':
+          return const WebpToJpegPage();
+        case 'Convert WebP to TIFF':
+          return const WebpToTiffPage();
+        case 'Convert WebP to BMP':
+          return const WebpToBmpPage();
+        case 'Convert WebP to YUV':
+           return const WebpToYuvPage();
+        case 'Convert WebP to PAM':
+           return const WebpToPamPage();
+        case 'Convert WebP to PGM':
+           return const WebpToPgmPage();
+        case 'Convert WebP to PPM':
+           return const WebpToPpmPage();
+        case 'Convert PNG to JPG':
+           return const PngToJpgPage();
+        case 'Convert PNG to PGM':
+           return const PngToPgmPage();
+        case 'Convert PNG to PPM':
+           return const PngToPpmPage();
+        case 'Convert JPG to PNG':
+           return const JpgToPngPage();
+        case 'Convert JPEG to PGM':
+           return const JpegToPgmPage();
+        case 'Convert JPEG to PPM':
+           return const JpegToPpmPage();
+        case 'Convert HEIC to PNG':
+           return const HeicToPngPage();
+        case 'Convert HEIC to JPG':
+           return const HeicToJpgPage();
+        case 'Convert SVG to PNG':
+           return const SvgToPngPage();
+        case 'Convert SVG to JPG':
+           return const SvgToJpgPage();
+        case 'Remove EXIF Data':
+          return const RemoveExifPage();
+        default:
+          return ToolActionPage(
+            categoryId: categoryId,
+            toolName: toolName,
+            categoryIcon: Icons.image_outlined,
+          );
+      }
+    }
+
+    if (categoryId == 'ocr_conversion') {
+      switch (toolName) {
+        case 'OCR: Convert PNG to Text':
+          return const OcrPngToTextPage();
+        case 'OCR: Convert JPG to Text':
+          return const OcrJpgToTextPage();
+        case 'OCR: Convert PNG to PDF':
+          return const OcrPngToPdfPage();
+        case 'OCR: Convert JPG to PDF':
+          return const OcrJpgToPdfPage();
+        case 'OCR: Convert PDF to Text':
+          return const OcrPdfToTextPage();
+        case 'OCR: Convert PDF Image to PDF Text':
+          return const OcrPdfImageToPdfTextPage();
+      }
+    }
+
+    if (categoryId == 'ebook_conversion') {
+      switch (toolName) {
+        case 'Convert Markdown To Epub':
+          return const MarkdownToEpubPage();
+        case 'Convert Epub To Mobi':
+          return const EpubToMobiPage();
+        case 'Convert Epub To Azw':
+          return const EpubToAzwPage();
+        case 'Convert Mobi To Epub':
+          return const MobiToEpubPage();
+        case 'Convert Mobi To Azw':
+          return const MobiToAzwPage();
+        case 'Convert Azw To Epub':
+          return const AzwToEpubPage();
+        case 'Convert Azw To Mobi':
+          return const AzwToMobiPage();
+        case 'Convert Epub To Pdf':
+          return const EpubToPdfPage();
+        case 'Convert Mobi To Pdf':
+          return const MobiToPdfPage();
+        case 'Convert Azw To Pdf':
+          return const AzwToPdfPage();
+        case 'Convert Azw3 To Pdf':
+          return const Azw3ToPdfPage();
+        case 'Convert Fb2 To Pdf':
+          return const Fb2ToPdfPage();
+        case 'Convert Fbz To Pdf':
+          return const FbzToPdfPage();
+        case 'Convert Pdf To Epub':
+          return const PdfToEpubPage();
+        case 'Convert Pdf To Mobi':
+          return const PdfToMobiPage();
+        case 'Convert Pdf To Azw':
+          return const PdfToAzwPage();
+        case 'Convert Pdf To Azw3':
+          return const PdfToAzw3Page();
+        case 'Convert Pdf To Fb2':
+          return const PdfToFb2Page();
+        case 'Convert Pdf To Fbz':
+          return const PdfToFbzPage();
+      }
+    }
+
+    if (categoryId == 'video_conversion') {
+      switch (toolName) {
+        case 'Convert Mov To Mp4':
+          return const MovToMp4Page();
+        case 'Convert Mkv To Mp4':
+          return const MkvToMp4Page();
+        case 'Convert Avi To Mp4':
+          return const AviToMp4Page();
+        case 'Convert Mp4 To Mp3':
+          return const Mp4ToMp3Page();
+        case 'Convert Video Format':
+          return const ConvertVideoFormatPage();
+        case 'Video To Audio':
+          return const VideoToAudioPage();
+        case 'Extract Audio':
+          return const ExtractAudioPage();
+        case 'Resize Video':
+          return const ResizeVideoPage();
+        case 'Compress Video':
+          return const CompressVideoPage();
+        case 'Get Video Info':
+          return const GetVideoInfoPage();
+        case 'Supported Formats':
+          return const SupportedFormatsPage();
+      }
+    }
+
+    if (categoryId == 'audio_conversion') {
+      switch (toolName) {
+        case 'Convert MP4 to MP3':
+          return const Mp4ToMp3FromAudioPage();
+        case 'Convert WAV to MP3':
+          return const WavToMp3Page();
+        case 'Convert FLAC to MP3':
+          return const FlacToMp3Page();
+        case 'Convert MP3 to WAV':
+          return const Mp3ToWavPage();
+        case 'Convert FLAC to WAV':
+          return const FlacToWavPage();
+        case 'Convert WAV to FLAC':
+          return const WavToFlacPage();
+        case 'Convert Audio Format':
+          return const ConvertAudioFormatPage();
+        case 'Normalize Audio':
+          return const NormalizeAudioPage();
+        case 'Trim Audio':
+          return const TrimAudioPage();
+        case 'Get Audio Info':
+          return const GetAudioInfoPage();
+        case 'Supported Audio Formats':
+          return const SupportedAudioFormatsPage();
+      }
+    }
+
+    if (categoryId == 'file_formatter') {
+      switch (toolName) {
+        case 'Format JSON':
+          return const ff_json_format.JsonFormatterPage();
+        case 'Validate JSON':
+          return const ff_json_validate.JsonValidationPage();
+        case 'Validate XML':
+          return const ff_xml_validate.XmlValidatorPage();
+        case 'Validate XSD':
+          return const ff_xsd_validate.XsdValidatorPage();
+        case 'Minify JSON':
+          return const ff_json_minify.JsonMinifierPage();
+        case 'Format XML':
+          return const ff_xml_format.XmlFormatterPage();
+        case 'Get JSON Schema Info':
+          return const ff_json_schema.JsonSchemaInfoPage();
+        case 'Supported File Formats':
+          return const ff_formats.SupportedFileFormatsPage();
+      }
+    }
+
+    // Fallback generic page
+    return ToolActionPage(
+      categoryId: categoryId,
+      toolName: toolName,
+      categoryIcon: categoryIcon,
+    );
+  }
 }
 
 class _CategoryToolsPageState extends State<CategoryToolsPage> {
@@ -621,7 +1246,7 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           itemBuilder: (context, index) {
             final toolName = _filteredTools[index];
             void handleTap() {
-              final page = _resolveToolPage(context, widget.id, toolName, widget.icon);
+              final page = CategoryToolsPage.resolveToolPage(context, widget.id, toolName, widget.icon);
               Navigator.of(context).push(
                 PageRouteBuilder(
                   pageBuilder: (_, __, ___) => page,
@@ -660,6 +1285,23 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
                           ),
                         ),
                       ),
+                      Consumer<FavoritesProvider>(
+                        builder: (context, provider, child) {
+                          final isFav = provider.isFavorite(widget.id, toolName);
+                          return IconButton(
+                            icon: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              size: 20,
+                              color: isFav ? AppColors.primaryBlue : AppColors.textSecondary,
+                            ),
+                            onPressed: () => provider.toggleFavorite(
+                              categoryId: widget.id,
+                              toolName: toolName,
+                              categoryIcon: widget.icon,
+                            ),
+                          );
+                        },
+                      ),
                       IconButton(
                         icon: const Icon(
                           Icons.arrow_forward_ios,
@@ -676,631 +1318,6 @@ class _CategoryToolsPageState extends State<CategoryToolsPage> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _resolveToolPage(
-    BuildContext context,
-    String categoryId,
-    String toolName,
-    IconData categoryIcon,
-  ) {
-    // JSON category mappings
-    if (categoryId == 'json_conversion') {
-      switch (toolName) {
-        case 'AI: Convert PDF to JSON':
-          return const AiConvertPdfToJsonPage();
-        case 'AI: Convert PNG to JSON':
-          return const AiConvertPngToJsonPage();
-        case 'AI: Convert JPG to JSON':
-          return const AiConvertJpgToJsonPage();
-        case 'Convert XML to JSON':
-          return const json_xml.XmlToJsonPage();
-        case 'JSON Formatter':
-          return const JsonFormatterPage();
-        case 'JSON Validator':
-          return const JsonValidationPage();
-        case 'Convert JSON to XML':
-          return const JsonToXmlPage();
-        case 'Convert JSON to CSV':
-          return const JsonToCsvPage();
-        case 'Convert JSON to Excel':
-          return const JsonToExcelOfficePage();
-        case 'Convert Excel to JSON':
-          return const ExcelToJsonOfficePage();
-        case 'Convert CSV to JSON':
-          return const CsvToJsonPage();
-        case 'Convert JSON to YAML':
-          return const JsonToYamlPage();
-        case 'Convert JSON objects to CSV':
-          return const JsonObjectsToCsvPage();
-        case 'Convert JSON objects to Excel':
-          return const JsonObjectsToExcelPage();
-        case 'Convert YAML to JSON':
-          return const YamlToJsonPage();
-      }
-    }
-
-    // XML category mappings
-    if (categoryId == 'xml_conversion') {
-      switch (toolName) {
-        case 'Convert CSV to XML':
-          return const CsvToXmlFromXmlCategoryPage();
-        case 'Convert Excel to XML':
-          return const ExcelToXmlOfficePage();
-        case 'Convert XML to JSON':
-          return const XmlToJsonFromXmlCategoryPage();
-        case 'Convert XML to CSV':
-          return const XmlToCsvOfficePage();
-        case 'Convert XML to Excel':
-          return const XmlToExcelOfficePage();
-        case 'Fix XML Escaping':
-          return const XmlFixEscapingPage();
-
-        case 'XML/XSD Validator':
-          return const XmlXsdValidatorPage();
-        case 'Convert JSON to XML':
-          return const JsonToXmlFromXmlCategoryPage();
-      }
-    }
-
-    if (categoryId == 'csv_conversion') {
-      switch (toolName) {
-        case 'AI: Convert PDF to CSV':
-          return const AiConvertPdfToCsvPage();
-        case 'Convert HTML Table to CSV':
-          return const HtmlTableToCsvPage();
-        case 'Convert Excel to CSV':
-          return const ExcelToCsvFromCsvCategoryPage();
-        case 'Convert OpenOffice Calc ODS to CSV':
-          return const OdsToCsvOfficePage();
-        case 'Convert CSV to Excel':
-          return const CsvToExcelOfficePage();
-        case 'Convert CSV to XML':
-          return const CsvToXmlPage();
-        case 'Convert XML to CSV':
-          return const XmlToCsvFromCsvCategoryPage();
-        case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
-        case 'Convert JSON to CSV':
-          return const JsonToCsvFromCsvCategoryPage();
-        case 'Convert CSV to JSON':
-          return const CsvToJsonPage();
-        case 'Convert JSON objects to CSV':
-          return const JsonObjectsToCsvFromCsvCategoryPage();
-        case 'Convert BSON to CSV':
-          return const BsonToCsvPage();
-        case 'Convert SRT to CSV':
-          return const SrtToCsvPage();
-        case 'Convert CSV to SRT':
-          return const CsvToSrtPage();
-      }
-    }
-
-    if (categoryId == 'office_documents_conversion') {
-      switch (toolName) {
-        case 'AI: Convert PDF to CSV':
-          return const AiConvertPdfToCsvPage();
-        case 'AI: Convert PDF to Excel':
-          return const AiPdfToExcelPage();
-        case 'Convert Word to PDF':
-          return const WordToPdfOfficePage();
-        case 'Convert Word to HTML':
-          return const WordToHtmlOfficePage();
-        case 'Convert PowerPoint to PDF':
-          return const PowerPointToPdfOfficePage();
-        case 'Convert PowerPoint to HTML':
-          return const PowerPointToHtmlOfficePage();
-        case 'Convert OXPS to PDF':
-          return const OxpsToPdfPage();
-        case 'Convert Word to Text':
-          return const WordToTextOfficePage();
-        case 'Convert PowerPoint to Text':
-          return const PowerPointToTextOfficePage();
-        case 'Convert Excel to PDF':
-          return const ExcelToPdfOfficePage();
-        case 'Convert Excel to XPS':
-          return const ExcelToXpsOfficePage();
-        case 'Convert Excel to HTML':
-          return const ExcelToHtmlOfficePage();
-        case 'Convert Excel to CSV':
-          return const ExcelToCsvOfficePage();
-        case 'Convert Excel to OpenOffice Calc ODS':
-          return const ExcelToOdsOfficePage();
-        case 'Convert OpenOffice Calc ODS to CSV':
-          return const OdsToCsvOfficePage();
-        case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfOfficePage();
-        case 'Convert OpenOffice Calc ODS to Excel':
-          return const OdsToExcelOfficePage();
-        case 'Convert CSV to Excel':
-          return const CsvToExcelOfficePage();
-        case 'Convert Excel to XML':
-          return const ExcelToXmlOfficePage();
-        case 'Convert XML to CSV':
-          return const XmlToCsvOfficePage();
-        case 'Convert XML to Excel':
-          return const XmlToExcelOfficePage();
-
-        case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
-        case 'Convert PDF to Excel':
-          return const PdfToExcelOfficePage();
-        case 'Convert PDF to Word':
-          return const PdfToWordOfficePage();
-        case 'Convert JSON to Excel':
-          return const JsonToExcelOfficePage();
-        case 'Convert Excel to JSON':
-          return const ExcelToJsonOfficePage();
-        case 'Convert JSON objects to Excel':
-          return const JsonObjectsToExcelOfficePage();
-        case 'Convert BSON to Excel':
-          return const BsonToExcelOfficePage();
-        case 'Convert SRT to Excel':
-          return const SrtToExcelOfficePage();
-        case 'Convert Excel to SRT':
-          return const ExcelToSrtOfficePage();
-      }
-    }
-
-    if (categoryId == 'pdf_conversion') {
-      switch (toolName) {
-        case 'Merge PDF':
-          return const MergePdfPage();
-        case 'Split PDF':
-          return const PdfSplitPage();
-        case 'Compress PDF':
-          return const PdfCompressPage();
-        case 'Remove Pages':
-          return const RemovePagesPage();
-        case 'Extract Pages':
-          return const ExtractPagesPage();
-        case 'Rotate PDF':
-          return const RotatePdfPage();
-        case 'Add Page Numbers':
-          return const AddPageNumbersPage();
-        case 'Crop PDF':
-          return const CropPdfPage();
-        case 'Protect PDF':
-          return const ProtectPdfPage();
-        case 'Unlock PDF':
-          return const UnlockPdfPage();
-        case 'Repair PDF':
-          return const RepairPdfPage();
-        case 'Compare PDFs':
-          return const ComparePdfsPage();
-        case 'Get PDF Metadata':
-          return const PdfMetadataPage();
-        case 'Add Watermark':
-          return const WatermarkPdfPage();
-        case 'AI: Convert PDF to JSON':
-          return AiPdfToJsonPage(categoryId: categoryId);
-        case 'AI: Convert PDF to Markdown':
-          return const AiPdfToMarkdownPage();
-        case 'AI: Convert PDF to CSV':
-          return const AiPdfToCsvPage();
-        case 'AI: Convert PDF to Excel':
-          return const AiPdfToExcelPage();
-        case 'Convert HTML to PDF':
-          return const HtmlToPdfPage();
-        case 'Convert Word to PDF':
-          return const WordToPdfOfficePage();
-        case 'Convert PowerPoint to PDF':
-          return const PowerPointToPdfOfficePage();
-        case 'Convert OXPS to PDF':
-          return const OxpsToPdfPage();
-        case 'Convert JPG to PDF':
-          return const JpgToPdfPage();
-        case 'Convert PNG to PDF':
-          return const PngToPdfPage();
-        case 'Convert Markdown to PDF':
-          return const MarkdownToPdfPage();
-        case 'Convert Excel to PDF':
-          return const ExcelToPdfOfficePage();
-        case 'Convert Excel to XPS':
-          return const ExcelToXpsOfficePage();
-        case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfOfficePage();
-        case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
-        case 'Convert PDF to Excel':
-          return const PdfToExcelOfficePage();
-        case 'Convert PDF to Word':
-          return const PdfToWordOfficePage();
-        case 'Convert PDF to JPG':
-          return const PdfToJpgPage();
-        case 'Convert PDF to PNG':
-          return const PdfToPngPage();
-        case 'Convert PDF to TIFF':
-          return const PdfToTiffPage();
-        case 'Convert PDF to SVG':
-          return const PdfToSvgPage();
-        case 'Convert PDF to HTML':
-          return const PdfToHtmlPage();
-        case 'Convert PDF to Text':
-          return const PdfToTextPage();
-      }
-    }
-
-    if (categoryId == 'website_conversion') {
-      switch (toolName) {
-        case 'Convert Website to PDF':
-          return const WebsiteToPdfPage();
-        case 'Convert HTML to PDF':
-          return HtmlToPdfPage(categoryId: categoryId);
-        case 'Convert Word to HTML':
-          return const WordToHtmlPage();
-        case 'Convert PowerPoint to HTML':
-          return const PowerPointToHtmlPage();
-        case 'Convert Markdown to HTML':
-          return const MarkdownToHtmlPage();
-        case 'Convert Website to JPG':
-          return const WebsiteToJpgPage();
-        case 'Convert HTML to JPG':
-          return const HtmlToJpgPage();
-        case 'Convert Website to PNG':
-          return const WebsiteToPngPage();
-        case 'Convert HTML to PNG':
-          return const HtmlToPngPage();
-        case 'Convert HTML Table to CSV':
-          return const HtmlTableToCsvPage();
-        case 'Convert Excel to HTML':
-          return const ExcelToHtmlWebPage();
-        case 'Convert PDF to HTML':
-          return const PdfToHtmlWebPage();
-      }
-    }
-
-    if (categoryId == 'video_conversion') {
-      switch (toolName) {
-        case 'Convert MOV to MP4':
-          return const MovToMp4Page();
-        case 'Convert MKV to MP4':
-          return const MkvToMp4Page();
-        case 'Convert AVI to MP4':
-          return const AviToMp4Page();
-        case 'Convert MP4 to MP3':
-          return const Mp4ToMp3Page();
-      }
-    }
-
-    if (categoryId == 'audio_conversion') {
-      switch (toolName) {
-        case 'Convert MP4 to MP3':
-          return const Mp4ToMp3FromAudioPage();
-        case 'Convert WAV to MP3':
-          return const WavToMp3Page();
-        case 'Convert FLAC to MP3':
-          return const FlacToMp3Page();
-        case 'Convert MP3 to WAV':
-          return const Mp3ToWavPage();
-        case 'Convert FLAC to WAV':
-          return const FlacToWavPage();
-        case 'Convert WAV to FLAC':
-          return const WavToFlacPage();
-      }
-    }
-
-    if (categoryId == 'subtitle_conversion') {
-      switch (toolName) {
-        case 'AI: Translate SRT':
-          return const AiTranslateSrtPage();
-        case 'Convert SRT to CSV':
-          return const SrtToCsvFromSubtitlePage();
-        case 'Convert SRT to Excel':
-          return const SrtToExcelOfficePage();
-        case 'Convert SRT to Text':
-          return const SrtToTextPage();
-        case 'Convert SRT to VTT':
-          return const SrtToVttPage();
-        case 'Convert VTT to Text':
-          return const VttToTextPage();
-        case 'Convert VTT to SRT':
-          return const VttToSrtPage();
-        case 'Convert CSV to SRT':
-          return const CsvToSrtFromSubtitlePage();
-        case 'Convert Excel to SRT':
-          return const ExcelToSrtPage();
-      }
-    }
-
-    if (categoryId == 'text_conversion') {
-      switch (toolName) {
-        case 'Convert Word to Text':
-          return const WordToTextTextPage();
-        case 'Convert PowerPoint to Text':
-          return const PowerPointToTextPage();
-        case 'Convert PDF to Text':
-          return const PdfToTextTextPage();
-        case 'Convert SRT to Text':
-          return const SrtToTextFromTextPage();
-        case 'Convert VTT to Text':
-          return const VttToTextFromTextPage();
-      }
-    }
-
-
-
-    if (categoryId == 'ebook_conversion') {
-      switch (toolName) {
-        case 'Convert Markdown to ePUB':
-          return const MarkdownToEpubPage();
-        case 'Convert ePUB to MOBI':
-          return const EpubToMobiPage();
-        case 'Convert ePUB to AZW':
-          return const EpubToAzwPage();
-        case 'Convert MOBI to ePUB':
-          return const MobiToEpubPage();
-        case 'Convert MOBI to AZW':
-          return const MobiToAzwPage();
-        case 'Convert AZW to ePUB':
-          return const AzwToEpubPage();
-        case 'Convert AZW to MOBI':
-          return const AzwToMobiPage();
-        case 'Convert ePUB to PDF':
-          return const EpubToPdfPage();
-        case 'Convert MOBI to PDF':
-          return const MobiToPdfPage();
-        case 'Convert AZW to PDF':
-          return const AzwToPdfPage();
-        case 'Convert AZW3 to PDF':
-          return const Azw3ToPdfPage();
-        case 'Convert FB2 to PDF':
-          return const Fb2ToPdfPage();
-        case 'Convert FBZ to PDF':
-          return const FbzToPdfPage();
-        case 'Convert PDF to ePUB':
-          return const PdfToEpubPage();
-        case 'Convert PDF to MOBI':
-          return const PdfToMobiPage();
-        case 'Convert PDF to AZW':
-          return const PdfToAzwPage();
-        case 'Convert PDF to AZW3':
-          return const PdfToAzw3Page();
-        case 'Convert PDF to FB2':
-          return const PdfToFb2Page();
-        case 'Convert PDF to FBZ':
-          return const PdfToFbzPage();
-      }
-    }
-
-    if (categoryId == 'image_conversion') {
-      switch (toolName) {
-        case 'AI: Convert PNG to JSON':
-          return const AiPngToJsonPage();
-        case 'AI: Convert JPG to JSON':
-          return const AiJpgToJsonPage();
-        case 'Convert JPG to PDF':
-          return const JpgToPdfPage();
-        case 'Convert PNG to PDF':
-          return const PngToPdfPage();
-        case 'Convert Website to JPG':
-          return const WebsiteToJpgPage();
-        case 'Convert HTML to JPG':
-          return const HtmlToJpgPage();
-        case 'Convert Website to PNG':
-          return const WebsiteToPngPage();
-        case 'Convert HTML to PNG':
-          return const HtmlToPngPage();
-        case 'Convert PDF to JPG':
-          return const PdfToJpgImagePage(useImageCategoryStorage: true);
-        case 'Convert PDF to PNG':
-          return const PdfToImagePage(initialFormat: 'PNG');
-        case 'Convert PDF to TIFF':
-          return const PdfToImagePage(initialFormat: 'TIFF');
-        case 'Convert PDF to SVG':
-          return const PdfToImagePage(initialFormat: 'SVG');
-        case 'Convert AI to SVG':
-          return const AiToSvgPage();
-        case 'Convert PNG to SVG':
-          return const PngToSvgPage();
-        case 'Convert PNG to AVIF':
-          return const PngToAvifPage();
-        case 'Convert JPG to AVIF':
-          return const JpgToAvifPage();
-        case 'Convert WebP to AVIF':
-          return const WebpToAvifPage();
-        case 'Convert AVIF to PNG':
-          return const AvifToPngPage();
-        case 'Convert AVIF to JPEG':
-           return const AvifToJpegPage();
-        case 'Convert AVIF to WebP':
-           return const AvifToWebpPage();
-        case 'Convert PNG to WebP':
-          return const PngToWebpPage();
-        case 'Convert JPG to WebP':
-          return const JpgToWebpPage();
-        case 'Convert TIFF to WebP':
-          return const TiffToWebpPage();
-        case 'Convert GIF to WebP':
-          return const GifToWebpPage();
-        case 'Convert WebP to PNG':
-          return const WebpToPngPage();
-        case 'Convert WebP to JPEG':
-          return const WebpToJpegPage();
-        case 'Convert WebP to TIFF':
-          return const WebpToTiffPage();
-        case 'Convert WebP to BMP':
-          return const WebpToBmpPage();
-        case 'Convert WebP to YUV':
-           return const WebpToYuvPage();
-        case 'Convert WebP to PAM':
-           return const WebpToPamPage();
-        case 'Convert WebP to PGM':
-           return const WebpToPgmPage();
-        case 'Convert WebP to PPM':
-           return const WebpToPpmPage();
-        case 'Convert PNG to JPG':
-           return const PngToJpgPage();
-        case 'Convert PNG to PGM':
-           return const PngToPgmPage();
-        case 'Convert PNG to PPM':
-           return const PngToPpmPage();
-        case 'Convert JPG to PNG':
-           return const JpgToPngPage();
-        case 'Convert JPEG to PGM':
-           return const JpegToPgmPage();
-        case 'Convert JPEG to PPM':
-           return const JpegToPpmPage();
-        case 'Convert HEIC to PNG':
-           return const HeicToPngPage();
-        case 'Convert HEIC to JPG':
-           return const HeicToJpgPage();
-        case 'Convert SVG to PNG':
-           return const SvgToPngPage();
-        case 'Convert SVG to JPG':
-           return const SvgToJpgPage();
-        case 'Remove EXIF Data':
-          return const RemoveExifPage();
-        default:
-          return ToolActionPage(
-            categoryId: categoryId,
-            toolName: toolName,
-            categoryIcon: Icons.image_outlined,
-          );
-      }
-    }
-
-    if (categoryId == 'ocr_conversion') {
-      switch (toolName) {
-        case 'OCR: Convert PNG to Text':
-          return const OcrPngToTextPage();
-        case 'OCR: Convert JPG to Text':
-          return const OcrJpgToTextPage();
-        case 'OCR: Convert PNG to PDF':
-          return const OcrPngToPdfPage();
-        case 'OCR: Convert JPG to PDF':
-          return const OcrJpgToPdfPage();
-        case 'OCR: Convert PDF to Text':
-          return const OcrPdfToTextPage();
-        case 'OCR: Convert PDF Image to PDF Text':
-          return const OcrPdfImageToPdfTextPage();
-      }
-    }
-
-    if (categoryId == 'ebook_conversion') {
-      switch (toolName) {
-        case 'Convert Markdown To Epub':
-          return const MarkdownToEpubPage();
-        case 'Convert Epub To Mobi':
-          return const EpubToMobiPage();
-        case 'Convert Epub To Azw':
-          return const EpubToAzwPage();
-        case 'Convert Mobi To Epub':
-          return const MobiToEpubPage();
-        case 'Convert Mobi To Azw':
-          return const MobiToAzwPage();
-        case 'Convert Azw To Epub':
-          return const AzwToEpubPage();
-        case 'Convert Azw To Mobi':
-          return const AzwToMobiPage();
-        case 'Convert Epub To Pdf':
-          return const EpubToPdfPage();
-        case 'Convert Mobi To Pdf':
-          return const MobiToPdfPage();
-        case 'Convert Azw To Pdf':
-          return const AzwToPdfPage();
-        case 'Convert Azw3 To Pdf':
-          return const Azw3ToPdfPage();
-        case 'Convert Fb2 To Pdf':
-          return const Fb2ToPdfPage();
-        case 'Convert Fbz To Pdf':
-          return const FbzToPdfPage();
-        case 'Convert Pdf To Epub':
-          return const PdfToEpubPage();
-        case 'Convert Pdf To Mobi':
-          return const PdfToMobiPage();
-        case 'Convert Pdf To Azw':
-          return const PdfToAzwPage();
-        case 'Convert Pdf To Azw3':
-          return const PdfToAzw3Page();
-        case 'Convert Pdf To Fb2':
-          return const PdfToFb2Page();
-        case 'Convert Pdf To Fbz':
-          return const PdfToFbzPage();
-      }
-    }
-
-    if (categoryId == 'video_conversion') {
-      switch (toolName) {
-        case 'Convert Mov To Mp4':
-          return const MovToMp4Page();
-        case 'Convert Mkv To Mp4':
-          return const MkvToMp4Page();
-        case 'Convert Avi To Mp4':
-          return const AviToMp4Page();
-        case 'Convert Mp4 To Mp3':
-          return const Mp4ToMp3Page();
-        case 'Convert Video Format':
-          return const ConvertVideoFormatPage();
-        case 'Video To Audio':
-          return const VideoToAudioPage();
-        case 'Extract Audio':
-          return const ExtractAudioPage();
-        case 'Resize Video':
-          return const ResizeVideoPage();
-        case 'Compress Video':
-          return const CompressVideoPage();
-        case 'Get Video Info':
-          return const GetVideoInfoPage();
-        case 'Supported Formats':
-          return const SupportedFormatsPage();
-      }
-    }
-
-    if (categoryId == 'audio_conversion') {
-      switch (toolName) {
-        case 'Convert MP4 to MP3':
-          return const Mp4ToMp3FromAudioPage();
-        case 'Convert WAV to MP3':
-          return const WavToMp3Page();
-        case 'Convert FLAC to MP3':
-          return const FlacToMp3Page();
-        case 'Convert MP3 to WAV':
-          return const Mp3ToWavPage();
-        case 'Convert FLAC to WAV':
-          return const FlacToWavPage();
-        case 'Convert WAV to FLAC':
-          return const WavToFlacPage();
-        case 'Convert Audio Format':
-          return const ConvertAudioFormatPage();
-        case 'Normalize Audio':
-          return const NormalizeAudioPage();
-        case 'Trim Audio':
-          return const TrimAudioPage();
-        case 'Get Audio Info':
-          return const GetAudioInfoPage();
-        case 'Supported Audio Formats':
-          return const SupportedAudioFormatsPage();
-      }
-    }
-
-    if (categoryId == 'file_formatter') {
-      switch (toolName) {
-        case 'Format JSON':
-          return const ff_json_format.JsonFormatterPage();
-        case 'Validate JSON':
-          return const ff_json_validate.JsonValidationPage();
-        case 'Validate XML':
-          return const ff_xml_validate.XmlValidatorPage();
-        case 'Validate XSD':
-          return const ff_xsd_validate.XsdValidatorPage();
-        case 'Minify JSON':
-          return const ff_json_minify.JsonMinifierPage();
-        case 'Format XML':
-          return const ff_xml_format.XmlFormatterPage();
-        case 'Get JSON Schema Info':
-          return const ff_json_schema.JsonSchemaInfoPage();
-        case 'Supported File Formats':
-          return const ff_formats.SupportedFileFormatsPage();
-      }
-    }
-
-    // Fallback generic page
-    return ToolActionPage(
-      categoryId: categoryId,
-      toolName: toolName,
-      categoryIcon: categoryIcon,
     );
   }
 }

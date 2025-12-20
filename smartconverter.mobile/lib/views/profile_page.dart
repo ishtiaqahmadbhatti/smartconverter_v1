@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_drawer.dart';
+import 'change_password_page.dart';
+import 'subscription_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -440,13 +442,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 'Change Password',
                 'Update your account password',
                 Icons.lock_outline,
-                () => _showChangePasswordDialog(),
+                () => _showChangePasswordPage(),
               ),
               _buildSettingItem(
                 'Subscription',
                 'Manage your subscription plan',
                 Icons.card_membership_outlined,
-                () => _showSubscriptionDialog(),
+                () => _showSubscriptionPage(),
               ),
             ]),
           ],
@@ -572,55 +574,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showChangePasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundCard,
-        title: const Text(
-          'Change Password',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: const Text(
-          'Password change feature coming soon!',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppColors.primaryBlue),
-            ),
-          ),
-        ],
-      ),
+  void _showChangePasswordPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
     );
   }
 
-  void _showSubscriptionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundCard,
-        title: const Text(
-          'Subscription',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: const Text(
-          'Subscription management coming soon!',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppColors.primaryBlue),
-            ),
-          ),
-        ],
-      ),
+  void _showSubscriptionPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SubscriptionPage()),
     );
   }
 
