@@ -452,40 +452,6 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
     return _buildBody();
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      iconTheme: const IconThemeData(color: AppColors.textPrimary),
-      title: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: AppColors.textPrimary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'All Tools',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-      actions: const [],
-    );
-  }
 
   Widget _buildBody() {
     return SingleChildScrollView(

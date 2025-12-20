@@ -7,6 +7,11 @@ import '../views/my_files_page.dart';
 import '../views/settings_page.dart';
 import '../views/history_page.dart';
 import '../views/main_navigation.dart';
+import '../views/favorites_page.dart';
+import '../views/help_support_page.dart';
+import '../views/privacy_policy_page.dart';
+import '../views/terms_service_page.dart';
+import '../views/about_page.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -110,7 +115,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 _buildDrawerItem(
                   icon: Icons.favorite_outline,
                   title: AppStrings.favorites,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const FavoritesPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_outlined,
@@ -125,22 +137,50 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 _buildDrawerItem(
                   icon: Icons.help_outline,
                   title: AppStrings.help,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const HelpSupportPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.privacy_tip_outlined,
                   title: AppStrings.privacy,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyPolicyPage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.description_outlined,
                   title: AppStrings.terms,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TermsServicePage(),
+                      ),
+                    );
+                  },
                 ),
                 _buildDrawerItem(
                   icon: Icons.info_outline,
                   title: AppStrings.about,
-                  onTap: () => _closeDrawer(context),
+                  onTap: () {
+                    _closeDrawer(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AboutPage(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
