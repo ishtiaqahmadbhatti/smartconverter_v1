@@ -208,7 +208,6 @@ class FavoritesPage extends StatelessWidget {
                 categoryIcon: icon,
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.textSecondary, size: 14),
           ],
         ),
       ),
