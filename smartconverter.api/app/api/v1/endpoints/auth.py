@@ -14,7 +14,7 @@ from app.services.auth_service import (
     refresh_access_token, blacklist_token, get_user_by_email,
     get_user_by_username, update_user_role, get_all_users, get_users_by_role
 )
-from app.services.user_list_service import get_user_list_by_email, create_user_list
+from app.services.user_list_service import get_user_list_by_email, create_user_list, authenticate_user_list
 from app.api.v1.dependencies import get_current_user, get_current_active_user, get_current_admin_user
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
@@ -170,6 +170,22 @@ async def register_user_list_endpoint(user_data: UserListCreate, db: Session = D
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Registration failed: {str(e)}"
         )
+
+
+@router.post("/login-userlist", response_model=Token)
+async def login_user_list_endpoint(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Login user from UserList table and return access token."""
+    user = authenticate_user_list(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create tokens (reusing existing system's token creation)
+    # Since UserList model doesn't have a 'username', we use 'email' as the sub
+    return create_token_pair(user)
 
 
 @router.post("/login", response_model=Token)

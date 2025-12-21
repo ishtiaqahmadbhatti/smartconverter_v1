@@ -59,6 +59,7 @@ class ApiConfig {
   // API Endpoints
   static const String healthEndpoint = '/api/v1/health';
   static const String loginEndpoint = '/api/v1/auth/login';
+  static const String loginUserListEndpoint = '/api/v1/auth/login-userlist';
   static const String registerEndpoint = '/api/v1/auth/register-userlist';
   static const String pdfToWordEndpoint = '/convert/pdf-to-word';
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';

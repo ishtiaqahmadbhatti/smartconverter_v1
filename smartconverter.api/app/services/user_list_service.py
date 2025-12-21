@@ -22,3 +22,13 @@ def create_user_list(db: Session, user_data: dict) -> UserList:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def authenticate_user_list(db: Session, email: str, password: str) -> Optional[UserList]:
+    """Authenticate a user from UserList using plain-text password."""
+    user = get_user_list_by_email(db, email)
+    if not user:
+        return None
+    if user.password != password:
+        return None
+    return user

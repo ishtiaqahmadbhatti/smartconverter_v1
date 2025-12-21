@@ -1,8 +1,33 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_config.dart';
 
 class AuthService {
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+
+  static Future<void> saveTokens(String access, String refresh) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_accessTokenKey, access);
+    await prefs.setString(_refreshTokenKey, refresh);
+  }
+
+  static Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_accessTokenKey);
+  }
+
+  static Future<void> clearTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+  }
+
+  static Future<bool> isLoggedIn() async {
+    final token = await getAccessToken();
+    return token != null;
+  }
   static Future<Map<String, dynamic>> register({
     required String firstName,
     required String lastName,
@@ -36,6 +61,55 @@ class AuthService {
         return {
           'success': false,
           'message': data['detail'] ?? 'Registration failed'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.loginUserListEndpoint}');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      } else {
+        // Handle different error message formats (String vs List)
+        String errorMessage = 'Login failed';
+        final detail = data['detail'];
+
+        if (detail is String) {
+          errorMessage = detail;
+        } else if (detail is List && detail.isNotEmpty) {
+          // FastAPI validation errors are lists
+          try {
+            errorMessage = detail[0]['msg'] ?? 'Validation error';
+          } catch (_) {
+            errorMessage = detail.toString();
+          }
+        } else if (detail != null) {
+          errorMessage = detail.toString();
+        }
+
+        return {
+          'success': false,
+          'message': errorMessage
         };
       }
     } catch (e) {

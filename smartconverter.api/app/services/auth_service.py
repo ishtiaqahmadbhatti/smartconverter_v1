@@ -81,11 +81,15 @@ def create_refresh_token(data: dict) -> str:
     return encoded_jwt
 
 
-def create_token_pair(user: User) -> Dict[str, Any]:
-    """Create both access and refresh tokens for a user."""
+def create_token_pair(user: Any) -> Dict[str, Any]:
+    """Create both access and refresh tokens for a user (supports both User and UserList)."""
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # Get role safely (UserList treats everyone as USER for now)
+    role_value = getattr(user.role, 'value', 'user') if hasattr(user, 'role') else 'user'
+    
     access_token = create_access_token(
-        data={"sub": user.email, "user_id": user.id, "role": user.role.value},
+        data={"sub": user.email, "user_id": user.id, "role": role_value},
         expires_delta=access_token_expires
     )
     refresh_token = create_refresh_token(

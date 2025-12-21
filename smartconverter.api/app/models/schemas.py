@@ -214,3 +214,9 @@ class UserListResponse(UserListBase):
 
     class Config:
         from_attributes = True
+
+
+class UserListLogin(BaseModel):
+    """Schema for UserList login via JSON."""
+    email: EmailStr
+    password: str

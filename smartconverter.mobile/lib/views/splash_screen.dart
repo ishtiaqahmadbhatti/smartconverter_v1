@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../services/admob_service.dart';
+import '../services/auth_service.dart';
 import 'main_navigation.dart';
+import 'sign_in_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -100,11 +102,14 @@ class _SplashScreenState extends State<SplashScreen>
     _navigateToHome();
   }
 
-  void _navigateToHome() {
+  void _navigateToHome() async {
+    final isLoggedIn = await AuthService.isLoggedIn();
+    if (!mounted) return;
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainNavigation(),
+            isLoggedIn ? const MainNavigation() : const SignInPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

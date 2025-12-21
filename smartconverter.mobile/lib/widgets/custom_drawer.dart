@@ -12,6 +12,7 @@ import '../views/help_support_page.dart';
 import '../views/privacy_policy_page.dart';
 import '../views/terms_service_page.dart';
 import '../views/about_page.dart';
+import '../services/auth_service.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -54,6 +55,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
         _healthStatusColor = AppColors.error;
       });
     }
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    // Show confirmation dialog or just logout
+    await AuthService.clearTokens();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/signin', (route) => false);
   }
 
   @override
@@ -313,7 +321,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _closeDrawer(context),
+                      onPressed: () => _logout(context),
                       icon: const Icon(Icons.logout, size: 18),
                       label: const Text(AppStrings.logout),
                       style: ElevatedButton.styleFrom(

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
+import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -28,12 +29,33 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 1));
+
+    final result = await AuthService.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
     if (!mounted) return;
     setState(() => _isSubmitting = false);
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+
+    if (result['success']) {
+      final data = result['data'];
+      await AuthService.saveTokens(
+        data['access_token'],
+        data['refresh_token'],
+      );
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Login failed'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
