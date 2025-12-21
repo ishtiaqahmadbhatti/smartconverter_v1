@@ -42,6 +42,7 @@ def init_db():
         from app.models.conversion_log import ConversionLog
         from app.models.person import Person
         from app.models.request_log import RequestLog
+        from app.models.user_list import UserList
         
         # Create all tables
         Base.metadata.create_all(bind=engine)

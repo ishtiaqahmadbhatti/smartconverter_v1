@@ -190,3 +190,27 @@ class PersonListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+# UserList Schemas (Specific for registration task)
+class UserListBase(BaseModel):
+    """Base schema for UserList."""
+    email: EmailStr
+    first_name: str = Field(..., min_length=1, max_length=100)
+    last_name: str = Field(..., min_length=1, max_length=100)
+    gender: str = Field(..., min_length=1, max_length=50)
+    phone_number: str = Field(..., min_length=1, max_length=20)
+
+
+class UserListCreate(UserListBase):
+    """Schema for creating a new user in UserList."""
+    password: str = Field(..., min_length=8, max_length=100)
+
+
+class UserListResponse(UserListBase):
+    """Schema for UserList response."""
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

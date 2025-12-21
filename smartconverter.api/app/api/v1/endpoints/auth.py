@@ -6,13 +6,15 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User, UserRole
 from app.models.schemas import (
-    UserCreate, UserLogin, UserResponse, Token, UserUpdate
+    UserCreate, UserLogin, UserResponse, Token, UserUpdate,
+    UserListCreate, UserListResponse
 )
 from app.services.auth_service import (
     authenticate_user, create_user, create_token_pair, 
     refresh_access_token, blacklist_token, get_user_by_email,
     get_user_by_username, update_user_role, get_all_users, get_users_by_role
 )
+from app.services.user_list_service import get_user_list_by_email, create_user_list
 from app.api.v1.dependencies import get_current_user, get_current_active_user, get_current_admin_user
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
@@ -142,6 +144,27 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         user = create_user(db, user_data.dict())
         return UserResponse.from_orm(user)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Registration failed: {str(e)}"
+        )
+
+
+@router.post("/register-userlist", response_model=UserListResponse, status_code=status.HTTP_201_CREATED)
+async def register_user_list_endpoint(user_data: UserListCreate, db: Session = Depends(get_db)):
+    """Register a new user in the UserList table (specific for mobile task)."""
+    # Check if user already exists
+    if get_user_list_by_email(db, user_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered in UserList"
+        )
+    
+    # Create user
+    try:
+        user = create_user_list(db, user_data.dict())
+        return user
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -8,7 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.100';
+  static const String networkIp = '192.168.8.101';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -58,6 +58,8 @@ class ApiConfig {
 
   // API Endpoints
   static const String healthEndpoint = '/api/v1/health';
+  static const String loginEndpoint = '/api/v1/auth/login';
+  static const String registerEndpoint = '/api/v1/auth/register-userlist';
   static const String pdfToWordEndpoint = '/convert/pdf-to-word';
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';
   static const String imagesToPdfEndpoint = '/convert/images-to-pdf';
