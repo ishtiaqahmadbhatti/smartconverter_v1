@@ -6,6 +6,7 @@ import 'constants/app_theme.dart';
 import 'services/conversion_service.dart';
 import 'services/admob_service.dart';
 import 'services/favorites_provider.dart';
+import 'services/notification_service.dart';
 import 'views/splash_screen.dart';
 import 'views/sign_in_page.dart';
 import 'views/sign_up_page.dart';
@@ -19,6 +20,7 @@ void main() async {
   // Initialize services
   final conversionService = ConversionService();
   await conversionService.initialize();
+  await NotificationService.initialize();
   await AdMobService.loadAppOpenAd();
 
   // Preload rewarded ad

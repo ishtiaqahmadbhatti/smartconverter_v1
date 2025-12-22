@@ -47,6 +47,7 @@ dependencies:
   # AdMob
   google_mobile_ads: ^6.0.0
 
+  awesome_notifications: ^0.10.1
   permission_handler: ^11.3.1
   intl_phone_field: ^3.2.0
   image_picker: ^1.1.2

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../services/conversion_service.dart';
 import '../services/admob_service.dart';
+import '../services/notification_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
 
 class ToolActionPage extends StatefulWidget {
   final String categoryId;
@@ -27,6 +29,7 @@ class _ToolActionPageState extends State<ToolActionPage> {
   File? _selectedFile;
   bool _isProcessing = false;
   String _status = '';
+  String? _savedFilePath;
   bool _adWatchedForCurrentFile =
       false; // Track if ad has been watched for current file
   String? _lastFilePath; // Track last processed file path
@@ -205,11 +208,18 @@ class _ToolActionPageState extends State<ToolActionPage> {
 
           setState(() {
             _isProcessing = false;
-            _status = '✅ Conversion successful!\nFile saved to:\n$savedPath';
+            _status = '✅ Conversion successful!\nFile saved to SmartConverter folder';
+            _savedFilePath = savedPath;
           });
 
+          // Trigger System Notification
+          await NotificationService.showFileSavedNotification(
+            fileName: p.basename(savedPath),
+            filePath: savedPath,
+          );
+
           // Show success dialog with download option
-          _showSuccessDialog(convertedFile);
+          if (mounted) _showSuccessDialog(convertedFile);
         } else {
           throw Exception('Conversion failed: File was not created properly');
         }
@@ -570,22 +580,119 @@ class _ToolActionPageState extends State<ToolActionPage> {
   }
 
   Widget _buildStatus() {
-    final isSuccess = _status.toLowerCase().contains('completed');
+    final isSuccess = _status.toLowerCase().contains('successful') || _status.toLowerCase().contains('completed');
     final isError = _status.toLowerCase().startsWith('failed');
     final color = isError
-        ? AppColors.warning
+        ? AppColors.error
         : isSuccess
-        ? AppColors.success
-        : AppColors.info;
+            ? AppColors.success
+            : AppColors.info;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color, width: 1),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
       ),
-      child: Text(_status, style: TextStyle(color: color, fontSize: 14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isError ? Icons.error_outline : isSuccess ? Icons.check_circle_outline : Icons.info_outline,
+                color: color,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _status,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isSuccess && _savedFilePath != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundCard.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'SAVE LOCATION:',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _savedFilePath!,
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withOpacity(0.9),
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Share.shareXFiles([XFile(_savedFilePath!)]),
+                    icon: const Icon(Icons.share, size: 18),
+                    label: const Text('Share'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color.withOpacity(0.2),
+                      foregroundColor: color,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: color.withOpacity(0.5)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => NotificationService.openFile(_savedFilePath!),
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Open'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
