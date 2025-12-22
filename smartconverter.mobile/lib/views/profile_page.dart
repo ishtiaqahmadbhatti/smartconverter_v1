@@ -6,6 +6,7 @@ import '../constants/app_colors.dart';
 import '../widgets/custom_drawer.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';
+import '../services/auth_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +18,28 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
+  bool _isLoggedIn = false;
+  String _userName = 'Guest User';
+  String _userEmail = 'Please sign in to access all features';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    if (loggedIn) {
+      final name = await AuthService.getUserName();
+      final email = await AuthService.getUserEmail();
+      setState(() {
+        _isLoggedIn = true;
+        _userName = name ?? 'User';
+        _userEmail = email ?? '';
+      });
+    }
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -251,9 +274,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Ishtiaq Ahmad',
-            style: TextStyle(
+          Text(
+            _userName,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -261,7 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'ishtiaq.ahmad.mobileapps@gmail.com',
+            _userEmail,
             style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 8),

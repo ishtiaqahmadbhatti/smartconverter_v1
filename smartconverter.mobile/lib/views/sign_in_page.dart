@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
+import 'main_navigation.dart';
 import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
@@ -43,11 +44,13 @@ class _SignInPageState extends State<SignInPage> {
       await AuthService.saveTokens(
         data['access_token'],
         data['refresh_token'],
+        name: data['full_name'] ?? 'User',
+        email: _emailController.text.trim(),
       );
       if (!mounted) return;
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainNavigation()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

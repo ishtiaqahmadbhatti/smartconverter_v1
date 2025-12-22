@@ -7,10 +7,15 @@ class AuthService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
 
-  static Future<void> saveTokens(String access, String refresh) async {
+  static const String _userNameKey = 'user_name';
+  static const String _userEmailKey = 'user_email';
+
+  static Future<void> saveTokens(String access, String refresh, {String? name, String? email}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, access);
     await prefs.setString(_refreshTokenKey, refresh);
+    if (name != null) await prefs.setString(_userNameKey, name);
+    if (email != null) await prefs.setString(_userEmailKey, email);
   }
 
   static Future<String?> getAccessToken() async {
@@ -22,6 +27,18 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_userNameKey);
+    await prefs.remove(_userEmailKey);
+  }
+
+  static Future<String?> getUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userNameKey);
+  }
+
+  static Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userEmailKey);
   }
 
   static Future<bool> isLoggedIn() async {

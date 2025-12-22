@@ -9,7 +9,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/permission_manager.dart';
 
 class AiPdfToJsonPage extends StatefulWidget {
   final String? categoryId;
@@ -194,19 +196,9 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
         _statusMessage = 'JSON file converted successfully!';
         _savedFilePath = null;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('JSON file ready: ${result.fileName}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
     } finally {
       if (mounted) {
         setState(() => _isConverting = false);
@@ -218,13 +210,27 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
     final result = _conversionResult;
     if (result == null) return;
 
+    // Check for storage permissions first
+    if (!await PermissionManager.isStoragePermissionGranted()) {
+      final granted = await PermissionManager.requestStoragePermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to save files.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
-      // Use JSON PDF to JSON directory if called from JSON tools, otherwise use PDF directory
-      final directory = widget.categoryId == 'json_conversion'
-          ? await FileManager.getJsonPdfToJsonDirectory()
-          : await FileManager.getPdfToJsonDirectory();
+      // Use the consolidated JSONConversion/pdf-to-json folder always
+      final directory = await FileManager.getJsonPdfToJsonDirectory();
 
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
@@ -251,12 +257,17 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -282,7 +293,7 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('JSON file is not available on disk.'),
+            content: Text('File not found. Please save it again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -290,9 +301,20 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
       return;
     }
 
-    await Share.shareXFiles([
-      XFile(fileToShare.path),
-    ], text: 'Converted JSON: ${result.fileName}');
+    try {
+      await Share.shareXFiles([
+        XFile(fileToShare.path),
+      ], text: 'Converted JSON: ${result.fileName}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Share failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _updateSuggestedFileName() {
@@ -400,7 +422,9 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? _buildPersistentResultCard() 
+                    : _buildResultCard(),
                 ],
                 const SizedBox(height: 24),
                 _buildInstructions(),
@@ -652,40 +676,46 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
   }
 
   Widget _buildStatusMessage() {
+    final bool isSuccess = _conversionResult != null || _savedFilePath != null;
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(
-            _isConverting
-                ? Icons.hourglass_empty
-                : _conversionResult != null
-                ? Icons.check_circle
-                : Icons.info_outline,
-            color: _isConverting
-                ? AppColors.warning
-                : _conversionResult != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
+          Row(
+            children: [
+              Icon(
+                _isConverting
+                    ? Icons.hourglass_empty
+                    : isSuccess
+                    ? Icons.check_circle
+                    : Icons.info_outline,
                 color: _isConverting
                     ? AppColors.warning
-                    : _conversionResult != null
+                    : isSuccess
                     ? AppColors.success
                     : AppColors.textSecondary,
-                fontSize: 13,
+                size: 20,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _statusMessage,
+                  style: TextStyle(
+                    color: _isConverting
+                        ? AppColors.warning
+                        : isSuccess
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -755,69 +785,35 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Flexible(
-                flex: isSaved ? 3 : 1,
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveJsonFile,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.textPrimary,
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.save_outlined, size: 18),
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: const Text(
-                      'Save Data',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 12,
-                    ),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : _saveJsonFile,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const Text(
+                'Save File',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.backgroundSurface,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              if (isSaved) ...[
-                const SizedBox(width: 12),
-                Flexible(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _shareJsonFile,
-                    icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share', style: TextStyle(fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.backgroundSurface,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 12,
-                      ),
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ],
       ),
@@ -895,6 +891,138 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPersistentResultCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'CONVERSION RESULT',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'FILE SAVED AT:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _savedFilePath!.replaceFirst('/storage/emulated/0/', ''),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                     if (!await File(_savedFilePath!).exists()) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('File no longer exists.')),
+                          );
+                        }
+                        return;
+                     }
+                     await NotificationService.openFile(_savedFilePath!);
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Open File'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryBlue,
+                    side: const BorderSide(color: AppColors.primaryBlue),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final folderPath = p.dirname(_savedFilePath!);
+                    await NotificationService.openFile(folderPath);
+                  },
+                  icon: const Icon(Icons.folder_open, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Folder File'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _shareJsonFile,
+                  icon: const Icon(Icons.share, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Share'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.secondaryGreen,
+                    side: const BorderSide(color: AppColors.secondaryGreen),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

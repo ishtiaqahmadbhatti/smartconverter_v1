@@ -25,6 +25,34 @@ class _CustomDrawerState extends State<CustomDrawer> {
   bool _isCheckingHealth = false;
   String _healthStatus = '';
   Color _healthStatusColor = AppColors.textSecondary;
+  bool _isLoggedIn = false;
+  String _userName = 'Guest User';
+  String _userEmail = 'Sign in to sync your data';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final loggedIn = await AuthService.isLoggedIn();
+    if (loggedIn) {
+      final name = await AuthService.getUserName();
+      final email = await AuthService.getUserEmail();
+      setState(() {
+        _isLoggedIn = true;
+        _userName = name ?? 'User';
+        _userEmail = email ?? '';
+      });
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+        _userName = 'Guest User';
+        _userEmail = 'Sign in to sync your data';
+      });
+    }
+  }
 
   Future<void> _checkApiHealth() async {
     setState(() {
@@ -75,22 +103,24 @@ class _CustomDrawerState extends State<CustomDrawer> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildDrawerItem(
-                  icon: Icons.login,
-                  title: 'Sign In',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed('/signin');
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.person_add_alt,
-                  title: 'Sign Up',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed('/signup');
-                  },
-                ),
+                if (!_isLoggedIn) ...[
+                  _buildDrawerItem(
+                    icon: Icons.login,
+                    title: 'Sign In',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed('/signin');
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.person_add_alt,
+                    title: 'Sign Up',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed('/signup');
+                    },
+                  ),
+                ],
                 const Divider(color: AppColors.textTertiary),
                 _buildDrawerItem(
                   icon: Icons.dashboard_outlined,
@@ -229,9 +259,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'John Doe',
-                              style: TextStyle(
+                            Text(
+                              _userName,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
@@ -239,7 +269,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'john.doe@email.com',
+                              _userEmail,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textPrimary.withOpacity(0.8),
@@ -317,25 +347,26 @@ class _CustomDrawerState extends State<CustomDrawer> {
             children: [
               const Divider(color: AppColors.textTertiary),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _logout(context),
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: const Text(AppStrings.logout),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: AppColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+              if (_isLoggedIn)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _logout(context),
+                        icon: const Icon(Icons.logout, size: 18),
+                        label: const Text(AppStrings.logout),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 16),
               Text(
                 'Version ${AppStrings.appVersion}',

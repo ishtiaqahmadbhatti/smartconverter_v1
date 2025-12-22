@@ -6,6 +6,7 @@ import '../services/admob_service.dart';
 import '../services/notification_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
+import '../utils/permission_manager.dart';
 
 class ToolActionPage extends StatefulWidget {
   final String categoryId;
@@ -105,6 +106,7 @@ class _ToolActionPageState extends State<ToolActionPage> {
         setState(() {
           _selectedFile = file;
           _status = 'Selected: ${file.path.split('/').last}';
+          _savedFilePath = null; // Clear previous result
           // Reset ad watch status when a new file is selected
           if (_lastFilePath != file.path) {
             _adWatchedForCurrentFile = false;
@@ -156,6 +158,22 @@ class _ToolActionPageState extends State<ToolActionPage> {
       return;
     }
 
+    // Check for storage permissions first
+    if (!await PermissionManager.isStoragePermissionGranted()) {
+      final granted = await PermissionManager.requestStoragePermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to save files.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     // Check if this is MP4 to MP3 conversion - show rewarded ad first
     // Only show ad if not already watched for this file
     if (_isMp4ToMp3Conversion() && !_adWatchedForCurrentFile) {
@@ -171,6 +189,7 @@ class _ToolActionPageState extends State<ToolActionPage> {
     setState(() {
       _isProcessing = true;
       _status = 'Processing video to audio...';
+      _savedFilePath = null; // Clear previous result
     });
 
     try {
@@ -212,14 +231,12 @@ class _ToolActionPageState extends State<ToolActionPage> {
             _savedFilePath = savedPath;
           });
 
+
           // Trigger System Notification
           await NotificationService.showFileSavedNotification(
             fileName: p.basename(savedPath),
             filePath: savedPath,
           );
-
-          // Show success dialog with download option
-          if (mounted) _showSuccessDialog(convertedFile);
         } else {
           throw Exception('Conversion failed: File was not created properly');
         }
@@ -340,7 +357,7 @@ class _ToolActionPageState extends State<ToolActionPage> {
           Navigator.of(context).pop(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Ad completed! Starting conversion...'),
+              content: Text('Ad completed! Starting conversion...'),
               backgroundColor: AppColors.success,
               duration: Duration(seconds: 2),
             ),
@@ -580,7 +597,11 @@ class _ToolActionPageState extends State<ToolActionPage> {
   }
 
   Widget _buildStatus() {
-    final isSuccess = _status.toLowerCase().contains('successful') || _status.toLowerCase().contains('completed');
+    if (_status.isEmpty && _savedFilePath == null) return const SizedBox.shrink();
+
+    final isSuccess = _status.toLowerCase().contains('successful') ||
+        _status.toLowerCase().contains('completed') ||
+        _savedFilePath != null;
     final isError = _status.toLowerCase().startsWith('failed');
     final color = isError
         ? AppColors.error
@@ -590,105 +611,144 @@ class _ToolActionPageState extends State<ToolActionPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: color.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                isError ? Icons.error_outline : isSuccess ? Icons.check_circle_outline : Icons.info_outline,
-                color: color,
-                size: 20,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isError ? Icons.error_outline : isSuccess ? Icons.check_circle : Icons.info_outline,
+                  color: color,
+                  size: 28,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  _status,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                  isError ? 'CONVERSION FAILED' : 'CONVERSION RESULT',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
             ],
           ),
-          if (isSuccess && _savedFilePath != null) ...[
-            const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          if (_savedFilePath != null) ...[
+            const Text(
+              'FILE SAVED AT:',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.backgroundCard.withOpacity(0.5),
+                color: Colors.black.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SAVE LOCATION:',
-                    style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _savedFilePath!,
-                    style: TextStyle(
-                      color: AppColors.textSecondary.withOpacity(0.9),
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
+              child: Text(
+                _savedFilePath!.replaceFirst('/storage/emulated/0/', ''),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Share.shareXFiles([XFile(_savedFilePath!)]),
-                    icon: const Icon(Icons.share, size: 18),
-                    label: const Text('Share'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color.withOpacity(0.2),
-                      foregroundColor: color,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: color.withOpacity(0.5)),
-                      ),
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                       if (!await File(_savedFilePath!).exists()) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('File no longer exists.')),
+                            );
+                          }
+                          return;
+                       }
+                       await NotificationService.openFile(_savedFilePath!);
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 14),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Open File'),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryBlue,
+                      side: const BorderSide(color: AppColors.primaryBlue),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      textStyle: const TextStyle(fontSize: 11),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => NotificationService.openFile(_savedFilePath!),
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('Open'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final folderPath = p.dirname(_savedFilePath!);
+                      await NotificationService.openFile(folderPath);
+                    },
+                    icon: const Icon(Icons.folder_open, size: 14),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Folder File'),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      textStyle: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Share.shareXFiles([XFile(_savedFilePath!)]),
+                    icon: const Icon(Icons.share, size: 14),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Share'),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.secondaryGreen,
+                      side: const BorderSide(color: AppColors.secondaryGreen),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      textStyle: const TextStyle(fontSize: 11),
                     ),
                   ),
                 ),
               ],
+            ),
+          ] else ...[
+            Text(
+              _status,
+              style: TextStyle(
+                color: color,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ],

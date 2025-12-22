@@ -13,7 +13,10 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/permission_manager.dart';
+import 'package:file_picker/file_picker.dart';
 
 class XmlToJsonFromXmlCategoryPage extends StatefulWidget {
   const XmlToJsonFromXmlCategoryPage({super.key});
@@ -272,6 +275,22 @@ class _XmlToJsonFromXmlCategoryPageState extends State<XmlToJsonFromXmlCategoryP
   Future<void> _saveJsonFile() async {
     if (_convertedFile == null) return;
 
+    // Check for storage permissions first
+    if (!await PermissionManager.isStoragePermissionGranted()) {
+      final granted = await PermissionManager.requestStoragePermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to save files.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -295,12 +314,17 @@ class _XmlToJsonFromXmlCategoryPageState extends State<XmlToJsonFromXmlCategoryP
 
       setState(() => _savedFilePath = destinationFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger system notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: destinationFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -440,7 +464,9 @@ class _XmlToJsonFromXmlCategoryPageState extends State<XmlToJsonFromXmlCategoryP
                 _buildStatusMessage(),
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? _buildPersistentResultCard() 
+                    : _buildResultCard(),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -839,52 +865,180 @@ class _XmlToJsonFromXmlCategoryPageState extends State<XmlToJsonFromXmlCategoryP
              ),
           ),
           const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : _saveJsonFile,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const Text(
+                'Save File',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.backgroundSurface,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _copyJsonContent,
+              icon: const Icon(Icons.copy, size: 18),
+              label: const Text('Copy Content'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary.withOpacity(0.8),
+                side: BorderSide(color: AppColors.textPrimary.withOpacity(0.2)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildPersistentResultCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'CONVERSION RESULT',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'FILE SAVED AT:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _savedFilePath!.replaceFirst('/storage/emulated/0/', ''),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _saveJsonFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: const Text('Save'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                     if (!await File(_savedFilePath!).exists()) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('File no longer exists.')),
+                          );
+                        }
+                        return;
+                     }
+                     await NotificationService.openFile(_savedFilePath!);
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Open File'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryBlue,
+                    side: const BorderSide(color: AppColors.primaryBlue),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _copyJsonContent,
-                  icon: const Icon(Icons.copy),
-                  label: const Text('Copy'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final folderPath = p.dirname(_savedFilePath!);
+                    await NotificationService.openFile(folderPath);
+                  },
+                  icon: const Icon(Icons.folder_open, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Folder File'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: _shareJsonFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  icon: const Icon(Icons.share, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Share'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.secondaryGreen,
+                    side: const BorderSide(color: AppColors.secondaryGreen),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),

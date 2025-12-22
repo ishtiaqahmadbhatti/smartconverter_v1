@@ -128,7 +128,25 @@ class FileManager {
   /// Get the Documents directory path
   static Future<Directory?> getDocumentsDirectory() async {
     if (Platform.isAndroid) {
-      return Directory('/storage/emulated/0/Documents');
+      // 1. Try to use Public Documents folder first (Visible to all file managers)
+      // This is the ideal location for "View Folder" actions to work correctly.
+      final publicDocs = Directory('/storage/emulated/0/Documents');
+      
+      try {
+        if (!await publicDocs.exists()) {
+          await publicDocs.create(recursive: true);
+        }
+        return publicDocs;
+      } catch (e) {
+        print('DEBUG: Failed to access public Documents: $e');
+      }
+
+      // 2. Fallback: App-specific external storage
+      // Note: Sub-directories here are often HIDDEN from third-party explorers on Android 11+.
+      final externalDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
+      if (externalDirs != null && externalDirs.isNotEmpty) {
+        return externalDirs.first;
+      }
     } else if (Platform.isIOS) {
       return await getApplicationDocumentsDirectory();
     }
@@ -1188,16 +1206,9 @@ class FileManager {
     return pdfToMarkdownDir;
   }
 
-  /// Get directory for PDF to JSON outputs
+  /// Get directory for PDF to JSON outputs (consolidated to JSONConversion)
   static Future<Directory> getPdfToJsonDirectory() async {
-    final pdfConversionsDir = await getPdfConversionsDirectory();
-    final pdfToJsonDir = Directory(
-      '${pdfConversionsDir.path}/$_pdfToJsonSubFolder',
-    );
-    if (!await pdfToJsonDir.exists()) {
-      await pdfToJsonDir.create(recursive: true);
-    }
-    return pdfToJsonDir;
+    return await getJsonPdfToJsonDirectory();
   }
 
   /// Get directory for PDF to CSV outputs
