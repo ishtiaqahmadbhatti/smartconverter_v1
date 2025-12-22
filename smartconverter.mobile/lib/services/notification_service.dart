@@ -93,80 +93,73 @@ class NotificationService {
         // Ensure path ends with a slash for better explorer identification
         final folderPath = path.endsWith('/') ? path : '$path/';
         
-        // 1. Try generic ACTION_VIEW with inode/directory (very reliable for folder navigation)
-        final intentInode = AndroidIntent(
-          action: 'android.intent.action.VIEW',
-          data: 'file://$folderPath',
-          type: 'inode/directory',
-          flags: [Flag.FLAG_ACTIVITY_NEW_TASK],
-        );
+        // 1. Precise DocumentsContract URI for system file manager (Highest success for "Direct Open")
+        // primary:Documents/SmartConverter/JSONConversion/pdf-to-json
+        String relativePath = folderPath.replaceAll('/storage/emulated/0/', '');
+        String encodedPath = relativePath.replaceAll('/', '%2F');
+        String docUri = 'content://com.android.externalstorage.documents/document/primary%3A$encodedPath';
+        
+        // 2. FileProvider URI for other file managers
+        // authority matching AndroidManifest.xml: com.example.smartconverter.fileprovider
+        String authority = 'com.example.smartconverter.fileprovider';
+        String fileProviderUri = 'content://$authority/external_files/$relativePath';
 
-        // 2. Try with vnd.android.document/directory
-        final intentDocDir = AndroidIntent(
-          action: 'android.intent.action.VIEW',
-          data: 'file://$folderPath',
-          type: 'vnd.android.document/directory',
-          flags: [Flag.FLAG_ACTIVITY_NEW_TASK],
-        );
-
-        // List of common file manager packages 
+        final uris = [docUri, fileProviderUri];
         final packages = [
-          'com.android.documentsui',             // System Documents UI (High Success)
+          'com.android.documentsui',             // System Documents UI
           'com.google.android.apps.nbu.files',   // Files by Google
-          'com.vivo.filemanager',                // Vivo (User device)
-          'com.android.filemanager',             // AOSP/Generic
+          'com.vivo.filemanager',                // Vivo
+          'com.android.filemanager',             // Generic
           'com.sec.android.app.myfiles',         // Samsung
-          'com.mi.android.globalFileexplorer',   // Xiaomi
-          'com.coloros.filemanager',             // Oppo
         ];
 
-        // List of directory MIME types to try
         final mimeTypes = [
-          'inode/directory',
           'vnd.android.document/directory',
+          'inode/directory',
           'resource/folder',
         ];
 
         bool launched = false;
         
-        // 1. Try targeting known packages with multiple MIME types
-        for (final pkg in packages) {
-          for (final mime in mimeTypes) {
-            try {
-              final intent = AndroidIntent(
-                action: 'android.intent.action.VIEW',
-                data: 'file://$folderPath',
-                type: mime,
-                package: pkg,
-                flags: [Flag.FLAG_ACTIVITY_NEW_TASK, Flag.FLAG_GRANT_READ_URI_PERMISSION],
-              );
-              debugPrint('🔔 Trying folder intent: pkg=$pkg, mime=$mime');
-              await intent.launch();
-              launched = true;
-              break;
-            } catch (e) {
-              continue; // Try next MIME type for this package
+        // Try combinations with content URIs
+        for (final uri in uris) {
+          for (final pkg in packages) {
+            for (final mime in mimeTypes) {
+              try {
+                final intent = AndroidIntent(
+                  action: 'android.intent.action.VIEW',
+                  data: uri,
+                  type: mime,
+                  package: pkg,
+                  flags: [Flag.FLAG_ACTIVITY_NEW_TASK, Flag.FLAG_GRANT_READ_URI_PERMISSION],
+                );
+                await intent.launch();
+                launched = true;
+                debugPrint('🔔 Success opening folder with: pkg=$pkg, uri=$uri');
+                break;
+              } catch (e) {
+                continue;
+              }
             }
+            if (launched) break;
           }
-          if (launched) break; // Found a working combo
+          if (launched) break;
         }
 
         if (launched) return;
 
-        // 2. Generic fallback intent (as a last resort)
-        final genericIntent = AndroidIntent(
-          action: 'android.intent.action.VIEW',
-          data: 'file://$folderPath',
-          type: 'inode/directory',
-          flags: [Flag.FLAG_ACTIVITY_NEW_TASK, Flag.FLAG_GRANT_READ_URI_PERMISSION],
-        );
-
+        // Fallback to generic ACTION_VIEW with content URI
         try {
-          debugPrint('🔔 Launching generic fallback folder intent...');
-          await genericIntent.launch();
+          final intent = AndroidIntent(
+            action: 'android.intent.action.VIEW',
+            data: fileProviderUri,
+            type: 'vnd.android.document/directory',
+            flags: [Flag.FLAG_ACTIVITY_NEW_TASK, Flag.FLAG_GRANT_READ_URI_PERMISSION],
+          );
+          await intent.launch();
           return;
         } catch (e) {
-          debugPrint('🔔 Generic intent failed: $e. Falling back to OpenFilex...');
+          debugPrint('🔔 Generic content intent failed, trying OpenFilex...');
         }
       }
 
