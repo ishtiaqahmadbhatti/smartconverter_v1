@@ -56,12 +56,15 @@ class NotificationService {
     required String filePath,
   }) async {
     debugPrint('🔔 Showing notification for $fileName at $filePath');
+    final relativePath = filePath.replaceFirst('/storage/emulated/0/', '');
+    final folderPath = p.dirname(relativePath);
+    
     final success = await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
         channelKey: 'file_save_channel',
         title: 'File Saved Successfully',
-        body: 'Your file "$fileName" has been saved to Documents/SmartConverter folder.',
+        body: 'Your file "$fileName" has been saved to $folderPath folder.',
         notificationLayout: NotificationLayout.Default,
         payload: {'path': filePath},
         category: NotificationCategory.Status,
