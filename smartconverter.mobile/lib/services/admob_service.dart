@@ -11,8 +11,8 @@ class AdMobService {
   static bool adsEnabled = true;
 
   // Granular Ad Controls
-  static bool bannerAdsEnabled = false;
-  static bool interstitialAdsEnabled = false;
+  static bool bannerAdsEnabled = true;
+  static bool interstitialAdsEnabled = true;
   static bool rewardedAdsEnabled = true;
   static bool appOpenAdsEnabled = true;
 

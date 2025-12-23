@@ -182,19 +182,9 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
         _statusMessage = 'JSON file converted successfully!';
         _savedFilePath = null;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('JSON file ready: ${result.fileName}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
     } finally {
       if (mounted) {
         setState(() => _isConverting = false);
@@ -291,7 +281,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('JSON file is not available on disk.'),
+            content: Text('File not found. Please save it again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -299,9 +289,20 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
       return;
     }
 
-    await Share.shareXFiles([
-      XFile(fileToShare.path),
-    ], text: 'Converted JSON: ${result.fileName}');
+    try {
+      await Share.shareXFiles([
+        XFile(fileToShare.path),
+      ], text: 'Converted JSON: ${result.fileName}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Share failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _updateSuggestedFileName() {
@@ -347,6 +348,11 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
 
   void _resetForNewConversion() {
     setState(() {
+      _selectedFile = null;
+      _conversionResult = null;
+      _isConverting = false;
+      _isSaving = false;
+      _savedFilePath = null;
       _statusMessage = 'Select a CSV file to begin.';
       _fileNameController.clear();
       _delimiterController.text = ',';
@@ -689,40 +695,46 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
   }
 
   Widget _buildStatusMessage() {
+    final bool isSuccess = _conversionResult != null || _savedFilePath != null;
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(
-            _isConverting
-                ? Icons.hourglass_empty
-                : _conversionResult != null
-                ? Icons.check_circle
-                : Icons.info_outline,
-            color: _isConverting
-                ? AppColors.warning
-                : _conversionResult != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
+          Row(
+            children: [
+              Icon(
+                _isConverting
+                    ? Icons.hourglass_empty
+                    : isSuccess
+                    ? Icons.check_circle
+                    : Icons.info_outline,
                 color: _isConverting
                     ? AppColors.warning
-                    : _conversionResult != null
+                    : isSuccess
                     ? AppColors.success
                     : AppColors.textSecondary,
-                fontSize: 13,
+                size: 20,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _statusMessage,
+                  style: TextStyle(
+                    color: _isConverting
+                        ? AppColors.warning
+                        : isSuccess
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -827,7 +839,6 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
     );
   }
 
-
   Widget _buildPersistentResultCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -926,7 +937,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
                   icon: const Icon(Icons.folder_open, size: 14),
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Folder File'),
+                    child: Text('Open Folder'),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.warning,
