@@ -1024,7 +1024,7 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
                   icon: const Icon(Icons.folder_open, size: 14),
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Folder File'),
+                    child: Text('Open Folder'),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.warning,

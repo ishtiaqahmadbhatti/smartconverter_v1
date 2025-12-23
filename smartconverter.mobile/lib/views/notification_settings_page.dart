@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -14,6 +15,35 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _conversionAlerts = true;
   bool _appUpdates = true;
   bool _marketingTips = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _allNotifications = prefs.getBool('all_notifications') ?? true;
+      _conversionAlerts = prefs.getBool('conversion_alerts') ?? true;
+      _appUpdates = prefs.getBool('app_updates') ?? true;
+      _marketingTips = prefs.getBool('marketing_tips') ?? false;
+    });
+  }
+
+  Future<void> _saveSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  Future<void> _saveAllSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('all_notifications', _allNotifications);
+    await prefs.setBool('conversion_alerts', _conversionAlerts);
+    await prefs.setBool('app_updates', _appUpdates);
+    await prefs.setBool('marketing_tips', _marketingTips);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +195,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   _appUpdates = true;
                 }
               });
+              _saveAllSettings();
             },
           ),
         ],
@@ -180,21 +211,30 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           'Notify me when a file is ready',
           Icons.auto_awesome_outlined,
           _conversionAlerts,
-          (value) => setState(() => _conversionAlerts = value),
+          (value) {
+            setState(() => _conversionAlerts = value);
+            _saveSetting('conversion_alerts', value);
+          },
         ),
         _buildToggleItem(
           'App Updates',
           'New features and tool releases',
           Icons.system_update_alt_outlined,
           _appUpdates,
-          (value) => setState(() => _appUpdates = value),
+          (value) {
+            setState(() => _appUpdates = value);
+            _saveSetting('app_updates', value);
+          },
         ),
         _buildToggleItem(
           'Marketing & Tips',
           'Daily tips and special offers',
           Icons.lightbulb_outline,
           _marketingTips,
-          (value) => setState(() => _marketingTips = value),
+          (value) {
+            setState(() => _marketingTips = value);
+            _saveSetting('marketing_tips', value);
+          },
         ),
       ].animate(interval: 50.ms).fadeIn().slideY(begin: 0.1),
     );

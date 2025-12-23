@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
 import '../constants/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static Future<void> initialize() async {
@@ -55,6 +56,15 @@ class NotificationService {
     required String fileName,
     required String filePath,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final allNotifications = prefs.getBool('all_notifications') ?? true;
+    final conversionAlerts = prefs.getBool('conversion_alerts') ?? true;
+
+    if (!allNotifications || !conversionAlerts) {
+      debugPrint('🔔 Skipping notification: allNotifications=$allNotifications, conversionAlerts=$conversionAlerts');
+      return;
+    }
+
     debugPrint('🔔 Showing notification for $fileName at $filePath');
     final relativePath = filePath.replaceFirst('/storage/emulated/0/', '');
     final folderPath = p.dirname(relativePath);
@@ -78,7 +88,7 @@ class NotificationService {
         ),
         NotificationActionButton(
           key: 'VIEW',
-          label: 'View Folder',
+          label: 'Open Folder',
           actionType: ActionType.Default,
         ),
       ],
