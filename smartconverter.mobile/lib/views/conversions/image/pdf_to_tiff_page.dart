@@ -461,8 +461,7 @@ class _PdfToTiffImagePageState extends State<PdfToTiffImagePage> {
                   const SizedBox(height: 20),
                   _buildResultsCard(),
                 ],
-                const SizedBox(height: 24),
-                _buildInstructions(),
+
                 const SizedBox(height: 24),
               ],
             ),
@@ -987,76 +986,5 @@ class _PdfToTiffImagePageState extends State<PdfToTiffImagePage> {
     );
   }
 
-  Widget _buildInstructions() {
-    final steps = [
-      'Choose the PDF you want to convert.',
-      'Optionally customize the output folder name.',
-      'Tap the convert button to export every page as TIFF.',
-      'Save the images locally or share them instantly.',
-    ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'How it works',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (int i = 0; i < steps.length; i++) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${i + 1}',
-                    style: const TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    steps[i],
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (i != steps.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      ),
-    );
-  }
 }

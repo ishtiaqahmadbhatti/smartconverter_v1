@@ -61,7 +61,9 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
       _isProgrammaticNameUpdate = false;
       return;
     }
-    final hasText = _fileNameController.text.trim().isNotEmpty;
+    final hasText = _fileNameController.text
+        .trim()
+        .isNotEmpty;
     if (_fileNameEdited != hasText) {
       setState(() => _fileNameEdited = hasText);
     }
@@ -117,7 +119,8 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
       if (extension != '.pdf') {
         if (mounted) {
           setState(
-            () => _statusMessage = 'Please select a PDF file (.pdf extension).',
+                () =>
+            _statusMessage = 'Please select a PDF file (.pdf extension).',
           );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -181,7 +184,9 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
     });
 
     try {
-      final customFilename = _fileNameController.text.trim().isNotEmpty
+      final customFilename = _fileNameController.text
+          .trim()
+          .isNotEmpty
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
@@ -197,7 +202,7 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
           _conversionResult = null;
           _savedFolderPath = null;
           _statusMessage =
-              'Conversion completed, but images could not be downloaded.';
+          'Conversion completed, but images could not be downloaded.';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -218,13 +223,14 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
             ? result.pagesProcessed
             : result.files.length;
         _statusMessage =
-            'Converted $pages pages. Downloaded ${result.files.length} JPG images.';
+        'Converted $pages pages. Downloaded ${result.files.length} JPG images.';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Downloaded ${result.files.length} JPG images (folder: ${result.folderName}).',
+            'Downloaded ${result.files.length} JPG images (folder: ${result
+                .folderName}).',
           ),
           backgroundColor: AppColors.success,
         ),
@@ -462,7 +468,7 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
                   _buildResultsCard(),
                 ],
                 const SizedBox(height: 24),
-                _buildInstructions(),
+
                 const SizedBox(height: 24),
               ],
             ),
@@ -471,11 +477,11 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
       ),
       bottomNavigationBar: _isBannerReady && _bannerAd != null
           ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
+        color: Colors.transparent,
+        alignment: Alignment.center,
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      )
           : null,
     );
   }
@@ -761,17 +767,17 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
         ),
         child: _isConverting
             ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
             : const Text(
-                'Convert to JPG',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+          'Convert to JPG',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -815,7 +821,8 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
           Column(
             children: previewNames
                 .map(
-                  (name) => Padding(
+                  (name) =>
+                  Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
@@ -845,7 +852,7 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
                       ],
                     ),
                   ),
-                )
+            )
                 .toList(),
           ),
           if (remaining > 0) ...[
@@ -883,15 +890,15 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
                   ),
                   icon: _isSaving
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
+                    ),
+                  )
                       : const Icon(Icons.download_rounded),
                   label: const Text('Save Images'),
                 ),
@@ -910,15 +917,15 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
                   ),
                   icon: _isSharing
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.textPrimary,
-                            ),
-                          ),
-                        )
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.textPrimary,
+                      ),
+                    ),
+                  )
                       : const Icon(Icons.share_rounded),
                   label: const Text('Share'),
                 ),
@@ -959,16 +966,16 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
                 height: 18,
                 child: _isConverting
                     ? const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primaryBlue,
-                        ),
-                      )
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryBlue,
+                  ),
+                )
                     : const Icon(
-                        Icons.info_outline,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
+                  Icons.info_outline,
+                  color: AppColors.textSecondary,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -982,79 +989,6 @@ class _PdfToJpgImagePageState extends State<PdfToJpgImagePage> {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructions() {
-    final steps = [
-      'Choose the PDF you want to convert.',
-      'Optionally customize the output folder name.',
-      'Tap the convert button to export every page as JPG.',
-      'Save the images locally or share them instantly.',
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'How it works',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (int i = 0; i < steps.length; i++) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${i + 1}',
-                    style: const TextStyle(
-                      color: AppColors.primaryBlue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    steps[i],
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (i != steps.length - 1) const SizedBox(height: 10),
-          ],
         ],
       ),
     );

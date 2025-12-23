@@ -358,8 +358,7 @@ class _ToolDetailPageState extends State<ToolDetailPage>
           _buildConversionButton(),
           const SizedBox(height: 24),
           _buildStatusSection(),
-          const SizedBox(height: 24),
-          _buildInstructions(),
+
         ],
       ),
     );
@@ -635,94 +634,5 @@ class _ToolDetailPageState extends State<ToolDetailPage>
     );
   }
 
-  Widget _buildInstructions() {
-    return FuturisticCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'How to use',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildInstructionStep(
-            '1',
-            'Select File',
-            'Choose the file you want to convert from your device',
-          ),
-          _buildInstructionStep(
-            '2',
-            'Convert',
-            'Tap the convert button to start the conversion process',
-          ),
-          _buildInstructionStep(
-            '3',
-            'Download',
-            'Once complete, download your converted file',
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildInstructionStep(
-    String number,
-    String title,
-    String description,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

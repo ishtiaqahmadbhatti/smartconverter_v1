@@ -435,8 +435,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
                   const SizedBox(height: 20),
                   _buildResultCard(),
                 ],
-                const SizedBox(height: 24),
-                _buildInstructions(),
+
               ],
             ),
           ),
@@ -876,88 +875,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     );
   }
 
-  Widget _buildInstructions() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'How to use',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 12),
-          _InstructionStep(
-            number: 1,
-            description: 'Tap "Select PDF Files" and choose at least 2 PDFs.',
-          ),
-          _InstructionStep(
-            number: 2,
-            description:
-                'Reorder the files by dragging the handle to set the merge order.',
-          ),
-          _InstructionStep(
-            number: 3,
-            description:
-                'Optionally edit the output file name, then tap "Merge PDFs".',
-          ),
-          _InstructionStep(
-            number: 4,
-            description:
-                'Use the Save or Share buttons once the merged file is ready.',
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
-class _InstructionStep extends StatelessWidget {
-  final int number;
-  final String description;
 
-  const _InstructionStep({required this.number, required this.description});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primaryBlue.withOpacity(0.15),
-            child: Text(
-              '$number',
-              style: const TextStyle(
-                color: AppColors.primaryBlue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              description,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

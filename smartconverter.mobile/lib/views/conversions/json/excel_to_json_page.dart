@@ -376,8 +376,6 @@ class _ExcelToJsonPageState extends State<ExcelToJsonPage> with AdHelper<ExcelTo
                   const SizedBox(height: 20),
                   _buildResultCard(),
                 ],
-                const SizedBox(height: 24),
-                _buildInstructions(),
               ],
             ),
           ),
@@ -813,77 +811,4 @@ class _ExcelToJsonPageState extends State<ExcelToJsonPage> with AdHelper<ExcelTo
     );
   }
 
-  Widget _buildInstructions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'How to use',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select an Excel file (.xls, .xlsx)'),
-          const SizedBox(height: 8),
-          _buildInstructionStep(
-            '2',
-            'Tap "Convert to JSON" to transform the spreadsheet',
-          ),
-          const SizedBox(height: 8),
-          _buildInstructionStep('3', 'Save or share the generated JSON file'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionStep(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
