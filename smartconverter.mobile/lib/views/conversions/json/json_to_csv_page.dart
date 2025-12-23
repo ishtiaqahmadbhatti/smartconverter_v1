@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class JsonToCsvPage extends StatefulWidget {
   const JsonToCsvPage({super.key});
@@ -18,9 +19,8 @@ class JsonToCsvPage extends StatefulWidget {
   State<JsonToCsvPage> createState() => _JsonToCsvPageState();
 }
 
-class _JsonToCsvPageState extends State<JsonToCsvPage> {
+class _JsonToCsvPageState extends State<JsonToCsvPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
   final TextEditingController _delimiterController =
       TextEditingController(text: ',');
@@ -33,15 +33,11 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
   String _statusMessage = 'Select a JSON file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -50,8 +46,6 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
       ..removeListener(_handleFileNameChange)
       ..dispose();
     _delimiterController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -61,38 +55,6 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
     }
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickJsonFile() async {
@@ -128,10 +90,9 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'JSON file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -343,18 +304,11 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
 
   void _resetForNewConversion() {
     setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
       _statusMessage = 'Select a JSON file to begin.';
       _fileNameController.clear();
       _delimiterController.text = ',';
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -417,14 +371,7 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

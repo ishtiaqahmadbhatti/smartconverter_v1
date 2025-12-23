@@ -7,6 +7,7 @@ import '../services/notification_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import '../utils/permission_manager.dart';
+import '../utils/ad_helper.dart';
 
 class ToolActionPage extends StatefulWidget {
   final String categoryId;
@@ -24,29 +25,22 @@ class ToolActionPage extends StatefulWidget {
   State<ToolActionPage> createState() => _ToolActionPageState();
 }
 
-class _ToolActionPageState extends State<ToolActionPage> {
+class _ToolActionPageState extends State<ToolActionPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   File? _selectedFile;
   bool _isProcessing = false;
   String _status = '';
   String? _savedFilePath;
-  bool _adWatchedForCurrentFile =
-      false; // Track if ad has been watched for current file
   String? _lastFilePath; // Track last processed file path
 
   @override
   void initState() {
     super.initState();
-    // Preload ad if this is MP4 to MP3 conversion
-    if (_isMp4ToMp3Conversion()) {
-      _admobService.preloadAd();
-    }
+    // AdHelper handles preloading and banner loading
   }
 
   @override
   void dispose() {
-    _admobService.dispose();
     super.dispose();
   }
 
@@ -108,10 +102,9 @@ class _ToolActionPageState extends State<ToolActionPage> {
           _status = 'Selected: ${file.path.split('/').last}';
           _savedFilePath = null; // Clear previous result
           // Reset ad watch status when a new file is selected
-          if (_lastFilePath != file.path) {
-            _adWatchedForCurrentFile = false;
-            _lastFilePath = file.path;
-          }
+          _savedFilePath = null; // Clear previous result
+          // Reset ad watch status when a new file is selected
+          resetAdStatus(file.path);
         });
       } else {
         setState(() => _status = 'No file selected');
@@ -176,14 +169,9 @@ class _ToolActionPageState extends State<ToolActionPage> {
 
     // Check if this is MP4 to MP3 conversion - show rewarded ad first
     // Only show ad if not already watched for this file and ads are enabled
-    if (_isMp4ToMp3Conversion() && AdMobService.adsEnabled && !_adWatchedForCurrentFile) {
-      final adShown = await _showRewardedAdDialog();
-      if (!adShown) {
-        // User didn't watch ad, don't proceed
-        return;
-      }
-      // Mark ad as watched for current file
-      _adWatchedForCurrentFile = true;
+    if (_isMp4ToMp3Conversion()) {
+      final adWatched = await showRewardedAdGate(toolName: 'MP4 to MP3');
+      if (!adWatched) return;
     }
 
     setState(() {
@@ -264,124 +252,6 @@ class _ToolActionPageState extends State<ToolActionPage> {
         );
       }
     }
-  }
-
-  Future<bool> _showRewardedAdDialog() async {
-    // First check if ad is ready, if not try to load it
-    if (!_admobService.isAdReady) {
-      await _admobService.loadRewardedAd();
-      // Wait a bit for ad to load
-      await Future.delayed(const Duration(seconds: 2));
-    }
-
-    if (!_admobService.isAdReady) {
-      // Ad not available, show dialog asking if user wants to proceed anyway
-      return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: AppColors.backgroundSurface,
-              title: const Text(
-                'Ad Not Available',
-                style: TextStyle(color: AppColors.textPrimary),
-              ),
-              content: const Text(
-                'The ad is not ready. Would you like to proceed with conversion anyway?',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Continue'),
-                ),
-              ],
-            ),
-          ) ??
-          false;
-    }
-
-    // Show dialog asking user to watch ad
-    final watchAd = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundSurface,
-        title: const Text(
-          'Watch Ad to Convert',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: const Text(
-          'Watch a short ad to unlock MP4 to MP3 conversion.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-            ),
-            child: const Text('Watch Ad'),
-          ),
-        ],
-      ),
-    );
-
-    if (watchAd != true) {
-      return false;
-    }
-
-    // Show loading indicator
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Show the rewarded ad
-    bool adCompleted = false;
-    final result = await _admobService.showRewardedAd(
-      onRewarded: (reward) {
-        adCompleted = true;
-        // Mark ad as watched immediately when reward is granted
-        _adWatchedForCurrentFile = true;
-        if (mounted) {
-          Navigator.of(context).pop(); // Close loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ad completed! Starting conversion...'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      onFailed: (error) {
-        if (mounted) {
-          Navigator.of(context).pop(); // Close loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ad error: $error'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-      },
-    );
-
-    if (!result && mounted) {
-      Navigator.of(context).pop(); // Close loading dialog if still open
-    }
-
-    return adCompleted;
   }
 
   void _showSuccessDialog(File convertedFile) {
@@ -470,6 +340,7 @@ class _ToolActionPageState extends State<ToolActionPage> {
           ),
         ),
       ),
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

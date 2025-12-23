@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 /// Uses test ad unit IDs for testing
 class AdMobService {
   /// Global control for ads (Developer side)
-  static bool adsEnabled = false;
+  static bool adsEnabled = true;
 
   // Test Rewarded Ad Unit ID
   static const String _testRewardedAdUnitId =

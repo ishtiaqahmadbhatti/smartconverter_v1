@@ -12,6 +12,7 @@ import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/permission_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class CsvToJsonPage extends StatefulWidget {
   const CsvToJsonPage({super.key});
@@ -20,9 +21,8 @@ class CsvToJsonPage extends StatefulWidget {
   State<CsvToJsonPage> createState() => _CsvToJsonPageState();
 }
 
-class _CsvToJsonPageState extends State<CsvToJsonPage> {
+class _CsvToJsonPageState extends State<CsvToJsonPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
   final TextEditingController _delimiterController =
       TextEditingController(text: ',');
@@ -35,17 +35,11 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
   String _statusMessage = 'Select a CSV file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
-  bool _adWatchedForCurrentFile = false;
-  String? _lastSelectedFilePath;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -54,8 +48,6 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
       ..removeListener(_handleFileNameChange)
       ..dispose();
     _delimiterController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -65,38 +57,6 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
     }
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickCsvFile() async {
@@ -137,10 +97,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
         _savedFilePath = null;
         _statusMessage = 'CSV file selected: ${p.basename(file.path)}';
         
-        if (_lastSelectedFilePath != file.path) {
-          _adWatchedForCurrentFile = false;
-          _lastSelectedFilePath = file.path;
-        }
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -174,15 +131,13 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
     });
 
     // Check for rewarded ad first
-    if (AdMobService.adsEnabled && !_adWatchedForCurrentFile) {
-      final adWatchedOrSkipped = await _showRewardedAdDialog();
-      if (!adWatchedOrSkipped) {
-        setState(() {
-          _isConverting = false;
-          _statusMessage = 'Conversion cancelled (Ad required).';
-        });
-        return;
-      }
+    final adWatched = await showRewardedAdGate(toolName: 'AI CSV-to-JSON');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
     }
 
     setState(() {
@@ -268,13 +223,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
     }
 
     // Show Interstitial Ad before saving if ready
-    if (_admobService.isInterstitialReady) {
-      debugPrint('🎬 Showing Interstitial Ad before save');
-      await _admobService.showInterstitialAd();
-    } else {
-      debugPrint('⚠️ Interstitial Ad not ready, loading for next time');
-      _admobService.loadInterstitialAd();
-    }
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -398,18 +347,11 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
 
   void _resetForNewConversion() {
     setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
       _statusMessage = 'Select a CSV file to begin.';
       _fileNameController.clear();
       _delimiterController.text = ',';
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -474,14 +416,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -1098,89 +1033,5 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
         ],
       ),
     );
-  }
-  Future<bool> _showRewardedAdDialog() async {
-    // If ad is ready, just show the choice dialog
-    if (!_admobService.isAdReady) {
-      // Try loading briefly
-      await _admobService.loadRewardedAd();
-      await Future.delayed(const Duration(seconds: 1));
-    }
-
-    final watchAd = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Conversion Required',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_clock_outlined, size: 48, color: AppColors.primaryBlue),
-            const SizedBox(height: 16),
-            const Text(
-              'To perform this AI CSV-to-JSON conversion, please watch a rewarded video ad.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textTertiary)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Watch Ad'),
-          ),
-        ],
-      ),
-    );
-
-    if (watchAd != true) return false;
-
-    // Show the ad
-    bool adCompleted = false;
-    
-    // Show a small loading overlay while ad prepares if needed
-    if (!_admobService.isAdReady) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
-        );
-      }
-      // Wait for it
-      int retries = 0;
-      while (!_admobService.isAdReady && retries < 3) {
-        await Future.delayed(const Duration(milliseconds: 1500));
-        retries++;
-      }
-      if (mounted) Navigator.of(context).pop(); // Close spinner
-    }
-
-    final success = await _admobService.showRewardedAd(
-      onRewarded: (reward) {
-        adCompleted = true;
-        _adWatchedForCurrentFile = true;
-      },
-      onFailed: (error) {
-         // If ad system fails, we can let them convert as a fallback
-         adCompleted = true; 
-      }
-    );
-
-    return success || adCompleted;
   }
 }

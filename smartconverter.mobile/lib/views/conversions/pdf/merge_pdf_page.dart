@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class MergePdfPage extends StatefulWidget {
   const MergePdfPage({super.key});
@@ -18,10 +19,9 @@ class MergePdfPage extends StatefulWidget {
   State<MergePdfPage> createState() => _MergePdfPageState();
 }
 
-class _MergePdfPageState extends State<MergePdfPage> {
+class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
-  final AdMobService _admobService = AdMobService();
 
   List<File> _selectedFiles = [];
   MergePdfResult? _mergeResult;
@@ -32,10 +32,6 @@ class _MergePdfPageState extends State<MergePdfPage> {
   String? _suggestedBaseName;
   String? _targetDirectoryPath;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
-  String? _lastRewardedSignature;
-  bool _hasRewardForCurrentSelection = false;
 
   static const String _relativeDestinationPath =
       'Documents/SmartConverter/PDFConversions/merged_pdfs';
@@ -44,8 +40,6 @@ class _MergePdfPageState extends State<MergePdfPage> {
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectoryPath();
   }
 
@@ -54,8 +48,6 @@ class _MergePdfPageState extends State<MergePdfPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -78,37 +70,6 @@ class _MergePdfPageState extends State<MergePdfPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickPdfFiles({required bool append}) async {
     try {
@@ -136,8 +97,7 @@ class _MergePdfPageState extends State<MergePdfPage> {
         _mergeResult = null;
         _savedFilePath = null;
         _statusMessage = '${_selectedFiles.length} PDF files selected.';
-        _hasRewardForCurrentSelection = false;
-        _lastRewardedSignature = null;
+        resetAdStatus(null);
       });
 
       _updateSuggestedFileName();
@@ -194,126 +154,9 @@ class _MergePdfPageState extends State<MergePdfPage> {
   }
 
   Future<bool> _requestRewardedAd() async {
-    if (!_admobService.isAdReady) {
-      await _admobService.loadRewardedAd();
-      await Future.delayed(const Duration(seconds: 2));
-    }
-
-    if (!_admobService.isAdReady) {
-      if (!mounted) return false;
-      return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: AppColors.backgroundSurface,
-              title: const Text(
-                'Ad Not Available',
-                style: TextStyle(color: AppColors.textPrimary),
-              ),
-              content: const Text(
-                'The rewarded ad is not ready right now. Would you like to continue merging without watching an ad?',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Continue'),
-                ),
-              ],
-            ),
-          ) ??
-          false;
-    }
-
-    if (!mounted) return false;
-    final watchAd = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundSurface,
-        title: const Text(
-          'Watch Ad to Merge',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: const Text(
-          'Watch a short ad to unlock the Merge PDF tool.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-            ),
-            child: const Text('Watch Ad'),
-          ),
-        ],
-      ),
-    );
-
-    if (watchAd != true) {
-      return false;
-    }
-
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    bool adCompleted = false;
-    final result = await _admobService.showRewardedAd(
-      onRewarded: (reward) {
-        adCompleted = true;
-        if (mounted) {
-          final navigator = Navigator.of(context, rootNavigator: true);
-          if (navigator.canPop()) {
-            navigator.pop();
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Thanks! Merge unlocked.'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      onFailed: (error) {
-        if (mounted) {
-          final navigator = Navigator.of(context, rootNavigator: true);
-          if (navigator.canPop()) {
-            navigator.pop();
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ad error: $error'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-      },
-    );
-
-    if (!result && mounted) {
-      final navigator = Navigator.of(context, rootNavigator: true);
-      if (navigator.canPop()) {
-        navigator.pop();
-      }
-    }
-
-    return adCompleted;
+    return showRewardedAdGate(toolName: 'Merge PDF');
   }
-
+  
   String _computeSelectionSignature(List<File> files) {
     if (files.isEmpty) {
       return '';
@@ -331,8 +174,7 @@ class _MergePdfPageState extends State<MergePdfPage> {
       _mergeResult = null;
       _savedFilePath = null;
       _statusMessage = '${_selectedFiles.length} PDF files selected.';
-      _hasRewardForCurrentSelection = false;
-      _lastRewardedSignature = null;
+      resetAdStatus(null);
     });
     _updateSuggestedFileName();
   }
@@ -347,8 +189,6 @@ class _MergePdfPageState extends State<MergePdfPage> {
       } else {
         _statusMessage = '${_selectedFiles.length} PDF files selected.';
       }
-      _hasRewardForCurrentSelection = false;
-      _lastRewardedSignature = null;
     });
     _updateSuggestedFileName();
   }
@@ -364,22 +204,13 @@ class _MergePdfPageState extends State<MergePdfPage> {
       return;
     }
 
-    final signatureValue = _computeSelectionSignature(_selectedFiles);
-    final normalizedSignature = signatureValue.isEmpty ? null : signatureValue;
-    final isUnlocked =
-        !AdMobService.adsEnabled || 
-        (_hasRewardForCurrentSelection &&
-        _lastRewardedSignature == normalizedSignature);
+    final isUnlocked = adWatchedForCurrentFile;
     if (!isUnlocked) {
       final proceed = await _requestRewardedAd();
       if (!proceed) {
         return;
       }
       if (!mounted) return;
-      setState(() {
-        _hasRewardForCurrentSelection = true;
-        _lastRewardedSignature = normalizedSignature;
-      });
     }
 
     setState(() {
@@ -515,19 +346,10 @@ class _MergePdfPageState extends State<MergePdfPage> {
 
   void _resetForNewMerge() {
     setState(() {
-      _selectedFiles = [];
-      _mergeResult = null;
-      _isMerging = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
       _statusMessage = 'Select at least 2 PDF files to begin.';
       _fileNameController.clear();
-      _hasRewardForCurrentSelection = false;
-      _lastRewardedSignature = null;
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   int _totalBytesSelected() {
@@ -620,14 +442,7 @@ class _MergePdfPageState extends State<MergePdfPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

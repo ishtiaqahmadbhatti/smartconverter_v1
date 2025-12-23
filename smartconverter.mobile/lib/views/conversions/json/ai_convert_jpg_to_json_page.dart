@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class AiConvertJpgToJsonPage extends StatefulWidget {
   const AiConvertJpgToJsonPage({super.key});
@@ -18,9 +19,8 @@ class AiConvertJpgToJsonPage extends StatefulWidget {
   State<AiConvertJpgToJsonPage> createState() => _AiConvertJpgToJsonPageState();
 }
 
-class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
+class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -31,15 +31,11 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
   String _statusMessage = 'Select a Jpg file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -47,8 +43,6 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -58,38 +52,6 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
     }
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickImageFile() async {
@@ -125,10 +87,9 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'Image file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -335,17 +296,10 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
 
   void _resetForNewConversion() {
     setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
       _statusMessage = 'Select a Jpg file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -406,14 +360,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
