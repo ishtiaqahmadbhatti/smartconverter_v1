@@ -14,6 +14,8 @@ class AdMobService {
       'ca-app-pub-3940256099942544/6300978111';
   static const String _testAppOpenAdUnitId =
       'ca-app-pub-3940256099942544/3419835294';
+  static const String _testInterstitialAdUnitId =
+      'ca-app-pub-3940256099942544/1033173712';
 
   RewardedAd? _rewardedAd;
   bool _isAdReady = false;
@@ -21,6 +23,10 @@ class AdMobService {
   static AppOpenAd? _appOpenAd;
   static bool _isAppOpenLoading = false;
   static bool _isShowingAppOpenAd = false;
+  
+  InterstitialAd? _interstitialAd;
+  bool _isInterstitialReady = false;
+  bool _isInterstitialLoading = false;
 
   /// Get the rewarded ad unit ID (using test ads)
   static String get rewardedAdUnitId {
@@ -33,6 +39,9 @@ class AdMobService {
 
   /// Get app open ad unit ID (using test ads)
   static String get appOpenAdUnitId => _testAppOpenAdUnitId;
+
+  /// Get interstitial ad unit ID (using test ads)
+  static String get interstitialAdUnitId => _testInterstitialAdUnitId;
 
   /// Check if AdMob is supported on current platform
   static bool get isSupported => Platform.isAndroid || Platform.isIOS;
@@ -178,7 +187,87 @@ class AdMobService {
     if (!_isAdReady && !_isLoading) {
       loadRewardedAd();
     }
+    if (!_isInterstitialReady && !_isInterstitialLoading) {
+      loadInterstitialAd();
+    }
   }
+
+  /// Load Interstitial Ad
+  Future<void> loadInterstitialAd() async {
+    if (!isSupported) return;
+    
+    if (_isInterstitialLoading || _isInterstitialReady) {
+      return;
+    }
+
+    try {
+      _isInterstitialLoading = true;
+      debugPrint('🔄 Loading interstitial ad...');
+
+      await InterstitialAd.load(
+        adUnitId: interstitialAdUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            debugPrint('✅ Interstitial ad loaded successfully');
+            _interstitialAd = ad;
+            _isInterstitialReady = true;
+            _isInterstitialLoading = false;
+
+            _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (InterstitialAd ad) {
+                ad.dispose();
+                _interstitialAd = null;
+                _isInterstitialReady = false;
+                loadInterstitialAd(); // Load next one
+              },
+              onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+                ad.dispose();
+                _interstitialAd = null;
+                _isInterstitialReady = false;
+                loadInterstitialAd();
+              },
+            );
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            debugPrint('❌ Failed to load interstitial ad: ${error.message}');
+            _isInterstitialLoading = false;
+            _isInterstitialReady = false;
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Error loading interstitial ad: $e');
+      _isInterstitialLoading = false;
+      _isInterstitialReady = false;
+    }
+  }
+
+  /// Show Interstitial Ad
+  Future<bool> showInterstitialAd() async {
+    if (!isSupported) return false;
+
+    if (!_isInterstitialReady || _interstitialAd == null) {
+      debugPrint('⚠️ Interstitial ad not ready, loading...');
+      await loadInterstitialAd();
+      return false; 
+    }
+
+    try {
+      await _interstitialAd!.show();
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error showing interstitial ad: $e');
+      _interstitialAd?.dispose();
+      _interstitialAd = null;
+      _isInterstitialReady = false;
+      loadInterstitialAd();
+      return false;
+    }
+  }
+
+  /// Check if interstitial is ready
+  bool get isInterstitialReady => isSupported && _isInterstitialReady && _interstitialAd != null;
 
   /// Dispose resources
   void dispose() {
@@ -186,6 +275,11 @@ class AdMobService {
     _rewardedAd = null;
     _isAdReady = false;
     _isLoading = false;
+    
+    _interstitialAd?.dispose();
+    _interstitialAd = null;
+    _isInterstitialReady = false;
+    _isInterstitialLoading = false;
   }
 
   /// Load App Open Ad

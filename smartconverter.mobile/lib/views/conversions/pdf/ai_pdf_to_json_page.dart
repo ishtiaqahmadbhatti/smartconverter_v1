@@ -36,6 +36,8 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
   String? _savedFilePath;
   BannerAd? _bannerAd;
   bool _isBannerReady = false;
+  bool _adWatchedForCurrentFile = false;
+  String? _lastSelectedFilePath;
 
   @override
   void initState() {
@@ -131,6 +133,11 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+
+        if (_lastSelectedFilePath != file.path) {
+          _adWatchedForCurrentFile = false;
+          _lastSelectedFilePath = file.path;
+        }
       });
 
       _updateSuggestedFileName();
@@ -158,9 +165,25 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting PDF to JSON...';
+      _statusMessage = 'Preparing for conversion...';
       _conversionResult = null;
       _savedFilePath = null;
+    });
+
+    // Check for rewarded ad first
+    if (!_adWatchedForCurrentFile) {
+      final adWatchedOrSkipped = await _showRewardedAdDialog();
+      if (!adWatchedOrSkipped) {
+        setState(() {
+          _isConverting = false;
+          _statusMessage = 'Conversion cancelled (Ad required).';
+        });
+        return;
+      }
+    }
+
+    setState(() {
+      _statusMessage = 'Converting PDF to JSON...';
     });
 
     try {
@@ -224,6 +247,15 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
         }
         return;
       }
+    }
+
+    // Show Interstitial Ad before saving if ready
+    if (_admobService.isInterstitialReady) {
+      debugPrint('🎬 Showing Interstitial Ad before save');
+      await _admobService.showInterstitialAd();
+    } else {
+      debugPrint('⚠️ Interstitial Ad not ready, loading for next time');
+      _admobService.loadInterstitialAd();
     }
 
     setState(() => _isSaving = true);
@@ -1024,5 +1056,96 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> {
         ],
       ),
     );
+  }
+
+  Future<bool> _showRewardedAdDialog() async {
+    // If ad is ready, just show the choice dialog
+    if (!_admobService.isAdReady) {
+      // Try loading briefly
+      await _admobService.loadRewardedAd();
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    if (!_admobService.isAdReady) {
+       // Optional: Allow proceed if ad fails to load, or demand ad. 
+       // For user request, we demand the ad popup.
+       // If ad truly failed, we'll let them through for now OR ask them to wait.
+    }
+
+    final watchAd = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Conversion Required',
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_clock_outlined, size: 48, color: AppColors.primaryBlue),
+            const SizedBox(height: 16),
+            const Text(
+              'To perform this AI PDF-to-JSON conversion, please watch a rewarded video ad.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textTertiary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.textPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Watch Ad'),
+          ),
+        ],
+      ),
+    );
+
+    if (watchAd != true) return false;
+
+    // Show the ad
+    bool adCompleted = false;
+    
+    // Show a small loading overlay while ad prepares if needed
+    if (!_admobService.isAdReady) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+      }
+      // Wait for it
+      int retries = 0;
+      while (!_admobService.isAdReady && retries < 3) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+        retries++;
+      }
+      if (mounted) Navigator.of(context).pop(); // Close spinner
+    }
+
+    final success = await _admobService.showRewardedAd(
+      onRewarded: (reward) {
+        adCompleted = true;
+        _adWatchedForCurrentFile = true;
+      },
+      onFailed: (error) {
+         // If ad system fails, we can let them convert as a fallback
+         adCompleted = true; 
+      }
+    );
+
+    return success || adCompleted;
   }
 }
