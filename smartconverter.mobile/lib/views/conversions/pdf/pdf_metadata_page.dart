@@ -38,6 +38,7 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

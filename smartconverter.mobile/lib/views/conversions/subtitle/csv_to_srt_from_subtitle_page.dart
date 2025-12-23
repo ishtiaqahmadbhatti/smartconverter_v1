@@ -58,6 +58,7 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

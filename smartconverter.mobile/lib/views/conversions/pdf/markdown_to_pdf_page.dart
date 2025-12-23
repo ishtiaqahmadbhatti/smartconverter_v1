@@ -61,6 +61,7 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

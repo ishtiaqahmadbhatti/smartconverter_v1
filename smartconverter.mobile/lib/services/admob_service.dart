@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart';
 /// AdMob Service for managing rewarded ads
 /// Uses test ad unit IDs for testing
 class AdMobService {
+  /// Global control for ads (Developer side)
+  static bool adsEnabled = false;
+
   // Test Rewarded Ad Unit ID
   static const String _testRewardedAdUnitId =
       'ca-app-pub-3940256099942544/5224354917';
@@ -48,9 +51,14 @@ class AdMobService {
 
   /// Initialize AdMob SDK
   static Future<void> initialize() async {
-    // Only initialize on Android and iOS
+    // Only initialize on Android and iOS and if ads are enabled
     if (!isSupported) {
       debugPrint('⚠️ AdMob not supported on ${Platform.operatingSystem}');
+      return;
+    }
+
+    if (!adsEnabled) {
+      debugPrint('🚫 AdMob initialization skipped: adsEnabled is false');
       return;
     }
 
@@ -73,7 +81,7 @@ class AdMobService {
 
   /// Load a rewarded ad
   Future<void> loadRewardedAd() async {
-    if (!isSupported) return;
+    if (!isSupported || !adsEnabled) return;
     
     if (_isLoading || _isAdReady) {
       debugPrint('⚠️ Ad already loading or ready');
@@ -134,7 +142,7 @@ class AdMobService {
     required Function(RewardItem) onRewarded,
     Function(String)? onFailed,
   }) async {
-    if (!isSupported) return false;
+    if (!isSupported || !adsEnabled) return false;
     
     if (!_isAdReady || _rewardedAd == null) {
       debugPrint('⚠️ Ad not ready, attempting to load...');
@@ -179,11 +187,11 @@ class AdMobService {
   }
 
   /// Check if ad is ready
-  bool get isAdReady => isSupported && _isAdReady && _rewardedAd != null;
+  bool get isAdReady => isSupported && adsEnabled && _isAdReady && _rewardedAd != null;
 
   /// Preload ad (call this early)
   void preloadAd() {
-    if (!isSupported) return;
+    if (!isSupported || !adsEnabled) return;
     if (!_isAdReady && !_isLoading) {
       loadRewardedAd();
     }
@@ -194,7 +202,7 @@ class AdMobService {
 
   /// Load Interstitial Ad
   Future<void> loadInterstitialAd() async {
-    if (!isSupported) return;
+    if (!isSupported || !adsEnabled) return;
     
     if (_isInterstitialLoading || _isInterstitialReady) {
       return;
@@ -245,7 +253,7 @@ class AdMobService {
 
   /// Show Interstitial Ad
   Future<bool> showInterstitialAd() async {
-    if (!isSupported) return false;
+    if (!isSupported || !adsEnabled) return false;
 
     if (!_isInterstitialReady || _interstitialAd == null) {
       debugPrint('⚠️ Interstitial ad not ready, loading...');
@@ -267,7 +275,7 @@ class AdMobService {
   }
 
   /// Check if interstitial is ready
-  bool get isInterstitialReady => isSupported && _isInterstitialReady && _interstitialAd != null;
+  bool get isInterstitialReady => isSupported && adsEnabled && _isInterstitialReady && _interstitialAd != null;
 
   /// Dispose resources
   void dispose() {
@@ -284,7 +292,7 @@ class AdMobService {
 
   /// Load App Open Ad
   static Future<void> loadAppOpenAd() async {
-    if (!isSupported) return;
+    if (!isSupported || !adsEnabled) return;
     
     if (_isAppOpenLoading || _appOpenAd != null) {
       return;
@@ -314,7 +322,7 @@ class AdMobService {
 
   /// Show App Open Ad if available
   static Future<void> showAppOpenAdIfAvailable() async {
-    if (!isSupported) return;
+    if (!isSupported || !adsEnabled) return;
     
     if (_isShowingAppOpenAd) {
       return;

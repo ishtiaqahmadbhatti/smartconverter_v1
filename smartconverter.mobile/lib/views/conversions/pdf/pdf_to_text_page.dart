@@ -61,6 +61,7 @@ class _PdfToTextPageState extends State<PdfToTextPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

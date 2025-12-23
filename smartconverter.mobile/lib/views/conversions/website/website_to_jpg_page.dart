@@ -69,6 +69,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

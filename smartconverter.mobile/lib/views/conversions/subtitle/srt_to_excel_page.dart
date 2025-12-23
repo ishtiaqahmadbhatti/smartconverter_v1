@@ -58,6 +58,7 @@ class _SrtToExcelPageState extends State<SrtToExcelPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

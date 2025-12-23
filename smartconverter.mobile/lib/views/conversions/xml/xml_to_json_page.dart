@@ -74,6 +74,7 @@ class _XmlToJsonFromXmlCategoryPageState extends State<XmlToJsonFromXmlCategoryP
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

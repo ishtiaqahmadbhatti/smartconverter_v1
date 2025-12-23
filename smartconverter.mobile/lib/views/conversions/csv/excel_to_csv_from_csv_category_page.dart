@@ -65,6 +65,7 @@ class _ExcelToCsvFromCsvCategoryPageState extends State<ExcelToCsvFromCsvCategor
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

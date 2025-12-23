@@ -57,6 +57,7 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

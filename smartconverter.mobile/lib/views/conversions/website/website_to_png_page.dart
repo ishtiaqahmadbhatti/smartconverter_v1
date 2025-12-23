@@ -69,6 +69,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,

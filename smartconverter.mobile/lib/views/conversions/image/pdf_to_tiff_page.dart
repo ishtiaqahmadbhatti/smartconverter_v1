@@ -68,6 +68,7 @@ class _PdfToTiffImagePageState extends State<PdfToTiffImagePage> {
   }
 
   void _loadBannerAd() {
+    if (!AdMobService.adsEnabled) return;
     final ad = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,
