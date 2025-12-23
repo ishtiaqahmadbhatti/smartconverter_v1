@@ -33,7 +33,7 @@ mixin AdHelper<T extends StatefulWidget> on State<T> {
 
   /// Load a banner ad for the current page
   void loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
+    if (!AdMobService.adsEnabled || !AdMobService.bannerAdsEnabled) return;
     _bannerAd = BannerAd(
       adUnitId: AdMobService.bannerAdUnitId,
       size: AdSize.banner,
@@ -104,7 +104,7 @@ mixin AdHelper<T extends StatefulWidget> on State<T> {
 
   /// Show standardized rewarded ad dialog gate
   Future<bool> showRewardedAdGate({required String toolName}) async {
-    if (!AdMobService.adsEnabled || _adWatchedForCurrentFile) return true;
+    if (!AdMobService.adsEnabled || !AdMobService.rewardedAdsEnabled || _adWatchedForCurrentFile) return true;
 
     // If ad is ready, just show the choice dialog
     if (!_admobService.isAdReady) {

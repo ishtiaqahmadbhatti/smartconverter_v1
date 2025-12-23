@@ -10,6 +10,12 @@ class AdMobService {
   /// Global control for ads (Developer side)
   static bool adsEnabled = true;
 
+  // Granular Ad Controls
+  static bool bannerAdsEnabled = false;
+  static bool interstitialAdsEnabled = false;
+  static bool rewardedAdsEnabled = true;
+  static bool appOpenAdsEnabled = true;
+
   // Test Rewarded Ad Unit ID
   static const String _testRewardedAdUnitId =
       'ca-app-pub-3940256099942544/5224354917';
@@ -81,7 +87,7 @@ class AdMobService {
 
   /// Load a rewarded ad
   Future<void> loadRewardedAd() async {
-    if (!isSupported || !adsEnabled) return;
+    if (!isSupported || !adsEnabled || !rewardedAdsEnabled) return;
     
     if (_isLoading || _isAdReady) {
       debugPrint('⚠️ Ad already loading or ready');
@@ -142,7 +148,7 @@ class AdMobService {
     required Function(RewardItem) onRewarded,
     Function(String)? onFailed,
   }) async {
-    if (!isSupported || !adsEnabled) return false;
+    if (!isSupported || !adsEnabled || !rewardedAdsEnabled) return false;
     
     if (!_isAdReady || _rewardedAd == null) {
       debugPrint('⚠️ Ad not ready, attempting to load...');
@@ -187,7 +193,7 @@ class AdMobService {
   }
 
   /// Check if ad is ready
-  bool get isAdReady => isSupported && adsEnabled && _isAdReady && _rewardedAd != null;
+  bool get isAdReady => isSupported && adsEnabled && rewardedAdsEnabled && _isAdReady && _rewardedAd != null;
 
   /// Preload ad (call this early)
   void preloadAd() {
@@ -202,7 +208,7 @@ class AdMobService {
 
   /// Load Interstitial Ad
   Future<void> loadInterstitialAd() async {
-    if (!isSupported || !adsEnabled) return;
+    if (!isSupported || !adsEnabled || !interstitialAdsEnabled) return;
     
     if (_isInterstitialLoading || _isInterstitialReady) {
       return;
@@ -253,7 +259,7 @@ class AdMobService {
 
   /// Show Interstitial Ad
   Future<bool> showInterstitialAd() async {
-    if (!isSupported || !adsEnabled) return false;
+    if (!isSupported || !adsEnabled || !interstitialAdsEnabled) return false;
 
     if (!_isInterstitialReady || _interstitialAd == null) {
       debugPrint('⚠️ Interstitial ad not ready, loading...');
@@ -275,7 +281,7 @@ class AdMobService {
   }
 
   /// Check if interstitial is ready
-  bool get isInterstitialReady => isSupported && adsEnabled && _isInterstitialReady && _interstitialAd != null;
+  bool get isInterstitialReady => isSupported && adsEnabled && interstitialAdsEnabled && _isInterstitialReady && _interstitialAd != null;
 
   /// Dispose resources
   void dispose() {
@@ -292,7 +298,7 @@ class AdMobService {
 
   /// Load App Open Ad
   static Future<void> loadAppOpenAd() async {
-    if (!isSupported || !adsEnabled) return;
+    if (!isSupported || !adsEnabled || !appOpenAdsEnabled) return;
     
     if (_isAppOpenLoading || _appOpenAd != null) {
       return;
@@ -322,7 +328,7 @@ class AdMobService {
 
   /// Show App Open Ad if available
   static Future<void> showAppOpenAdIfAvailable() async {
-    if (!isSupported || !adsEnabled) return;
+    if (!isSupported || !adsEnabled || !appOpenAdsEnabled) return;
     
     if (_isShowingAppOpenAd) {
       return;
