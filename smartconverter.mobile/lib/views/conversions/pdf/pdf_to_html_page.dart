@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class PdfToHtmlPage extends StatefulWidget {
   const PdfToHtmlPage({super.key});
@@ -18,9 +19,8 @@ class PdfToHtmlPage extends StatefulWidget {
   State<PdfToHtmlPage> createState() => _PdfToHtmlPageState();
 }
 
-class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
+class _PdfToHtmlPageState extends State<PdfToHtmlPage> with AdHelper<PdfToHtmlPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -31,15 +31,11 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
   String _statusMessage = 'Select a PDF file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -47,8 +43,6 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -60,37 +54,6 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickPdfFile() async {
     try {
@@ -125,10 +88,9 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -153,13 +115,22 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
       );
       return;
     }
-
     setState(() {
       _isConverting = true;
       _statusMessage = 'Converting PDF to HTML...';
       _conversionResult = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'PDF-to-HTML');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       // Get custom filename if provided
@@ -217,6 +188,9 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
   Future<void> _saveHtmlFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -348,13 +322,11 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
       _conversionResult = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a PDF file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -415,14 +387,7 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

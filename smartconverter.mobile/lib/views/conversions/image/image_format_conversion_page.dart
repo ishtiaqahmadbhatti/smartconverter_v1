@@ -9,9 +9,9 @@ import 'package:dio/dio.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
-import '../../../services/admob_service.dart';
-import '../../../services/conversion_service.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
+import '../../../services/conversion_service.dart';
 
 class ImageFormatConversionPage extends StatefulWidget {
   final String toolName;
@@ -35,9 +35,8 @@ class ImageFormatConversionPage extends StatefulWidget {
   State<ImageFormatConversionPage> createState() => _ImageFormatConversionPageState();
 }
 
-class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
+class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> with AdHelper<ImageFormatConversionPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -49,16 +48,12 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
   String _statusMessage = '';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _statusMessage = 'Select a ${widget.sourceFormat} file to begin.';
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _service.initialize();
   }
 
@@ -67,8 +62,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -80,37 +73,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickFile() async {
     try {
@@ -161,11 +123,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _convertedFile = null;
-        _downloadUrl = null;
         _savedFilePath = null;
         _statusMessage = '${widget.sourceFormat} file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -190,7 +150,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       );
       return;
     }
-
     setState(() {
       _isConverting = true;
       _statusMessage = 'Converting to ${widget.targetFormat}...';
@@ -198,6 +157,16 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       _downloadUrl = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: widget.toolName);
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final apiBaseUrl = await ApiConfig.baseUrl;
@@ -283,6 +252,9 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
 
   Future<void> _saveFile() async {
     if (_convertedFile == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -391,13 +363,11 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
       _downloadUrl = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a ${widget.sourceFormat} file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -457,14 +427,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

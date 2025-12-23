@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class MarkdownToPdfPage extends StatefulWidget {
   const MarkdownToPdfPage({super.key});
@@ -18,9 +19,8 @@ class MarkdownToPdfPage extends StatefulWidget {
   State<MarkdownToPdfPage> createState() => _MarkdownToPdfPageState();
 }
 
-class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
+class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<MarkdownToPdfPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -31,15 +31,11 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
   String _statusMessage = 'Select a Markdown file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -47,8 +43,6 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -60,37 +54,6 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickMarkdownFile() async {
     try {
@@ -199,6 +162,9 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
   Future<void> _savePdfFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -328,7 +294,6 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
       _statusMessage = 'Select a Markdown file to begin.';
       _fileNameController.clear();
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -389,14 +354,7 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

@@ -4,13 +4,12 @@ import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/constants/app_colors.dart';
-import 'package:smartconverter/services/admob_service.dart';
-import 'package:smartconverter/services/conversion_service.dart';
-import 'package:smartconverter/utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
+import '../../../utils/file_manager.dart';
+import '../../../services/conversion_service.dart';
+import '../../../constants/app_colors.dart';
 
 class JsonFormatterPage extends StatefulWidget {
   const JsonFormatterPage({super.key});
@@ -19,9 +18,8 @@ class JsonFormatterPage extends StatefulWidget {
   State<JsonFormatterPage> createState() => _JsonFormatterPageState();
 }
 
-class _JsonFormatterPageState extends State<JsonFormatterPage> {
+class _JsonFormatterPageState extends State<JsonFormatterPage> with AdHelper<JsonFormatterPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _jsonTextController = TextEditingController();
   final TextEditingController _fileNameController = TextEditingController();
 
@@ -35,8 +33,6 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
   String? _formattedJson;
   ImageToPdfResult? _conversionResult;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
   String? _suggestedBaseName;
   bool _fileNameEdited = false;
   int _indentSize = 2;
@@ -44,13 +40,11 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
     _fileNameController.addListener(_onFileNameChanged);
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
     _fileNameController.removeListener(_onFileNameChanged);
     _fileNameController.dispose();
     _jsonTextController.dispose();
@@ -64,37 +58,6 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickJsonFile() async {
     try {
@@ -126,6 +89,7 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'File selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -163,10 +127,24 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Formatting JSON...';
+      _statusMessage = 'Preparing for formatting...';
       _formattedJson = null;
       _conversionResult = null;
       _savedFilePath = null;
+    });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'JSON Formatter');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Formatting cancelled (Ad required).';
+      });
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Formatting JSON...';
     });
 
     try {
@@ -236,6 +214,9 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
   Future<void> _saveJsonFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -369,18 +350,16 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
   void _resetForNewConversion() {
     setState(() {
       _selectedFile = null;
+      _isConverting = false;
+      _statusMessage = 'Select input method to begin.';
       _formattedJson = null;
       _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
-      _statusMessage = 'Select input method to begin.';
+      _suggestedBaseName = null;
       _fileNameController.clear();
       _jsonTextController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -454,14 +433,7 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

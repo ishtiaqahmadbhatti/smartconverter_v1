@@ -10,9 +10,10 @@ import 'package:archive/archive.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
-import '../../../services/admob_service.dart';
-import '../../../services/conversion_service.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
+import '../../../services/conversion_service.dart';
 
 class PdfToImagePage extends StatefulWidget {
   final String? initialFormat;
@@ -23,9 +24,8 @@ class PdfToImagePage extends StatefulWidget {
   State<PdfToImagePage> createState() => _PdfToImagePageState();
 }
 
-class _PdfToImagePageState extends State<PdfToImagePage> {
+class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImagePage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -43,16 +43,12 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
   late String _selectedFormat;
   final List<String> _formats = ['JPG', 'PNG', 'TIFF', 'SVG'];
 
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _selectedFormat = widget.initialFormat ?? 'JPG';
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _service.initialize();
   }
 
@@ -61,8 +57,6 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -74,37 +68,6 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickPdfFile() async {
     try {
@@ -137,12 +100,9 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _convertedFile = null;
-        _extractedImages = null;
-        _downloadUrl = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -191,6 +151,16 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
       _downloadUrl = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'PDF-to-Image');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final apiBaseUrl = await ApiConfig.baseUrl;
@@ -298,6 +268,9 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
 
   Future<void> _saveConvertedFile() async {
     if (_convertedFile == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -437,13 +410,11 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
       _downloadUrl = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a PDF file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -505,14 +476,7 @@ class _PdfToImagePageState extends State<PdfToImagePage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

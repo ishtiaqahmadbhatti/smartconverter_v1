@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../../../services/admob_service.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
 
@@ -15,9 +16,8 @@ class WordToTextTextPage extends StatefulWidget {
   State<WordToTextTextPage> createState() => _WordToTextTextPageState();
 }
 
-class _WordToTextTextPageState extends State<WordToTextTextPage> {
+class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper<WordToTextTextPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -29,7 +29,6 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
   String? _targetDirectoryPath;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  BannerAd? _bannerAd;
   bool _isBannerReady = false;
 
   @override
@@ -37,8 +36,6 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -46,41 +43,9 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectory();
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _loadTargetDirectory() async {
     final dir = await FileManager.getWordToTextDirectory();
@@ -94,9 +59,8 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
     );
     if (file != null) {
       setState(() {
-        _selectedFile = file;
-        _suggestedBaseName = p.basenameWithoutExtension(file.path);
         _statusMessage = 'Selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
       _updateSuggestedFileName();
     }
@@ -105,9 +69,18 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
   Future<void> _convert() async {
     if (_selectedFile == null) return;
     setState(() {
-      _isConverting = true;
       _statusMessage = 'Converting Word to Text...';
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Word-to-Text');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
     try {
       final outName = _fileNameController.text.trim();
       _result = await _service.convertWordToText(
@@ -132,6 +105,9 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
   Future<void> _saveResult() async {
     final res = _result?.file;
     if (res == null) return;
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getWordToTextDirectory();
@@ -472,13 +448,11 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
                         _result = null;
                         _isConverting = false;
                         _isSaving = false;
-                        _fileNameEdited = false;
-                        _suggestedBaseName = null;
                         _savedFilePath = null;
                         _statusMessage = 'Select a Word file to begin.';
                         _fileNameController.clear();
+                        resetAdStatus(null);
                       });
-                      _admobService.preloadAd();
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
@@ -759,14 +733,7 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> {
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class AiPdfToMarkdownPage extends StatefulWidget {
   const AiPdfToMarkdownPage({super.key});
@@ -18,9 +19,8 @@ class AiPdfToMarkdownPage extends StatefulWidget {
   State<AiPdfToMarkdownPage> createState() => _AiPdfToMarkdownPageState();
 }
 
-class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
+class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> with AdHelper<AiPdfToMarkdownPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -31,15 +31,11 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
   String _statusMessage = 'Select a PDF file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -47,8 +43,6 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -60,37 +54,6 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickPdfFile() async {
     try {
@@ -125,10 +88,9 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -160,6 +122,16 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
       _conversionResult = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'AI PDF-to-Markdown');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final customFilename = _fileNameController.text.trim().isNotEmpty
@@ -217,6 +189,9 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
   Future<void> _saveMarkdownFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -344,8 +319,8 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
       _savedFilePath = null;
       _statusMessage = 'Select a PDF file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -406,14 +381,7 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

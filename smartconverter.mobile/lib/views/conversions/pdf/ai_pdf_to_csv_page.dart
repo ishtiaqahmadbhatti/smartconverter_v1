@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../../utils/ad_helper.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
@@ -18,9 +18,8 @@ class AiPdfToCsvPage extends StatefulWidget {
   State<AiPdfToCsvPage> createState() => _AiPdfToCsvPageState();
 }
 
-class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
+class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper<AiPdfToCsvPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -31,15 +30,11 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
   String _statusMessage = 'Select a PDF file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -47,8 +42,6 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -60,37 +53,6 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickPdfFile() async {
     try {
@@ -129,6 +91,8 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
+
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -155,10 +119,21 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
     }
 
     setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting PDF to CSV...';
-      _conversionResult = null;
       _savedFilePath = null;
+    });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'AI PDF-to-CSV');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Converting PDF to CSV...';
     });
 
     try {
@@ -217,6 +192,9 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
   Future<void> _saveCsvFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -339,13 +317,11 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
       _conversionResult = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a PDF file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -400,20 +376,12 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
                   _buildResultCard(),
                 ],
                 const SizedBox(height: 24),
-                _buildInstructions(),
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -810,77 +778,4 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> {
     );
   }
 
-  Widget _buildInstructions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline, color: AppColors.primaryBlue, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'How to use',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildInstructionStep('1', 'Select a PDF file (.pdf)'),
-          const SizedBox(height: 8),
-          _buildInstructionStep(
-            '2',
-            'Tap "Convert to CSV" to extract table data',
-          ),
-          const SizedBox(height: 8),
-          _buildInstructionStep('3', 'Save or share the generated .csv file'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionStep(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

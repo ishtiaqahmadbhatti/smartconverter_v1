@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
-import '../../../services/admob_service.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
 
 class PowerPointToTextPage extends StatefulWidget {
@@ -15,9 +15,8 @@ class PowerPointToTextPage extends StatefulWidget {
   State<PowerPointToTextPage> createState() => _PowerPointToTextPageState();
 }
 
-class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
+class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelper<PowerPointToTextPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -29,15 +28,12 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
   String? _suggestedBaseName;
   String? _savedFilePath;
   String? _targetDirectoryPath;
-  BannerAd? _bannerAd;
   bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectory();
   }
 
@@ -46,41 +42,9 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _loadTargetDirectory() async {
     final dir = await FileManager.getPowerpointToTextDirectory();
@@ -94,9 +58,8 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
     );
     if (file != null) {
       setState(() {
-        _selectedFile = file;
-        _suggestedBaseName = p.basenameWithoutExtension(file.path);
         _statusMessage = 'Selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
       _updateSuggestedFileName();
     }
@@ -105,9 +68,18 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
   Future<void> _convert() async {
     if (_selectedFile == null) return;
     setState(() {
-      _isConverting = true;
       _statusMessage = 'Converting PowerPoint to Text...';
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'PowerPoint-to-Text');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
     try {
       final outName = _fileNameController.text.trim();
       _result = await _service.convertPowerpointToText(
@@ -152,6 +124,9 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
   Future<void> _saveResult() async {
     final res = _result?.file;
     if (res == null) return;
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getPowerpointToTextDirectory();
@@ -455,14 +430,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -563,7 +531,6 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> {
                         _statusMessage = 'Select a PowerPoint file to begin.';
                         _fileNameController.clear();
                       });
-                      _admobService.preloadAd();
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,

@@ -3,13 +3,12 @@ import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/constants/app_colors.dart';
-import 'package:smartconverter/services/admob_service.dart';
-import 'package:smartconverter/services/conversion_service.dart';
-import 'package:smartconverter/utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
+import '../../../utils/file_manager.dart';
+import '../../../services/conversion_service.dart';
+import '../../../constants/app_colors.dart';
 
 class YamlToJsonPage extends StatefulWidget {
   const YamlToJsonPage({super.key});
@@ -18,9 +17,8 @@ class YamlToJsonPage extends StatefulWidget {
   State<YamlToJsonPage> createState() => _YamlToJsonPageState();
 }
 
-class _YamlToJsonPageState extends State<YamlToJsonPage> {
+class _YamlToJsonPageState extends State<YamlToJsonPage> with AdHelper<YamlToJsonPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -29,21 +27,17 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
   String _statusMessage = 'Select a YAML file to begin.';
   ImageToPdfResult? _conversionResult;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
   String? _suggestedBaseName;
   bool _fileNameEdited = false;
 
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
     _fileNameController.addListener(_onFileNameChanged);
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
     _fileNameController.removeListener(_onFileNameChanged);
     _fileNameController.dispose();
     super.dispose();
@@ -56,37 +50,6 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickYamlFile() async {
     try {
@@ -116,6 +79,7 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'YAML file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -143,9 +107,22 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting YAML to JSON...';
-      _conversionResult = null;
+      _statusMessage = 'Preparing for conversion...';
       _savedFilePath = null;
+    });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'YAML-to-JSON');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Converting YAML to JSON...';
     });
 
     try {
@@ -204,6 +181,9 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
   Future<void> _saveJsonFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -331,13 +311,11 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
       _conversionResult = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a YAML file to begin.';
       _fileNameController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -398,14 +376,7 @@ class _YamlToJsonPageState extends State<YamlToJsonPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

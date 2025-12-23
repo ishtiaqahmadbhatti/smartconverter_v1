@@ -3,11 +3,10 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
-import 'package:smartconverter/constants/app_colors.dart';
-import 'package:smartconverter/services/admob_service.dart';
-import 'package:smartconverter/services/conversion_service.dart';
+import '../../../utils/ad_helper.dart';
+import '../../../services/conversion_service.dart';
+import '../../../constants/app_colors.dart';
 
 class JsonValidationPage extends StatefulWidget {
   const JsonValidationPage({super.key});
@@ -16,9 +15,8 @@ class JsonValidationPage extends StatefulWidget {
   State<JsonValidationPage> createState() => _JsonValidationPageState();
 }
 
-class _JsonValidationPageState extends State<JsonValidationPage> {
+class _JsonValidationPageState extends State<JsonValidationPage> with AdHelper<JsonValidationPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _jsonTextController = TextEditingController();
 
   // Toggle between file upload and text input
@@ -28,53 +26,18 @@ class _JsonValidationPageState extends State<JsonValidationPage> {
   bool _isValidating = false;
   String _statusMessage = 'Select input method to begin.';
   Map<String, dynamic>? _validationResult;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
     _jsonTextController.dispose();
     super.dispose();
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
-  }
 
   Future<void> _pickJsonFile() async {
     try {
@@ -104,6 +67,7 @@ class _JsonValidationPageState extends State<JsonValidationPage> {
         _selectedFile = file;
         _validationResult = null;
         _statusMessage = 'File selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
     } catch (e) {
       final message = 'Failed to select JSON file: $e';
@@ -142,6 +106,16 @@ class _JsonValidationPageState extends State<JsonValidationPage> {
       _statusMessage = 'Validating JSON...';
       _validationResult = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'JSON Validator');
+    if (!adWatched) {
+      setState(() {
+        _isValidating = false;
+        _statusMessage = 'Validation cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       Map<String, dynamic>? result;
@@ -192,12 +166,12 @@ class _JsonValidationPageState extends State<JsonValidationPage> {
   void _resetForNewValidation() {
     setState(() {
       _selectedFile = null;
-      _validationResult = null;
       _isValidating = false;
       _statusMessage = 'Select input method to begin.';
+      _validationResult = null;
       _jsonTextController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   @override
@@ -254,14 +228,7 @@ class _JsonValidationPageState extends State<JsonValidationPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
