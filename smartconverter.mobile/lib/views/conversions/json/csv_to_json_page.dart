@@ -174,7 +174,7 @@ class _CsvToJsonPageState extends State<CsvToJsonPage> {
     });
 
     // Check for rewarded ad first
-    if (!_adWatchedForCurrentFile) {
+    if (AdMobService.adsEnabled && !_adWatchedForCurrentFile) {
       final adWatchedOrSkipped = await _showRewardedAdDialog();
       if (!adWatchedOrSkipped) {
         setState(() {

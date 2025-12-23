@@ -367,8 +367,9 @@ class _MergePdfPageState extends State<MergePdfPage> {
     final signatureValue = _computeSelectionSignature(_selectedFiles);
     final normalizedSignature = signatureValue.isEmpty ? null : signatureValue;
     final isUnlocked =
-        _hasRewardForCurrentSelection &&
-        _lastRewardedSignature == normalizedSignature;
+        !AdMobService.adsEnabled || 
+        (_hasRewardForCurrentSelection &&
+        _lastRewardedSignature == normalizedSignature);
     if (!isUnlocked) {
       final proceed = await _requestRewardedAd();
       if (!proceed) {

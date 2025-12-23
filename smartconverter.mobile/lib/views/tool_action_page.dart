@@ -175,8 +175,8 @@ class _ToolActionPageState extends State<ToolActionPage> {
     }
 
     // Check if this is MP4 to MP3 conversion - show rewarded ad first
-    // Only show ad if not already watched for this file
-    if (_isMp4ToMp3Conversion() && !_adWatchedForCurrentFile) {
+    // Only show ad if not already watched for this file and ads are enabled
+    if (_isMp4ToMp3Conversion() && AdMobService.adsEnabled && !_adWatchedForCurrentFile) {
       final adShown = await _showRewardedAdDialog();
       if (!adShown) {
         // User didn't watch ad, don't proceed
