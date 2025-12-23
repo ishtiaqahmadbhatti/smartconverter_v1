@@ -65,7 +65,7 @@ class NotificationService {
         channelKey: 'file_save_channel',
         title: 'File Saved Successfully',
         body: 'Your file "$fileName" has been saved to $folderPath folder.',
-        notificationLayout: NotificationLayout.Default,
+        notificationLayout: NotificationLayout.BigText,
         payload: {'path': filePath},
         category: NotificationCategory.Status,
       ),
