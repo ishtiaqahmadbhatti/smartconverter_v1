@@ -1,19 +1,15 @@
 import 'dart:io';
-import 'dart:math';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:dio/dio.dart';
 
 import '../../../constants/app_colors.dart';
-import '../../../constants/api_config.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
-import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class XmlXsdValidatorPage extends StatefulWidget {
   const XmlXsdValidatorPage({super.key});
@@ -22,68 +18,23 @@ class XmlXsdValidatorPage extends StatefulWidget {
   State<XmlXsdValidatorPage> createState() => _XmlXsdValidatorPageState();
 }
 
-class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
+class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper<XmlXsdValidatorPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _previewController = TextEditingController();
 
   File? _selectedXmlFile;
   File? _selectedXsdFile;
   bool _isValidating = false;
   String _statusMessage = 'Select XML file (and optional XSD) to validate.';
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
   
   // Validation Result
   bool _isValid = false;
   String? _validationResultText;
 
   @override
-  void initState() {
-    super.initState();
-    _admobService.preloadAd();
-    _loadBannerAd();
-    _service.initialize();
-  }
-
-  @override
   void dispose() {
     _previewController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickXmlFile() async {
@@ -112,6 +63,7 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
         _selectedXmlFile = file;
         _validationResultText = null;
         _statusMessage = 'XML selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
     } catch (e) {
       if (mounted) {
@@ -175,63 +127,55 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
       _previewController.clear();
     });
 
+    // Show Rewarded Ad before validation
+    final adWatched = await showRewardedAdGate(toolName: 'XML-Validator');
+    if (!adWatched) {
+      setState(() {
+        _isValidating = false;
+        _statusMessage = 'Validation cancelled (Ad required).';
+      });
+      return;
+    }
+
     try {
-      final apiBaseUrl = await ApiConfig.baseUrl;
-      final dio = Dio(BaseOptions(
-        baseUrl: apiBaseUrl,
-        connectTimeout: ApiConfig.connectTimeout,
-        receiveTimeout: ApiConfig.receiveTimeout,
-      ));
-
-      final formDataMap = <String, dynamic>{
-        'file_xml': await MultipartFile.fromFile(
-          _selectedXmlFile!.path,
-          filename: p.basename(_selectedXmlFile!.path),
-        ),
-      };
-
-      if (_selectedXsdFile != null) {
-        formDataMap['file_xsd'] = await MultipartFile.fromFile(
-          _selectedXsdFile!.path,
-          filename: p.basename(_selectedXsdFile!.path),
-        );
-      }
-
-      final formData = FormData.fromMap(formDataMap);
-
-      final response = await dio.post(
-        ApiConfig.xmlXsdValidatorEndpoint,
-        data: formData,
+      final result = await _service.validateXmlXsd(
+        xmlFile: _selectedXmlFile!,
+        xsdFile: _selectedXsdFile,
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        
+      if (result != null) {
         bool isValid = false;
         String resultString = '';
 
-        // Check if we have converted_data which contains the validation result
-        if (data is Map && data.containsKey('converted_data') && data['converted_data'] is String) {
-          try {
-            final validationJson = jsonDecode(data['converted_data']);
-            isValid = validationJson['valid'] == true;
-            resultString = const JsonEncoder.withIndent('  ').convert(validationJson);
-          } catch (e) {
-            // Fallback if parsing fails
-            resultString = data['converted_data'];
-            isValid = false;
-          }
+        // Safely parse specific known response structures
+        if (result.containsKey('converted_data') && result['converted_data'] is String) {
+           try {
+             final validationJson = jsonDecode(result['converted_data']);
+             isValid = validationJson['valid'] == true;
+             resultString = const JsonEncoder.withIndent('  ').convert(validationJson);
+           } catch (e) {
+             resultString = result['converted_data'];
+             isValid = false;
+           }
+        } else if (result.containsKey('detail') || (result.containsKey('valid') && result['valid'] == false)) {
+             // Handle explicit error responses from backend
+             isValid = false;
+             if (result.containsKey('detail') && result['detail'] is Map) {
+                final detail = result['detail'];
+                if (detail['details'] != null && detail['details']['error'] != null) {
+                    resultString = detail['details']['error'].toString();
+                } else {
+                    resultString = const JsonEncoder.withIndent('  ').convert(detail);
+                }
+             } else {
+                 resultString = const JsonEncoder.withIndent('  ').convert(result);
+             }
         } else {
-          // Fallback for unexpected response structure
-          if (data is Map) {
-             resultString = const JsonEncoder.withIndent('  ').convert(data);
-             isValid = data['valid'] == true || data['success'] == true;
-          } else {
-             resultString = data.toString();
-             isValid = true;
-          }
+             // Default success structure check
+             isValid = result['valid'] == true || result['success'] == true;
+             resultString = const JsonEncoder.withIndent('  ').convert(result);
         }
 
         setState(() {
@@ -242,32 +186,15 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
         });
 
       } else {
-        throw Exception(response.data['message'] ?? 'Validation failed');
+        throw Exception('Validation failed: No response data');
       }
     } catch (e) {
       if (!mounted) return;
-
-      // Handle 500 Internal Server Error as specific validation failure
-      if (e is DioException && e.response?.statusCode == 500) {
-        final data = e.response?.data;
-        if (data is Map && data.containsKey('detail')) {
-          final detail = data['detail'];
-          if (detail is Map && detail['details'] != null && detail['details']['error'] != null) {
-            final errorMessage = detail['details']['error'].toString();
-            
-            setState(() {
-              _isValid = false;
-              _validationResultText = errorMessage;
-              _previewController.text = errorMessage;
-              _statusMessage = 'Validation Failed: XML is Invalid';
-            });
-            // Stop here, allowing the UI to show the Red Banner instead of SnackBar
-            return; 
-          }
-        }
-      }
-
-      setState(() => _statusMessage = 'Validation Error: $e');
+      setState(() {
+         _statusMessage = 'Validation Error: $e';
+         _isValid = false;
+         _validationResultText = 'Error occurred during validation: $e';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
@@ -286,8 +213,22 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
       _isValidating = false;
       _statusMessage = 'Select XML file (and optional XSD) to validate.';
       _previewController.clear();
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
+  }
+
+  Future<void> _copyContent() async {
+    if (_previewController.text.isNotEmpty) {
+      await Clipboard.setData(ClipboardData(text: _previewController.text));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Validation result copied to clipboard'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -334,14 +275,7 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -616,15 +550,26 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
                ),
                child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
+                 crossAxisAlignment: CrossAxisAlignment.stretch,
                  children: [
-                   const Text(
-                     'Error Details:',
-                     style: TextStyle(
-                       color: AppColors.textPrimary,
-                       fontWeight: FontWeight.bold,
-                       fontSize: 14,
-                     ),
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       const Text(
+                         'Error Details:',
+                         style: TextStyle(
+                           color: AppColors.textPrimary,
+                           fontWeight: FontWeight.bold,
+                           fontSize: 14,
+                         ),
+                       ),
+                       IconButton(
+                          onPressed: _copyContent,
+                          icon: const Icon(Icons.copy, size: 16, color: AppColors.textSecondary),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                       ),
+                     ],
                    ),
                    const SizedBox(height: 8),
                    Text(
@@ -654,7 +599,6 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> {
            return errors.map((e) => "• $e").join('\n');
         }
       }
-      // If parsing specific structure fails, try to return message or just raw text cleanup
       if (json is Map && json.containsKey('message')) {
          return json['message'].toString();
       }

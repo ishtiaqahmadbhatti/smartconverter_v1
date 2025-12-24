@@ -2,17 +2,17 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:dio/dio.dart';
 
 import '../../../constants/app_colors.dart';
-import '../../../constants/api_config.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/permission_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class JsonToXmlFromXmlCategoryPage extends StatefulWidget {
   const JsonToXmlFromXmlCategoryPage({super.key});
@@ -21,33 +21,24 @@ class JsonToXmlFromXmlCategoryPage extends StatefulWidget {
   State<JsonToXmlFromXmlCategoryPage> createState() => _JsonToXmlFromXmlCategoryPageState();
 }
 
-class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryPage> {
+class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryPage> with AdHelper<JsonToXmlFromXmlCategoryPage> {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
-  final TextEditingController _previewController = TextEditingController();
-  final TextEditingController _rootNameController =
-      TextEditingController(text: 'root');
+  final TextEditingController _rootElementController = TextEditingController(text: 'root');
 
   File? _selectedFile;
-  File? _convertedFile;
-  String? _downloadUrl;
+  ImageToPdfResult? _conversionResult;
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
   String _statusMessage = 'Select a JSON file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
-    _service.initialize();
   }
 
   @override
@@ -55,10 +46,7 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _previewController.dispose();
-    _rootNameController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
+    _rootElementController.dispose();
     super.dispose();
   }
 
@@ -68,38 +56,6 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
     }
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickJsonFile() async {
@@ -136,11 +92,10 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
 
       setState(() {
         _selectedFile = file;
-        _convertedFile = null;
-        _downloadUrl = null;
+        _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'JSON file selected: ${p.basename(file.path)}';
-        _previewController.clear();
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -168,93 +123,66 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting JSON to XML...';
-      _convertedFile = null;
-      _downloadUrl = null;
+      _statusMessage = 'Preparing for conversion...';
+      _conversionResult = null;
       _savedFilePath = null;
-      _previewController.clear();
+    });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'JSON-to-XML');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Converting JSON to XML...';
     });
 
     try {
-      final apiBaseUrl = await ApiConfig.baseUrl;
-      final dio = Dio(BaseOptions(
-        baseUrl: apiBaseUrl,
-        connectTimeout: ApiConfig.connectTimeout,
-        receiveTimeout: ApiConfig.receiveTimeout,
-      ));
+      final customFilename = _fileNameController.text.trim().isNotEmpty
+          ? _sanitizeBaseName(_fileNameController.text.trim())
+          : null;
 
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          _selectedFile!.path,
-          filename: p.basename(_selectedFile!.path),
-        ),
-        if (_fileNameController.text.trim().isNotEmpty)
-          'filename': _fileNameController.text.trim(),
-        'root_element': _rootNameController.text.trim().isEmpty 
-            ? 'root' 
-            : _rootNameController.text.trim(),
-      });
-
-      final response = await dio.post(
-        ApiConfig.jsonToXmlXmlToolsEndpoint,
-        data: formData,
+      final result = await _service.convertJsonToXml(
+        _selectedFile!,
+        outputFilename: customFilename,
+        rootElement: _rootElementController.text,
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final outputFilename = response.data['output_filename'] as String;
-        final downloadUrl = response.data['download_url'] as String;
-        final convertedData = response.data['converted_data'];
-
-        // Download the file immediately to temp
-        final tempDir = await FileManager.getTempDirectory();
-        final savePath = p.join(tempDir.path, outputFilename);
-        
-        // Construct full download URL
-        String fullDownloadUrl = downloadUrl;
-        if (!downloadUrl.startsWith('http')) {
-             if (downloadUrl.startsWith('/')) {
-                  fullDownloadUrl = '$apiBaseUrl$downloadUrl';
-             } else {
-                  fullDownloadUrl = '$apiBaseUrl/$downloadUrl';
-             }
-        }
-        
-        await dio.download(fullDownloadUrl, savePath);
-
-        String previewText = '';
-        if (convertedData != null && convertedData is String) {
-             previewText = convertedData;
-        } else {
-             try {
-                previewText = await File(savePath).readAsString();
-             } catch (e) {
-                 previewText = 'File downloaded but preview unavailable.';
-             }
-        }
-        
-        // Limit preview size
-        if (previewText.length > 5000) {
-            previewText = '${previewText.substring(0, 5000)}\n\n...(Preview Truncated)';
-        }
-
+      if (result == null) {
         setState(() {
-          _convertedFile = File(savePath);
-          _downloadUrl = fullDownloadUrl;
-          _statusMessage = 'JSON converted to XML successfully!';
-          _previewController.text = previewText;
+          _statusMessage =
+              'Conversion completed but no file returned. Please try again.';
         });
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('XML file ready: $outputFilename'),
-            backgroundColor: AppColors.success,
+          const SnackBar(
+            content: Text(
+              'Conversion completed, but unable to download the file.',
+            ),
+            backgroundColor: AppColors.warning,
           ),
         );
-      } else {
-        throw Exception(response.data['message'] ?? 'Conversion failed');
+        return;
       }
+
+      setState(() {
+        _conversionResult = result;
+        _statusMessage = 'XML file converted successfully!';
+        _savedFilePath = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('XML file ready: ${result.fileName}'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _statusMessage = 'Conversion failed: $e');
@@ -269,15 +197,42 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
   }
 
   Future<void> _saveXmlFile() async {
-    if (_convertedFile == null) return;
+    final result = _conversionResult;
+    if (result == null) return;
+
+    // Check for storage permissions first
+    if (!await PermissionManager.isStoragePermissionGranted()) {
+      final granted = await PermissionManager.requestStoragePermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to save files.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
     try {
-      final targetDir = await FileManager.getJsonToXmlDirectory();
+      final directory = await FileManager.getJsonToXmlDirectory();
 
-      String targetFileName = p.basename(_convertedFile!.path);
-      File destinationFile = File(p.join(targetDir.path, targetFileName));
+      String targetFileName;
+      if (_fileNameController.text.trim().isNotEmpty) {
+        final customName = _sanitizeBaseName(_fileNameController.text.trim());
+        targetFileName = _ensureXmlExtension(customName);
+      } else {
+        targetFileName = result.fileName;
+      }
+
+      File destinationFile = File(p.join(directory.path, targetFileName));
 
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
@@ -285,21 +240,26 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
           'xml',
         );
         targetFileName = fallbackName;
-        destinationFile = File(p.join(targetDir.path, targetFileName));
+        destinationFile = File(p.join(directory.path, targetFileName));
       }
 
-      await _convertedFile!.copy(destinationFile.path);
+      final savedFile = await result.file.copy(destinationFile.path);
 
       if (!mounted) return;
 
-      setState(() => _savedFilePath = destinationFile.path);
+      setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger system notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -316,21 +276,33 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
   }
 
   Future<void> _shareXmlFile() async {
-    if (_convertedFile == null) return;
-    final pathToShare = _savedFilePath ?? _convertedFile!.path;
-    await Share.shareXFiles([
-      XFile(pathToShare),
-    ], text: 'Converted XML file');
-  }
+    final result = _conversionResult;
+    if (result == null) return;
+    final pathToShare = _savedFilePath ?? result.file.path;
+    final fileToShare = File(pathToShare);
 
-  Future<void> _copyContent() async {
-    if (_previewController.text.isNotEmpty) {
-      await Clipboard.setData(ClipboardData(text: _previewController.text));
+    if (!await fileToShare.exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('XML copied to clipboard'),
-            backgroundColor: AppColors.success,
+            content: Text('XML file is not available on disk.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      await Share.shareXFiles([
+        XFile(fileToShare.path),
+      ], text: 'Converted XML: ${result.fileName}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Share failed: $e'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -373,22 +345,23 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
     return base.substring(0, min(base.length, 80));
   }
 
+  String _ensureXmlExtension(String base) {
+    final trimmed = base.trim();
+    return trimmed.toLowerCase().endsWith('.xml') ? trimmed : '$trimmed.xml';
+  }
+
   void _resetForNewConversion() {
     setState(() {
       _selectedFile = null;
-      _convertedFile = null;
-      _downloadUrl = null;
+      _conversionResult = null;
       _isConverting = false;
       _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
       _savedFilePath = null;
       _statusMessage = 'Select a JSON file to begin.';
       _fileNameController.clear();
-      _previewController.clear();
-      _rootNameController.text = 'root';
+      _rootElementController.text = 'root';
+      resetAdStatus(null);
     });
-    _admobService.preloadAd();
   }
 
   String _formatBytes(int bytes) {
@@ -440,24 +413,18 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
                 _buildConvertButton(),
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
-                if (_convertedFile != null) ...[
+                if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? _buildPersistentResultCard() 
+                    : _buildResultCard(),
                 ],
-                const SizedBox(height: 24),
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -678,12 +645,12 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
       style: const TextStyle(color: AppColors.textPrimary),
     );
   }
-  
+
   Widget _buildOptionsFields() {
     return Column(
       children: [
         TextField(
-          controller: _rootNameController,
+          controller: _rootElementController,
           decoration: InputDecoration(
             labelText: 'Root Element Name',
             hintText: 'Default: root',
@@ -713,6 +680,7 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 4,
+          shadowColor: AppColors.primaryBlue.withOpacity(0.4),
         ),
         child: _isConverting
             ? const SizedBox(
@@ -734,6 +702,8 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
   }
 
   Widget _buildStatusMessage() {
+    final bool isSuccess = _conversionResult != null || _savedFilePath != null;
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -745,12 +715,12 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
           Icon(
             _isConverting
                 ? Icons.hourglass_empty
-                : _convertedFile != null
+                : isSuccess
                 ? Icons.check_circle
                 : Icons.info_outline,
             color: _isConverting
                 ? AppColors.warning
-                : _convertedFile != null
+                : isSuccess
                 ? AppColors.success
                 : AppColors.textSecondary,
             size: 20,
@@ -762,7 +732,7 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
               style: TextStyle(
                 color: _isConverting
                     ? AppColors.warning
-                    : _convertedFile != null
+                    : isSuccess
                     ? AppColors.success
                     : AppColors.textSecondary,
                 fontSize: 13,
@@ -775,8 +745,9 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
   }
 
   Widget _buildResultCard() {
-    final file = _convertedFile!;
-    
+    final result = _conversionResult!;
+    final isSaved = _savedFilePath != null;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -802,7 +773,7 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.code,
+                  Icons.check_circle_outline,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -822,7 +793,7 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      p.basename(file.path),
+                      result.fileName,
                       style: TextStyle(
                         color: AppColors.textPrimary.withOpacity(0.8),
                         fontSize: 12,
@@ -835,77 +806,164 @@ class _JsonToXmlFromXmlCategoryPageState extends State<JsonToXmlFromXmlCategoryP
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Preview Text Field
-          Container(
-             height: 150,
-             padding: const EdgeInsets.all(8),
-             decoration: BoxDecoration(
-               color: AppColors.backgroundSurface.withOpacity(0.5),
-               borderRadius: BorderRadius.circular(8),
-             ),
-             child: TextField(
-               controller: _previewController,
-               readOnly: true,
-               maxLines: null,
-               style: const TextStyle(
-                 fontFamily: 'monospace',
-                 fontSize: 11,
-                 color: AppColors.textPrimary,
-               ),
-               decoration: const InputDecoration(
-                 border: InputBorder.none,
-                 contentPadding: EdgeInsets.zero,
-               ),
-             ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : _saveXmlFile,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const Text(
+                'Save File',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.backgroundSurface,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersistentResultCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.check_circle, color: AppColors.success, size: 28),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'CONVERSION RESULT',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+          const Text(
+            'FILE SAVED AT:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _savedFilePath!.replaceFirst('/storage/emulated/0/', ''),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _saveXmlFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: const Text('Save'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                     if (!await File(_savedFilePath!).exists()) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('File no longer exists.')),
+                          );
+                        }
+                        return;
+                     }
+                     await NotificationService.openFile(_savedFilePath!);
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Open File'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryBlue,
+                    side: const BorderSide(color: AppColors.primaryBlue),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _copyContent,
-                  icon: const Icon(Icons.copy),
-                  label: const Text('Copy'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final folderPath = p.dirname(_savedFilePath!);
+                    await NotificationService.openFile(folderPath);
+                  },
+                  icon: const Icon(Icons.folder_open, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Open Folder'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: _shareXmlFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  icon: const Icon(Icons.share, size: 14),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Share'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.secondaryGreen,
+                    side: const BorderSide(color: AppColors.secondaryGreen),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                    textStyle: const TextStyle(fontSize: 11),
                   ),
                 ),
               ),

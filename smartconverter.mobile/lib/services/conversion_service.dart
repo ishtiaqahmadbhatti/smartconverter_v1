@@ -1849,65 +1849,7 @@ Future<ImageToPdfResult?> convertXmlToJson(
   }
 }
 
-Future<ImageToPdfResult?> convertJsonToXml(
-  File jsonFile, {
-  String? outputFilename,
-  String? rootName,
-}) async {
-  try {
-    if (!jsonFile.existsSync()) {
-      throw Exception('JSON file does not exist');
-    }
 
-    final extension = p.extension(jsonFile.path).toLowerCase();
-    if (extension != '.json') {
-      throw Exception('Only JSON files are supported');
-    }
-
-    final file = await MultipartFile.fromFile(
-      jsonFile.path,
-      filename: p.basename(jsonFile.path),
-    );
-
-    FormData formData = FormData.fromMap({
-      'file': file,
-      if (rootName != null && rootName.isNotEmpty) 'root_name': rootName,
-      if (outputFilename != null && outputFilename.isNotEmpty)
-        'filename': outputFilename,
-    });
-
-    _debugLog('📤 Uploading JSON file for XML conversion...');
-
-    Response response = await _dio.post(
-      ApiConfig.jsonToXmlEndpoint,
-      data: formData,
-    );
-
-    if (response.statusCode == 200) {
-      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      String fileName =
-          response.data['output_filename'] ??
-          '${p.basenameWithoutExtension(jsonFile.path)}.xml';
-
-      _debugLog('✅ JSON converted to XML successfully!');
-      _debugLog('📥 Downloading XML: $fileName');
-
-      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-      if (downloadedFile == null) {
-        return null;
-      }
-
-      return ImageToPdfResult(
-        file: downloadedFile,
-        fileName: fileName,
-        downloadUrl: downloadUrl,
-      );
-    }
-
-  } catch (e) {
-    throw Exception('Failed to convert JSON to XML: $e');
-  }
-}
 
 Future<ImageToPdfResult?> convertJsonToCsv(
   File jsonFile, {
@@ -4690,4 +4632,402 @@ async def download_file(filename: str):
     }
   }
 
+
+  // Convert XML to CSV
+  Future<ImageToPdfResult?> convertXmlToCsv(
+    File xmlFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xmlFile.existsSync()) {
+        throw Exception('XML file does not exist');
+      }
+      final extension = p.extension(xmlFile.path).toLowerCase();
+      if (extension != '.xml') {
+        throw Exception('Only .xml files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xmlFile.path,
+        filename: p.basename(xmlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XML file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.xmlToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(xmlFile.path)}.csv';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'XmlToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert XML to CSV: $e');
+    }
+  }
+
+  // Convert XML to Excel
+  Future<ImageToPdfResult?> convertXmlToExcel(
+    File xmlFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xmlFile.existsSync()) {
+        throw Exception('XML file does not exist');
+      }
+      final extension = p.extension(xmlFile.path).toLowerCase();
+      if (extension != '.xml') {
+        throw Exception('Only .xml files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xmlFile.path,
+        filename: p.basename(xmlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XML file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.xmlToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(xmlFile.path)}.xlsx';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'XmlToExcel',
+          extension: 'xlsx',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert XML to Excel: $e');
+    }
+  }
+
+  // Convert CSV to XML
+  Future<ImageToPdfResult?> convertCsvToXml(
+    File csvFile, {
+    String? outputFilename,
+    String? rootName,
+    String? recordName,
+  }) async {
+    try {
+      if (!csvFile.existsSync()) {
+        throw Exception('CSV file does not exist');
+      }
+      final extension = p.extension(csvFile.path).toLowerCase();
+      if (extension != '.csv') {
+        throw Exception('Only .csv files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        csvFile.path,
+        filename: p.basename(csvFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+        'root_name': rootName?.trim().isNotEmpty == true ? rootName!.trim() : 'data',
+        'record_name': recordName?.trim().isNotEmpty == true ? recordName!.trim() : 'record',
+      });
+
+      _debugLog('📤 Uploading CSV file for XML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.csvToXmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(csvFile.path)}.xml';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'CsvToXml',
+          extension: 'xml',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert CSV to XML: $e');
+    }
+  }
+
+  // Convert Excel to XML
+  Future<ImageToPdfResult?> convertExcelToXml(
+    File excelFile, {
+    String? outputFilename,
+    String? rootName,
+    String? recordName,
+  }) async {
+    try {
+      if (!excelFile.existsSync()) {
+        throw Exception('Excel file does not exist');
+      }
+      final extension = p.extension(excelFile.path).toLowerCase();
+      if (extension != '.xls' && extension != '.xlsx') {
+        throw Exception('Only .xls and .xlsx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        excelFile.path,
+        filename: p.basename(excelFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+        'root_name': rootName?.trim().isNotEmpty == true ? rootName!.trim() : 'data',
+        'record_name': recordName?.trim().isNotEmpty == true ? recordName!.trim() : 'record',
+      });
+
+      _debugLog('📤 Uploading Excel file for XML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.excelToXmlEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(excelFile.path)}.xml';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToXml',
+          extension: 'xml',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Excel to XML: $e');
+    }
+  }
+
+  // Convert JSON to XML
+  Future<ImageToPdfResult?> convertJsonToXml(
+    File jsonFile, {
+    String? outputFilename,
+    String? rootElement,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+      final extension = p.extension(jsonFile.path).toLowerCase();
+      if (extension != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: p.basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+        'root_element': rootElement?.trim().isNotEmpty == true ? rootElement!.trim() : 'root',
+      });
+
+      _debugLog('📤 Uploading JSON file for XML conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonToXmlXmlToolsEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(jsonFile.path)}.xml';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JsonToXml',
+          extension: 'xml',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON to XML: $e');
+    }
+  }
+
+  // Fix XML Escaping
+  Future<ImageToPdfResult?> fixXmlEscaping(
+    File xmlFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xmlFile.existsSync()) {
+        throw Exception('XML file does not exist');
+      }
+      final extension = p.extension(xmlFile.path).toLowerCase();
+      if (extension != '.xml') {
+        throw Exception('Only .xml files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xmlFile.path,
+        filename: p.basename(xmlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XML file for escaping fix...');
+
+      Response response = await _dio.post(
+        ApiConfig.fixXmlEscapingEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(xmlFile.path)}_fixed.xml';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'XmlEscapingFix',
+          extension: 'xml',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to fix XML escaping: $e');
+    }
+  }
+
+  // Validate XML / XSD
+  Future<Map<String, dynamic>?> validateXmlXsd({
+    required File xmlFile,
+    File? xsdFile,
+  }) async {
+    try {
+      if (!xmlFile.existsSync()) {
+        throw Exception('XML file does not exist');
+      }
+      final extension = p.extension(xmlFile.path).toLowerCase();
+      if (extension != '.xml') {
+        throw Exception('Only .xml files are supported');
+      }
+
+      final formDataMap = <String, dynamic>{
+        'file_xml': await MultipartFile.fromFile(
+          xmlFile.path,
+          filename: p.basename(xmlFile.path),
+        ),
+      };
+
+      if (xsdFile != null) {
+        if (!xsdFile.existsSync()) {
+          throw Exception('XSD file does not exist');
+        }
+        final xsdExtension = p.extension(xsdFile.path).toLowerCase();
+        if (xsdExtension != '.xsd') {
+          throw Exception('Only .xsd files are supported');
+        }
+
+        formDataMap['file_xsd'] = await MultipartFile.fromFile(
+          xsdFile.path,
+          filename: p.basename(xsdFile.path),
+        );
+      }
+
+      FormData formData = FormData.fromMap(formDataMap);
+
+      _debugLog('📤 Uploading XML/XSD for validation...');
+
+      Response response = await _dio.post(
+        ApiConfig.xmlXsdValidatorEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+           return data;
+        }
+      }
+      return null;
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 500) {
+          // Pass through the 500 error body if it contains detailed validation errors
+          final data = e.response?.data;
+          if (data is Map<String, dynamic>) {
+              return data;
+          }
+      }
+      throw Exception('Failed to validate XML: $e');
+    }
+  }
 }
