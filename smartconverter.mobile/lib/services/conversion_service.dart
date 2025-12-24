@@ -5030,4 +5030,244 @@ async def download_file(filename: str):
       throw Exception('Failed to validate XML: $e');
     }
   }
+
+  // Convert CSV to Excel
+  Future<ImageToPdfResult?> convertCsvToExcel(
+    File csvFile, {
+    String? outputFilename,
+    String delimiter = ',',
+  }) async {
+    try {
+      if (!csvFile.existsSync()) {
+        throw Exception('CSV file does not exist');
+      }
+      final extension = p.extension(csvFile.path).toLowerCase();
+      if (extension != '.csv') {
+        throw Exception('Only .csv files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        csvFile.path,
+        filename: p.basename(csvFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        'delimiter': delimiter,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading CSV file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.csvCsvToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(csvFile.path)}.xlsx';
+
+        _debugLog('✅ CSV successfully converted to Excel!');
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'CsvToExcel',
+          extension: 'xlsx',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert CSV to Excel: $e');
+    }
+  }
+
+
+
+
+
+  // Convert Excel to CSV
+  Future<ImageToPdfResult?> convertExcelToCsv(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!excelFile.existsSync()) {
+        throw Exception('Excel file does not exist');
+      }
+      final extension = p.extension(excelFile.path).toLowerCase();
+      if (!['.xls', '.xlsx'].contains(extension)) {
+        throw Exception('Only Excel files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        excelFile.path,
+        filename: p.basename(excelFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading Excel file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.csvExcelToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(excelFile.path)}.csv';
+
+        _debugLog('✅ Excel successfully converted to CSV!');
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert Excel to CSV: $e');
+    }
+  }
+
+
+
+  // Convert ODS to CSV
+  Future<ImageToPdfResult?> convertOdsToCsv(
+    File odsFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!odsFile.existsSync()) {
+        throw Exception('ODS file does not exist');
+      }
+      final extension = p.extension(odsFile.path).toLowerCase();
+      if (extension != '.ods') {
+        throw Exception('Only .ods files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        odsFile.path,
+        filename: p.basename(odsFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading ODS file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.csvOdsToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(odsFile.path)}.csv';
+
+        _debugLog('✅ ODS successfully converted to CSV!');
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OdsToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert ODS to CSV: $e');
+    }
+  }
+
+
+
+  // Convert BSON to CSV
+  Future<ImageToPdfResult?> convertBsonToCsv(
+    File bsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!bsonFile.existsSync()) {
+        throw Exception('BSON file does not exist');
+      }
+      final extension = p.extension(bsonFile.path).toLowerCase();
+      if (extension != '.bson') {
+        throw Exception('Only .bson files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        bsonFile.path,
+        filename: p.basename(bsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading BSON file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.csvBsonToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        String downloadUrl = response.data['download_url'];
+        String fileName = response.data['output_filename'] ??
+            '${p.basenameWithoutExtension(bsonFile.path)}.csv';
+
+        _debugLog('✅ BSON successfully converted to CSV!');
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'BsonToCsv',
+          extension: 'csv',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert BSON to CSV: $e');
+    }
+  }
+
+
+
+
+
+
 }
