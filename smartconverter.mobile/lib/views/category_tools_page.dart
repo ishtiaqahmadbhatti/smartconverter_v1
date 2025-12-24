@@ -331,13 +331,13 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert CSV to XML':
           return const CsvToXmlFromXmlCategoryPage();
         case 'Convert Excel to XML':
-          return const ExcelToXmlOfficePage();
+          return const ExcelToXmlPage();
         case 'Convert XML to JSON':
           return const XmlToJsonFromXmlCategoryPage();
         case 'Convert XML to CSV':
-          return const XmlToCsvOfficePage();
+          return const XmlToCsvPage();
         case 'Convert XML to Excel':
-          return const XmlToExcelOfficePage();
+          return const XmlToExcelPage();
         case 'Fix XML Escaping':
           return const XmlFixEscapingPage();
 
