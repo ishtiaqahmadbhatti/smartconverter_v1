@@ -683,7 +683,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Text Ready',
+                      'Text File Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -706,8 +706,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
+          Center(
             child: ElevatedButton.icon(
               onPressed: _isSaving ? null : _saveTextFile,
               icon: _isSaving
@@ -722,21 +721,17 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
                       ),
                     )
                   : const Icon(Icons.save_outlined, size: 18),
-              label: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Save File',
-                  style: TextStyle(fontSize: 14),
-                ),
+              label: const Text(
+                'Save File',
+                style: TextStyle(fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.backgroundSurface,
                 foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(
                   vertical: 14,
-                  horizontal: 12,
+                  horizontal: 24,
                 ),
-                minimumSize: const Size(0, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
