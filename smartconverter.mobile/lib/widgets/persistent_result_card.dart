@@ -68,12 +68,41 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
             ],
           ),
           const SizedBox(height: 16),
+          const Center(
+            child: Text(
+              'FILE SAVED AT',
+              style: TextStyle(
+                color: AppColors.primaryBlue,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text(
-            'FILE SAVED AT:',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
+            'APP LOCATION:',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+             child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: _buildAppLocationPath(widget.savedFilePath),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'DEVICE LOCATION:',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
@@ -155,5 +184,96 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildAppLocationPath(String fullPath) {
+    List<Widget> widgets = [];
+
+    // 1. Drawer Menu Icon
+    widgets.add(
+      Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(Icons.menu, color: AppColors.textPrimary, size: 14),
+      ),
+    );
+
+    // Separator
+    widgets.add(const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryBlue));
+
+    // 2. My Files Group
+    widgets.add(
+      const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.folder_open, size: 16, color: AppColors.primaryBlue),
+          SizedBox(width: 2),
+          Text(
+            'My Files',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+          ),
+        ],
+      ),
+    );
+
+    // Separator
+    widgets.add(const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryBlue));
+
+    // 3. SmartConverter part
+    String relativePath = '';
+    if (fullPath.contains('SmartConverter')) {
+      final parts = fullPath.split('SmartConverter');
+      if (parts.length > 1) {
+        relativePath = 'SmartConverter${parts.sublist(1).join('SmartConverter')}';
+      } else {
+        relativePath = 'SmartConverter';
+      }
+    } else {
+      relativePath = p.basename(fullPath);
+    }
+
+    // Split and add segments
+    relativePath = relativePath.replaceAll('\\', '/');
+    if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
+    
+    final segments = relativePath.split('/');
+    
+    for (int i = 0; i < segments.length; i++) {
+        if (segments[i].isEmpty) continue;
+        
+        final isLast = i == segments.length - 1;
+        
+        widgets.add(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               Icon(
+                  isLast ? Icons.insert_drive_file : Icons.folder,
+                  size: 16, 
+                  color: isLast ? AppColors.textPrimary : AppColors.primaryBlue
+              ),
+              const SizedBox(width: 2),
+              Text(
+                segments[i],
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+        );
+        
+        if (!isLast) {
+           widgets.add(const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryBlue));
+        }
+    }
+
+    return widgets;
   }
 }
