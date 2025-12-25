@@ -391,15 +391,36 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.backgroundSurface.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: AppColors.textPrimary,
-              size: 32,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Icon(
+                      Icons.picture_as_pdf,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Icon(
+                      Icons.text_fields,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 16),
