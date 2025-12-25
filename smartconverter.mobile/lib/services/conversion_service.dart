@@ -341,7 +341,6 @@ class ConversionService {
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'WordToText',
           extension: 'txt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
