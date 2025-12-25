@@ -7,7 +7,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class CsvToSrtFromSubtitlePage extends StatefulWidget {
   const CsvToSrtFromSubtitlePage({super.key});
@@ -15,7 +18,7 @@ class CsvToSrtFromSubtitlePage extends StatefulWidget {
   State<CsvToSrtFromSubtitlePage> createState() => _CsvToSrtFromSubtitlePageState();
 }
 
-class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
+class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> with AdHelper {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -28,15 +31,11 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
   String _statusMessage = 'Select a CSV file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -44,8 +43,6 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -57,36 +54,7 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
-  }
+
 
   Future<void> _pickCsvFile() async {
     try {
@@ -113,6 +81,7 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'CSV selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
       _updateSuggestedFileName();
     } catch (e) {
@@ -139,9 +108,23 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting CSV to SRT...';
+      _statusMessage = 'Preparing conversion...';
       _conversionResult = null;
       _savedFilePath = null;
+    });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'CSV to SRT');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
+
+    setState(() {
+      _statusMessage = 'Converting CSV to SRT...';
     });
 
     try {
@@ -197,6 +180,10 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
   Future<void> _saveSrtFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
     try {
       final directory = await FileManager.getCsvToSrtSubtitleDirectory();
@@ -219,12 +206,18 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
       final savedFile = await result.file.copy(destinationFile.path);
       if (!mounted) return;
       setState(() => _savedFilePath = savedFile.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -342,21 +335,19 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> {
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareSrtFile,
+                      )
+                    : _buildResultCard(),
                 ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
