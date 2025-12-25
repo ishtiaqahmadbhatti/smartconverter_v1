@@ -151,7 +151,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Text converted successfully!';
+        _statusMessage = 'SRT to Text converted successfully!';
         _savedFilePath = null;
       });
 
@@ -211,6 +211,12 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
         fileName: targetFileName,
         filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
 
 
     } catch (e) {

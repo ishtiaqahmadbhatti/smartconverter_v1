@@ -166,7 +166,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Text converted successfully!';
+        _statusMessage = 'VTT to Text converted successfully!';
         _savedFilePath = null;
       });
 
@@ -226,6 +226,12 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
         fileName: targetFileName,
         filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
 
 
     } catch (e) {

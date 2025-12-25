@@ -144,7 +144,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Text converted successfully!';
+        _statusMessage = 'PowerPoint to Text converted successfully!';
         _savedFilePath = null;
       });
 
@@ -203,6 +203,12 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
         fileName: targetFileName,
         filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
 
 
     } catch (e) {

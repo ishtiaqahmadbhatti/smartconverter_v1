@@ -147,7 +147,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
       setState(() {
         _conversionResult = result;
-        _statusMessage = 'Text converted successfully!';
+        _statusMessage = 'PDF to Text converted successfully!';
         _savedFilePath = null;
       });
 
@@ -207,6 +207,12 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
         fileName: targetFileName,
         filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
 
 
     } catch (e) {
