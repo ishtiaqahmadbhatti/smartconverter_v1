@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import '../../../utils/ad_helper.dart';
-
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 
 class AiPdfToCsvPage extends StatefulWidget {
@@ -226,12 +227,17 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper<AiPdfToCs
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -373,7 +379,12 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper<AiPdfToCs
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareCsvFile,
+                      )
+                    : _buildResultCard(),
                 ],
                 const SizedBox(height: 24),
               ],

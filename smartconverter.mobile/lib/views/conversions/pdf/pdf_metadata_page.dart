@@ -6,8 +6,10 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
-import '../../../services/admob_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class PdfMetadataPage extends StatefulWidget {
   const PdfMetadataPage({super.key});
@@ -15,9 +17,9 @@ class PdfMetadataPage extends StatefulWidget {
   State<PdfMetadataPage> createState() => _PdfMetadataPageState();
 }
 
-class _PdfMetadataPageState extends State<PdfMetadataPage> {
+class _PdfMetadataPageState extends State<PdfMetadataPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
+  // final AdMobService _admobService = AdMobService(); // Handled by AdHelper
   final TextEditingController _fileNameController = TextEditingController();
   File? _selectedFile;
   File? _resultFile;
@@ -26,46 +28,10 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
   String _statusMessage = 'Select a PDF file to begin.';
   bool _isProcessing = false;
   bool _isSaving = false;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
-
   @override
   void initState() {
     super.initState();
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectoryPath();
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _loadTargetDirectoryPath() async {
@@ -76,8 +42,6 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
   @override
   void dispose() {
     _fileNameController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -92,6 +56,7 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
       _resultFile = null;
       _savedFilePath = null;
       _statusMessage = 'PDF selected: ${p.basename(file.path)}';
+      resetAdStatus(file.path);
     });
   }
 
@@ -104,6 +69,16 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
       _resultFile = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Get PDF Metadata');
+    if (!adWatched) {
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = 'Extraction cancelled (Ad required).';
+      });
+      return;
+    }
     try {
       final name = _fileNameController.text.trim();
       final res = await _service.getPdfMetadataFile(file, outputFilename: name.isNotEmpty ? name : null);
@@ -127,6 +102,10 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
   Future<void> _saveResult() async {
     final res = _resultFile;
     if (res == null) return;
+    
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getMetadataPdfDirectory();
@@ -142,10 +121,20 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
       }
       final saved = await res.copy(destinationFile.path);
       if (!mounted) return;
+      
       setState(() => _savedFilePath = saved.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved to: ${saved.path}'), backgroundColor: AppColors.success),
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: saved.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Metadata saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -189,24 +178,38 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
                 const SizedBox(height: 12),
                 _buildOptionsCard(),
                 const SizedBox(height: 12),
-                _buildActionsCard(),
+                _buildExtractButton(),
                 const SizedBox(height: 12),
-                _buildResultCard(),
+                _buildStatusMessage(),
+                if (_resultFile != null) ...[
+                  const SizedBox(height: 20),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareResult,
+                      )
+                    : _buildResultCard(),
+                ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? SafeArea(
-              bottom: true,
-              child: Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        _statusMessage,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+      ),
     );
   }
 
@@ -284,83 +287,134 @@ class _PdfMetadataPageState extends State<PdfMetadataPage> {
     );
   }
 
-  Widget _buildActionsCard() {
+  Widget _buildExtractButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (_selectedFile == null || _isProcessing) ? null : _getMetadata,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryBlue,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Text(
+          _isProcessing ? 'Processing…' : 'Get Metadata',
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    final res = _resultFile!;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.2),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (_selectedFile == null || _isProcessing) ? null : _getMetadata,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                  child: Text(_isProcessing ? 'Processing…' : 'Get Metadata', style: const TextStyle(color: Colors.white)),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.data_object,
+                  color: AppColors.textPrimary,
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: (_resultFile == null || _isSaving) ? null : _saveResult,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                  child: Text(_isSaving ? 'Saving…' : 'Save', style: const TextStyle(color: Colors.white)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Metadata Ready',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.basename(res.path),
+                      style: TextStyle(
+                        color: AppColors.textPrimary.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(_statusMessage, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultCard() {
-    final res = _resultFile;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Result', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          if (res == null)
-            const Text('No result yet.', style: TextStyle(color: AppColors.textSecondary))
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    p.basename(res.path),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Flexible(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _saveResult,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.textPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.save_outlined, size: 18),
+                  label: const Text('Save JSON'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.backgroundSurface,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.share, color: AppColors.primaryBlue),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                flex: 2,
+                child: ElevatedButton.icon(
                   onPressed: _shareResult,
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  label: const Text('Share'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.backgroundSurface,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Saved: ${_savedFilePath ?? 'Not saved yet'}',
-              style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              ),
+            ],
+          ),
         ],
       ),
     );

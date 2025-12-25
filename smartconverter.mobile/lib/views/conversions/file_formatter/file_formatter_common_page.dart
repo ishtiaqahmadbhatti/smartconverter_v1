@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'dart:math';
 
@@ -12,7 +11,10 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 /// A generic page for File Formatter tools.
 class FileFormatterCommonPage extends StatefulWidget {
@@ -43,30 +45,24 @@ class FileFormatterCommonPage extends StatefulWidget {
   State<FileFormatterCommonPage> createState() => _FileFormatterCommonPageState();
 }
 
-class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
+class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
   File? _convertedFile;
-  String? _downloadUrl;
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
   String _statusMessage = '';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _statusMessage = 'Select a ${widget.inputExtension.toUpperCase()} file to begin.';
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _service.initialize();
   }
 
@@ -75,8 +71,6 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -86,38 +80,6 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
     }
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickFile() async {
@@ -141,9 +103,9 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
       setState(() {
         _selectedFile = file;
         _convertedFile = null;
-        _downloadUrl = null;
         _savedFilePath = null;
         _statusMessage = 'Selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -173,9 +135,18 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
       _isConverting = true;
       _statusMessage = 'Processing file...';
       _convertedFile = null;
-      _downloadUrl = null;
       _savedFilePath = null;
     });
+
+    // Validated Load: Show Rewarded Ad Gate
+    final adWatched = await showRewardedAdGate(toolName: widget.toolName);
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Processing cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final apiBaseUrl = await ApiConfig.baseUrl;
@@ -224,16 +195,9 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
 
         setState(() {
           _convertedFile = File(savePath);
-          _downloadUrl = fullDownloadUrl;
           _statusMessage = 'Operation successful!';
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('File ready: $outputFilename'),
-            backgroundColor: AppColors.success,
-          ),
-        );
       } else {
         throw Exception(response.data['message'] ?? 'Operation failed');
       }
@@ -252,6 +216,9 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
 
   Future<void> _saveFile() async {
     if (_convertedFile == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
@@ -283,6 +250,11 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
       if (!mounted) return;
 
       setState(() => _savedFilePath = destinationFile.path);
+
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: destinationFile.path,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -355,7 +327,6 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
     setState(() {
       _selectedFile = null;
       _convertedFile = null;
-      _downloadUrl = null;
       _isConverting = false;
       _isSaving = false;
       _fileNameEdited = false;
@@ -364,7 +335,6 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
       _statusMessage = 'Select a ${widget.inputExtension.toUpperCase()} file to begin.';
       _fileNameController.clear();
     });
-    _admobService.preloadAd();
   }
 
   @override
@@ -420,7 +390,12 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
                 _buildStatusMessage(),
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareFile,
+                      )
+                    : _buildResultCard(),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -428,14 +403,7 @@ class _FileFormatterCommonPageState extends State<FileFormatterCommonPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

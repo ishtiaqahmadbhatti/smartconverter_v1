@@ -9,6 +9,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -19,7 +21,7 @@ class PdfToTextPage extends StatefulWidget {
   State<PdfToTextPage> createState() => _PdfToTextPageState();
 }
 
-class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPage> {
+class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
@@ -224,12 +226,17 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPa
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      setState(() => _savedFilePath = savedFile.path);
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() => _statusMessage = 'File saved successfully!');
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -371,7 +378,12 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPa
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareTextFile,
+                      )
+                    : _buildResultCard(),
                 ],
 
               ],
@@ -646,8 +658,7 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPa
 
   Widget _buildResultCard() {
     final result = _conversionResult!;
-    final isSaved = _savedFilePath != null;
-
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -710,7 +721,7 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPa
           Row(
             children: [
               Flexible(
-                flex: isSaved ? 3 : 1,
+                flex: 3,
                 child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _saveTextFile,
                   icon: _isSaving
@@ -746,29 +757,27 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper<PdfToTextPa
                   ),
                 ),
               ),
-              if (isSaved) ...[
-                const SizedBox(width: 12),
-                Flexible(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _shareTextFile,
-                    icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share', style: TextStyle(fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.backgroundSurface,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 12,
-                      ),
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+              const SizedBox(width: 12),
+              Flexible(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: _shareTextFile,
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  label: const Text('Share', style: TextStyle(fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.backgroundSurface,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 12,
+                    ),
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],

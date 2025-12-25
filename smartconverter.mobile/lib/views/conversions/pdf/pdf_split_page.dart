@@ -6,7 +6,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+// import '../../../widgets/persistent_result_card.dart'; // Not using for split as it returns a list/folder
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../models/conversion_tool.dart';
 
 class PdfSplitPage extends StatefulWidget {
@@ -15,9 +18,9 @@ class PdfSplitPage extends StatefulWidget {
   State<PdfSplitPage> createState() => _PdfSplitPageState();
 }
 
-class _PdfSplitPageState extends State<PdfSplitPage> {
+class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
+  // final AdMobService _admobService = AdMobService(); // Handled by AdHelper
   final TextEditingController _prefixCtrl = TextEditingController();
   final TextEditingController _rangesCtrl = TextEditingController();
   File? _selectedFile;
@@ -34,47 +37,12 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
   @override
   void initState() {
     super.initState();
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectoryPath();
   }
 
   @override
   void dispose() {
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _loadTargetDirectoryPath() async {
@@ -101,6 +69,7 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       _savedFolderPath = null;
       _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
       _prefixCtrl.text = p.basenameWithoutExtension(file.path);
+      resetAdStatus(file.path);
     });
   }
 
@@ -110,6 +79,17 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       return;
     }
     setState(() => _isProcessing = true);
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Split PDF');
+    if (!adWatched) {
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = 'Split cancelled (Ad required).';
+      });
+      return;
+    }
+
     try {
       final prefix = _prefixCtrl.text.trim().isEmpty
           ? p.basenameWithoutExtension(_selectedFile!.path)
@@ -137,6 +117,10 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
 
   Future<void> _savePartsLocally() async {
     if (_results.isEmpty) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     final baseDir = await FileManager.getSplitPdfsDirectory();
     String targetFolder = _prefixCtrl.text.trim().isEmpty
         ? (_selectedFile != null
@@ -150,6 +134,8 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       counter++;
     }
     await destination.create(recursive: true);
+    
+    bool anySaved = false;
     for (final part in _results) {
       final tmp = await _service.downloadConvertedFile(
         part.downloadUrl,
@@ -157,9 +143,24 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
       );
       if (tmp != null) {
         await tmp.copy(p.join(destination.path, part.fileName));
+        anySaved = true;
       }
     }
-    setState(() => _savedFolderPath = destination.path);
+    
+    if (anySaved) {
+      setState(() => _savedFolderPath = destination.path);
+      
+       // Trigger System Notification (Using first file or just generic info? The widget expects file path, but we have a folder. 
+       // I'll pass the folder path, it might try to open it if supported, or just show the path.)
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFolder,
+        filePath: destination.path,
+      );
+
+      if (mounted) {
+         setState(() => _statusMessage = 'Files saved to $targetFolder');
+      }
+    }
   }
 
   @override
@@ -190,24 +191,33 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
                 const SizedBox(height: 12),
                 _buildOptionsCard(),
                 const SizedBox(height: 12),
-                _buildActionsCard(),
+                _buildSplitButton(),
                 const SizedBox(height: 12),
-                _buildResultsCard(),
+                _buildStatusMessage(),
+                if (_results.isNotEmpty) ...[
+                   const SizedBox(height: 12),
+                   _buildResultsList(),
+                ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? SafeArea(
-              bottom: true,
-              child: Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        _statusMessage,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+      ),
     );
   }
 
@@ -363,11 +373,28 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
     );
   }
 
-  Widget _buildActionsCard() {
+  Widget _buildSplitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (_selectedFile == null || _isProcessing) ? null : _splitPdf,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryBlue,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Text(
+          _isProcessing ? 'Splitting…' : 'Split PDF',
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsList() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
+        color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primaryBlue.withOpacity(0.25),
@@ -379,107 +406,85 @@ class _PdfSplitPageState extends State<PdfSplitPage> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isProcessing ? null : _splitPdf,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                  ),
-                  child: Text(
-                    _isProcessing ? 'Splitting…' : 'Split PDF',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _results.isEmpty ? null : _savePartsLocally,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                  ),
-                  child: const Text(
-                    'Save Parts',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
+               const Expanded(
+                 child: Text(
+                   'Split Results',
+                   style: TextStyle(
+                     color: AppColors.textPrimary,
+                     fontSize: 16,
+                     fontWeight: FontWeight.w600,
+                   ),
+                 ),
+               ),
+               if (_results.isNotEmpty)
+                 TextButton.icon(
+                   onPressed: _savePartsLocally,
+                   icon: const Icon(Icons.save_alt),
+                   label: const Text('Save All'),
+                 ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            _statusMessage,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.25),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           if (_savedFolderPath != null)
-            Text(
-              'Saved to: $_savedFolderPath',
-              style: const TextStyle(color: AppColors.textSecondary),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Saved folder: $_savedFolderPath',
+                style: const TextStyle(color: AppColors.success, fontSize: 12),
+              ),
             ),
-          const SizedBox(height: 8),
           ..._results.map(
-            (r) => ListTile(
-              title: Text(
-                r.fileName,
-                style: const TextStyle(color: AppColors.textPrimary),
+            (r) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundSurface,
+                borderRadius: BorderRadius.circular(8),
               ),
-              subtitle: Text(
-                'Pages: ${r.pages.join(', ')}',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              trailing: ElevatedButton(
-                onPressed: () async {
-                  final f = await _service.downloadConvertedFile(
-                    r.downloadUrl,
-                    r.fileName,
-                  );
-                  if (f != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Downloaded ${r.fileName}')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                ),
-                child: const Text(
-                  'Download',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              onTap: () async {
-                final f = await _service.downloadConvertedFile(
-                  r.downloadUrl,
+              child: ListTile(
+                title: Text(
                   r.fileName,
-                );
-                if (f != null) {
-                  await Share.shareXFiles([
-                    XFile(f.path),
-                  ], text: 'Split part: ${r.fileName}');
-                }
-              },
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                ),
+                subtitle: Text(
+                  'Pages: ${r.pages.join(', ')}',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                     IconButton(
+                       icon: const Icon(Icons.download, color: AppColors.primaryBlue),
+                       onPressed: () async {
+                         final f = await _service.downloadConvertedFile(
+                           r.downloadUrl,
+                           r.fileName,
+                         );
+                         if (f != null && mounted) {
+                           // Individual file download notification or snackbar? 
+                           // Keeping snackbar for individual downloads to avoid spamming notification center
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(content: Text('Downloaded ${r.fileName}')),
+                           );
+                         }
+                       },
+                     ),
+                     IconButton(
+                        icon: const Icon(Icons.share, color: AppColors.primaryBlue),
+                        onPressed: () async {
+                           final f = await _service.downloadConvertedFile(
+                             r.downloadUrl,
+                             r.fileName,
+                           );
+                           if (f != null) {
+                             await Share.shareXFiles([
+                               XFile(f.path),
+                             ], text: 'Split part: ${r.fileName}');
+                           }
+                        },
+                     ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

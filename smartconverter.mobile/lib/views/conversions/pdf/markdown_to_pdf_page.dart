@@ -9,6 +9,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -19,7 +21,7 @@ class MarkdownToPdfPage extends StatefulWidget {
   State<MarkdownToPdfPage> createState() => _MarkdownToPdfPageState();
 }
 
-class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<MarkdownToPdfPage> {
+class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
@@ -74,6 +76,7 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<Mar
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'Markdown file selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
 
       _updateSuggestedFileName();
@@ -105,6 +108,16 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<Mar
       _conversionResult = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Markdown to PDF');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       // Get custom filename if provided
@@ -197,12 +210,17 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<Mar
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -345,7 +363,12 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper<Mar
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _sharePdfFile,
+                      )
+                    : _buildResultCard(),
                 ],
 
               ],

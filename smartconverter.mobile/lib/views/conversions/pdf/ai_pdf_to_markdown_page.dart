@@ -6,11 +6,13 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../../utils/ad_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
-import '../../../utils/ad_helper.dart';
 
 class AiPdfToMarkdownPage extends StatefulWidget {
   const AiPdfToMarkdownPage({super.key});
@@ -223,12 +225,17 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> with AdHelper
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -372,9 +379,13 @@ class _AiPdfToMarkdownPageState extends State<AiPdfToMarkdownPage> with AdHelper
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareMarkdownFile,
+                      )
+                    : _buildResultCard(),
                 ],
-
               ],
             ),
           ),

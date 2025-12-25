@@ -9,6 +9,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -153,9 +155,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     });
   }
 
-  Future<bool> _requestRewardedAd() async {
-    return showRewardedAdGate(toolName: 'Merge PDF');
-  }
+
   
   String _computeSelectionSignature(List<File> files) {
     if (files.isEmpty) {
@@ -204,13 +204,10 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
       return;
     }
 
-    final isUnlocked = adWatchedForCurrentFile;
-    if (!isUnlocked) {
-      final proceed = await _requestRewardedAd();
-      if (!proceed) {
-        return;
-      }
-      if (!mounted) return;
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Merge PDF');
+    if (!adWatched) {
+      return;
     }
 
     setState(() {
@@ -278,6 +275,9 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     final result = _mergeResult;
     if (result == null) return;
 
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
 
     try {
@@ -300,12 +300,17 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -433,7 +438,12 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
                 _buildStatusMessage(),
                 if (_mergeResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareMergedFile,
+                      )
+                    : _buildResultCard(),
                 ],
 
               ],

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../utils/ad_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 
 class ExtractPagesPage extends StatefulWidget {
@@ -15,7 +18,7 @@ class ExtractPagesPage extends StatefulWidget {
   State<ExtractPagesPage> createState() => _ExtractPagesPageState();
 }
 
-class _ExtractPagesPageState extends State<ExtractPagesPage> {
+class _ExtractPagesPageState extends State<ExtractPagesPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _rangesController = TextEditingController();
@@ -29,14 +32,9 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
   bool _isProcessing = false;
   bool _isSaving = false;
 
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
-
   @override
   void initState() {
     super.initState();
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectoryPath();
   }
 
@@ -44,40 +42,7 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
   void dispose() {
     _rangesController.dispose();
     _fileNameController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _loadTargetDirectoryPath() async {
@@ -100,6 +65,7 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
       _resultFile = null;
       _savedFilePath = null;
       _statusMessage = 'PDF selected: ${p.basename(file.path)}';
+      resetAdStatus(file.path);
     });
   }
 
@@ -142,6 +108,16 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
       _resultFile = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Extract Pages');
+    if (!adWatched) {
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = 'Operation cancelled (Ad required).';
+      });
+      return;
+    }
     try {
       final pages = _parseRanges(rangesText);
       final name = _fileNameController.text.trim();
@@ -166,6 +142,10 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
   Future<void> _saveResult() async {
     final res = _resultFile;
     if (res == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getExtractPagesDirectory();
@@ -182,9 +162,18 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
       final saved = await res.copy(destinationFile.path);
       if (!mounted) return;
       setState(() => _savedFilePath = saved.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved to: ${saved.path}'), backgroundColor: AppColors.success),
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: saved.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -210,7 +199,7 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Extract Pages', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Extract Pages', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
@@ -224,68 +213,163 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPickerCard(),
-                const SizedBox(height: 12),
+                _buildHeaderCard(),
+                const SizedBox(height: 20),
+                _buildActionButtons(),
+                const SizedBox(height: 16),
+                _buildSelectedFileCard(),
+                const SizedBox(height: 16),
                 _buildOptionsCard(),
-                const SizedBox(height: 12),
-                _buildActionsCard(),
-                const SizedBox(height: 12),
-                _buildResultCard(),
+                const SizedBox(height: 16),
+                _buildExtractButton(),
+                const SizedBox(height: 16),
+                _buildStatusMessage(),
+                if (_resultFile != null) ...[
+                   const SizedBox(height: 20),
+                   _savedFilePath != null
+                     ? PersistentResultCard(
+                         savedFilePath: _savedFilePath!,
+                         onShare: _shareResult,
+                       )
+                     : _buildResultCard(),
+                ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? SafeArea(
-              bottom: true,
-              child: Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
-  Widget _buildPickerCard() {
-    final name = _selectedFile != null ? p.basename(_selectedFile!.path) : 'No file selected';
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.25),
+            blurRadius: 18,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundSurface.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.content_copy,
+              color: AppColors.textPrimary,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Extract Pages',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Extract specific pages from your PDF documents into a new file.',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: (_isProcessing) ? null : _pickPdfFile,
+            icon: const Icon(Icons.file_open_outlined),
+            label: Text(
+              _selectedFile == null ? 'Select PDF File' : 'Change File',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.textPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedFileCard() {
+    if (_selectedFile == null) {
+      return const SizedBox.shrink();
+    }
+
+    final file = _selectedFile!;
+    final fileName = p.basename(file.path);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
+        color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Text('Select PDF', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.picture_as_pdf,
+              color: AppColors.primaryBlue,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isProcessing ? null : _pickPdfFile,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                child: const Text('Choose', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _targetDirectoryPath != null
-                ? 'Will save under: $_targetDirectoryPath'
-                : 'Will save under: Documents/SmartConverter/PDFConversions/ExtractPages',
-            style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
+              ],
+            ),
           ),
         ],
       ),
@@ -296,39 +380,41 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
+        color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Options', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
+          const Text('Extraction Settings', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
           TextField(
             controller: _rangesController,
-            decoration: const InputDecoration(
-              labelText: 'Pages to extract',
-              hintText: 'e.g., 1-5,7,9-12',
-              labelStyle: TextStyle(color: AppColors.textSecondary),
-              hintStyle: TextStyle(color: AppColors.textTertiary),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.textTertiary),
-              ),
+            decoration: InputDecoration(
+              labelText: 'Pages to Extract',
+              hintText: 'e.g., 1-5, 7, 9-12',
+              helperText: 'Enter page ranges or single page numbers',
+              helperStyle: const TextStyle(color: AppColors.textTertiary),
+              labelStyle: const TextStyle(color: AppColors.textSecondary),
+              hintStyle: const TextStyle(color: AppColors.textTertiary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              filled: true,
+              fillColor: AppColors.backgroundDark,
             ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           TextField(
             controller: _fileNameController,
-            decoration: const InputDecoration(
-              labelText: 'Output file name',
-              hintText: 'optional',
-              labelStyle: TextStyle(color: AppColors.textSecondary),
-              hintStyle: TextStyle(color: AppColors.textTertiary),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.textTertiary),
-              ),
+            decoration: InputDecoration(
+               labelText: 'Output Filename (Optional)',
+               hintText: 'custom_name',
+               labelStyle: const TextStyle(color: AppColors.textSecondary),
+               hintStyle: const TextStyle(color: AppColors.textTertiary),
+               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+               filled: true,
+               fillColor: AppColors.backgroundDark,
             ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
@@ -337,38 +423,83 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
     );
   }
 
-  Widget _buildActionsCard() {
+  Widget _buildExtractButton() {
+     final canConvert = _selectedFile != null && !_isProcessing;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: canConvert ? _extractPages : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryBlue,
+          foregroundColor: AppColors.textPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
+        ),
+        child: _isProcessing
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.textPrimary,
+                  ),
+                ),
+              )
+            : const Text(
+                'Extract Pages',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    final bool isSuccess = _resultFile != null || _savedFilePath != null;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (_selectedFile == null || _isProcessing) ? null : _extractPages,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                  child: Text(_isProcessing ? 'Processing…' : 'Extract Pages', style: const TextStyle(color: Colors.white)),
-                ),
+              Icon(
+                _isProcessing
+                    ? Icons.hourglass_empty
+                    : isSuccess
+                    ? Icons.check_circle
+                    : Icons.info_outline,
+                color: _isProcessing
+                    ? AppColors.warning
+                    : isSuccess
+                    ? AppColors.success
+                    : AppColors.textSecondary,
+                size: 20,
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: (_resultFile == null || _isSaving) ? null : _saveResult,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-                  child: Text(_isSaving ? 'Saving…' : 'Save', style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  _statusMessage,
+                  style: TextStyle(
+                    color: _isProcessing
+                        ? AppColors.warning
+                        : isSuccess
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(_statusMessage, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         ],
       ),
     );
@@ -376,44 +507,97 @@ class _ExtractPagesPageState extends State<ExtractPagesPage> {
 
   Widget _buildResultCard() {
     final res = _resultFile;
+    if (res == null) return const SizedBox.shrink();
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.25), width: 1),
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.2),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Result', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          if (res == null)
-            const Text('No result yet.', style: TextStyle(color: AppColors.textSecondary))
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    p.basename(res.path),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.share, color: AppColors.primaryBlue),
-                  onPressed: _shareResult,
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.textPrimary,
+                  size: 24,
                 ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ready to Save',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.basename(res.path),
+                      style: TextStyle(
+                        color: AppColors.textPrimary.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : _saveResult,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const Text(
+                'Save File',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.backgroundSurface,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Saved: ${_savedFilePath ?? 'Not saved yet'}',
-              style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ],
       ),
     );

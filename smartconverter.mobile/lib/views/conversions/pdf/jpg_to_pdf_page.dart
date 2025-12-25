@@ -9,6 +9,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -19,7 +21,7 @@ class JpgToPdfPage extends StatefulWidget {
   State<JpgToPdfPage> createState() => _JpgToPdfPageState();
 }
 
-class _JpgToPdfPageState extends State<JpgToPdfPage> with AdHelper<JpgToPdfPage> {
+class _JpgToPdfPageState extends State<JpgToPdfPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
@@ -226,12 +228,17 @@ class _JpgToPdfPageState extends State<JpgToPdfPage> with AdHelper<JpgToPdfPage>
 
       setState(() => _savedFilePath = savedFile.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -373,7 +380,12 @@ class _JpgToPdfPageState extends State<JpgToPdfPage> with AdHelper<JpgToPdfPage>
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _sharePdfFile,
+                      )
+                    : _buildResultCard(),
                 ],
 
               ],

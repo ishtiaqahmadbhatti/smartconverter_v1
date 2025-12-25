@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -10,6 +9,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../utils/ad_helper.dart';
 
 /// A generic page for File Validation tools.
 class FileValidatorCommonPage extends StatefulWidget {
@@ -30,66 +30,26 @@ class FileValidatorCommonPage extends StatefulWidget {
   State<FileValidatorCommonPage> createState() => _FileValidatorCommonPageState();
 }
 
-class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> {
+class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
-
+  
   File? _selectedFile;
   File? _schemaFile;
   
   bool _isValidating = false;
   String _statusMessage = '';
   Map<String, dynamic>? _validationResult;
-  
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _statusMessage = 'Select a ${widget.inputExtension.toUpperCase()} file to validate.';
-    _admobService.preloadAd();
-    _loadBannerAd();
     _service.initialize();
   }
 
   @override
   void dispose() {
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-
-    _bannerAd = ad;
-    ad.load();
   }
 
   Future<void> _pickFile(bool isSchema) async {
@@ -111,6 +71,7 @@ class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> {
           _selectedFile = file;
           _statusMessage = 'Selected: ${p.basename(file.path)}';
           _validationResult = null;
+          resetAdStatus(file.path);
         }
       });
     } catch (e) {
@@ -140,6 +101,16 @@ class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> {
       _statusMessage = 'Validating...';
       _validationResult = null;
     });
+
+    // Validated Load: Show Rewarded Ad Gate
+    final adWatched = await showRewardedAdGate(toolName: widget.toolName);
+    if (!adWatched) {
+      setState(() {
+        _isValidating = false;
+        _statusMessage = 'Validation cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final apiBaseUrl = await ApiConfig.baseUrl;
@@ -258,14 +229,7 @@ class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> {
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 

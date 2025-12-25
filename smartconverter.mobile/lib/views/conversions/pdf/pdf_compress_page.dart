@@ -6,7 +6,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class PdfCompressPage extends StatefulWidget {
   const PdfCompressPage({super.key});
@@ -15,12 +18,12 @@ class PdfCompressPage extends StatefulWidget {
   State<PdfCompressPage> createState() => _PdfCompressPageState();
 }
 
-class _PdfCompressPageState extends State<PdfCompressPage> {
+class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
   final TextEditingController _targetPctController = TextEditingController();
   final TextEditingController _dpiController = TextEditingController();
-  final AdMobService _admobService = AdMobService();
+  // final AdMobService _admobService = AdMobService(); // Removed as AdHelper handles it
 
   File? _selectedFile;
   CompressPdfResult? _result;
@@ -30,16 +33,12 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
   String _statusMessage = 'Select a PDF file to begin.';
   String? _targetDirectoryPath;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
   String _compressionLevel = 'medium';
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
     _loadTargetDirectoryPath();
   }
 
@@ -50,8 +49,6 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
       ..dispose();
     _targetPctController.dispose();
     _dpiController.dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -64,43 +61,8 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
   }
 
   Future<void> _loadTargetDirectoryPath() async {
-    try {
-      final dir = await FileManager.getCompressedPdfsDirectory();
-      if (mounted) {
-        setState(() => _targetDirectoryPath = dir.path);
-      }
-    } catch (_) {}
-  }
-
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
+    final dir = await FileManager.getCompressedPdfsDirectory();
+    setState(() => _targetDirectoryPath = dir.path);
   }
 
   Future<void> _pickPdfFile() async {
@@ -118,6 +80,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
         _result = null;
         _savedFilePath = null;
         _statusMessage = '1 PDF file selected.';
+        resetAdStatus(file.path);
       });
       _updateSuggestedFileName();
     } catch (e) {
@@ -167,6 +130,16 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
       _result = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'Compress PDF');
+    if (!adWatched) {
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = 'Compression cancelled (Ad required).';
+      });
+      return;
+    }
     try {
       final pct = int.tryParse(_targetPctController.text.trim());
       final dpi = int.tryParse(_dpiController.text.trim());
@@ -212,6 +185,10 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
   Future<void> _saveCompressedFile() async {
     final res = _result;
     if (res == null) return;
+    
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+    
     setState(() => _isSaving = true);
     try {
       final directory = await FileManager.getCompressedPdfsDirectory();
@@ -227,13 +204,20 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
       }
       final savedFile = await res.file.copy(destinationFile.path);
       if (!mounted) return;
+      
       setState(() => _savedFilePath = savedFile.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'File saved successfully!';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -302,24 +286,38 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
                 const SizedBox(height: 12),
                 _buildOptionsCard(),
                 const SizedBox(height: 12),
-                _buildActionsCard(),
+                _buildCompressButton(),
                 const SizedBox(height: 12),
-                _buildResultCard(),
+                _buildStatusMessage(),
+                if (_result != null) ...[
+                  const SizedBox(height: 20),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareCompressedFile,
+                      )
+                    : _buildResultCard(),
+                ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: (_isBannerReady && _bannerAd != null)
-          ? SafeArea(
-              bottom: true,
-              child: Container(
-                height: 50,
-                alignment: Alignment.center,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        _statusMessage,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+      ),
     );
   }
 
@@ -492,133 +490,135 @@ class _PdfCompressPageState extends State<PdfCompressPage> {
     );
   }
 
-  Widget _buildActionsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.25),
-          width: 1,
+  Widget _buildCompressButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (_selectedFile == null || _isProcessing)
+            ? null
+            : _compress,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryBlue,
+          padding: const EdgeInsets.symmetric(vertical: 16),
         ),
+        child: Text(
+          _isProcessing ? 'Compressing…' : 'Compress PDF',
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    final res = _result!;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withOpacity(0.2),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (_selectedFile == null || _isProcessing)
-                      ? null
-                      : _compress,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                  ),
-                  child: Text(
-                    _isProcessing ? 'Compressing…' : 'Compress',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.picture_as_pdf,
+                  color: AppColors.textPrimary,
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: (_result == null || _isSaving)
-                      ? null
-                      : _saveCompressedFile,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'PDF Compressed',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${(res.sizeBefore ?? 0)} -> ${(res.sizeAfter ?? 0)} bytes',
+                      style: TextStyle(
+                        color: AppColors.textPrimary.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Flexible(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _saveCompressedFile,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.textPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.save_outlined, size: 18),
+                  label: const Text('Save Result'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: AppColors.backgroundSurface,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: Text(
-                    _isSaving ? 'Saving…' : 'Save',
-                    style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: _shareCompressedFile,
+                  icon: const Icon(Icons.share_outlined, size: 18),
+                  label: const Text('Share'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.backgroundSurface,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            _statusMessage,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultCard() {
-    final res = _result;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.25),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Result',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (res == null)
-            const Text(
-              'No result yet.',
-              style: TextStyle(color: AppColors.textSecondary),
-            )
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    res.fileName,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.share, color: AppColors.primaryBlue),
-                  onPressed: _shareCompressedFile,
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Before: ${(res.sizeBefore ?? 0)} bytes  •  After: ${(res.sizeAfter ?? 0)} bytes',
-              style: const TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Saved: ${_savedFilePath ?? 'Not saved yet'}',
-              style: const TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: 12,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );
