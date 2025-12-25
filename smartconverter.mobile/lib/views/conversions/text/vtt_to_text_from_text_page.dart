@@ -1,23 +1,30 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:file_picker/file_picker.dart';
+
 import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/persistent_result_card.dart';
 import '../../../utils/file_manager.dart';
+import '../../../utils/ad_helper.dart';
 
 class VttToTextFromTextPage extends StatefulWidget {
   const VttToTextFromTextPage({super.key});
+
   @override
   State<VttToTextFromTextPage> createState() => _VttToTextFromTextPageState();
 }
 
-class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
+class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
+    with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
 
   File? _selectedFile;
@@ -28,15 +35,11 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
   String _statusMessage = 'Select a VTT file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  BannerAd? _bannerAd;
-  bool _isBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _admobService.preloadAd();
-    _loadBannerAd();
   }
 
   @override
@@ -44,8 +47,6 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
     _fileNameController
       ..removeListener(_handleFileNameChange)
       ..dispose();
-    _admobService.dispose();
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -57,44 +58,23 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
     }
   }
 
-  void _loadBannerAd() {
-    if (!AdMobService.adsEnabled) return;
-    final ad = BannerAd(
-      adUnitId: AdMobService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (!mounted) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isBannerReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isBannerReady = false;
-          });
-        },
-      ),
-    );
-    _bannerAd = ad;
-    ad.load();
-  }
-
   Future<void> _pickVttFile() async {
     try {
-      final file = await _service.pickFile(type: 'any');
-      if (file == null) {
-        if (mounted) setState(() => _statusMessage = 'No file selected.');
+      // Use FilePicker directly with FileType.any to avoid platform discrepancies with 'vtt' filter (which can cause crashes)
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+      );
+
+      if (result == null || result.files.isEmpty || result.files.single.path == null) {
+        if (mounted) {
+          setState(() => _statusMessage = 'No file selected.');
+        }
         return;
       }
+
+      final file = File(result.files.single.path!);
+
+      // Double check extension just in case
       final ext = p.extension(file.path).toLowerCase();
       if (ext != '.vtt') {
         if (mounted) {
@@ -108,12 +88,15 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         }
         return;
       }
+
       setState(() {
         _selectedFile = file;
         _conversionResult = null;
         _savedFilePath = null;
         _statusMessage = 'VTT selected: ${p.basename(file.path)}';
+        resetAdStatus(file.path);
       });
+
       _updateSuggestedFileName();
     } catch (e) {
       final message = 'Failed to select VTT file: $e';
@@ -143,6 +126,16 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
       _conversionResult = null;
       _savedFilePath = null;
     });
+
+    // Check for rewarded ad first
+    final adWatched = await showRewardedAdGate(toolName: 'VTT-to-Text-Text');
+    if (!adWatched) {
+      setState(() {
+        _isConverting = false;
+        _statusMessage = 'Conversion cancelled (Ad required).';
+      });
+      return;
+    }
 
     try {
       final customFilename = _fileNameController.text.trim().isNotEmpty
@@ -177,12 +170,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         _savedFilePath = null;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Text ready: ${result.fileName}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+
     } catch (e) {
       if (!mounted) return;
       setState(() => _statusMessage = 'Conversion failed: $e');
@@ -190,16 +178,24 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
-      if (mounted) setState(() => _isConverting = false);
+      if (mounted) {
+        setState(() => _isConverting = false);
+      }
     }
   }
 
   Future<void> _saveTextFile() async {
     final result = _conversionResult;
     if (result == null) return;
+
+    // Show Interstitial Ad before saving if ready
+    await showInterstitialAd();
+
     setState(() => _isSaving = true);
+
     try {
       final directory = await FileManager.getVttToTextDirectory();
+
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
@@ -207,7 +203,9 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
       } else {
         targetFileName = result.fileName;
       }
+
       File destinationFile = File(p.join(directory.path, targetFileName));
+
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
@@ -216,15 +214,20 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
       }
+
       final savedFile = await result.file.copy(destinationFile.path);
+
       if (!mounted) return;
+
       setState(() => _savedFilePath = savedFile.path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${savedFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
+
+      // Trigger System Notification
+      await NotificationService.showFileSavedNotification(
+        fileName: targetFileName,
+        filePath: savedFile.path,
       );
+
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -234,7 +237,9 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -243,6 +248,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
     if (result == null) return;
     final pathToShare = _savedFilePath ?? result.file.path;
     final fileToShare = File(pathToShare);
+
     if (!await fileToShare.exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -254,6 +260,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
       }
       return;
     }
+
     await Share.shareXFiles([
       XFile(fileToShare.path),
     ], text: 'Converted Text: ${result.fileName}');
@@ -269,8 +276,10 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
       });
       return;
     }
+
     final baseName = p.basenameWithoutExtension(_selectedFile!.path);
     final sanitized = _sanitizeBaseName(baseName);
+
     setState(() {
       _suggestedBaseName = sanitized;
       if (!_fileNameEdited) {
@@ -281,18 +290,36 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.txt'))
+    if (base.toLowerCase().endsWith('.txt')) {
       base = base.substring(0, base.length - 4);
+    }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) base = 'converted_document';
+    if (base.isEmpty) {
+      base = 'converted_document';
+    }
     return base.substring(0, min(base.length, 80));
   }
 
   String _ensureTxtExtension(String base) {
     final trimmed = base.trim();
     return trimmed.toLowerCase().endsWith('.txt') ? trimmed : '$trimmed.txt';
+  }
+
+  void _resetForNewConversion() {
+    setState(() {
+      _selectedFile = null;
+      _conversionResult = null;
+      _isConverting = false;
+      _isSaving = false;
+      _fileNameEdited = false;
+      _suggestedBaseName = null;
+      _savedFilePath = null;
+      _statusMessage = 'Select a VTT file to begin.';
+      _fileNameController.clear();
+    });
+    // Ad loading handled by AdHelper automatically or on next demand
   }
 
   String _formatBytes(int bytes) {
@@ -313,7 +340,10 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
         elevation: 0,
         title: const Text(
           'VTT to Text',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -341,21 +371,19 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
                 _buildStatusMessage(),
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  _savedFilePath != null 
+                    ? PersistentResultCard(
+                        savedFilePath: _savedFilePath!,
+                        onShare: _shareTextFile,
+                      )
+                    : _buildResultCard(),
                 ],
               ],
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _isBannerReady && _bannerAd != null
-          ? Container(
-              color: Colors.transparent,
-              alignment: Alignment.center,
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            )
-          : null,
+      bottomNavigationBar: buildBannerAd(),
     );
   }
 
@@ -442,22 +470,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
           SizedBox(
             width: 56,
             child: ElevatedButton(
-              onPressed: _isConverting
-                  ? null
-                  : () {
-                      setState(() {
-                        _selectedFile = null;
-                        _conversionResult = null;
-                        _isConverting = false;
-                        _isSaving = false;
-                        _fileNameEdited = false;
-                        _suggestedBaseName = null;
-                        _savedFilePath = null;
-                        _statusMessage = 'Select a VTT file to begin.';
-                        _fileNameController.clear();
-                      });
-                      _admobService.preloadAd();
-                    },
+              onPressed: _isConverting ? null : _resetForNewConversion,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.textPrimary,
@@ -475,10 +488,24 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
   }
 
   Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_selectedFile == null) {
+      return const SizedBox.shrink();
+    }
+
     final file = _selectedFile!;
     final fileName = p.basename(file.path);
-    final fileSize = _formatBytes(file.lengthSync());
+    
+    String fileSize;
+    try {
+      if (file.existsSync()) {
+        fileSize = _formatBytes(file.lengthSync());
+      } else {
+        fileSize = 'File no longer available';
+      }
+    } catch (e) {
+      fileSize = 'Unknown size';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -518,7 +545,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
                 const SizedBox(height: 4),
                 Text(
                   fileSize,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -532,8 +559,12 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_selectedFile == null) {
+      return const SizedBox.shrink();
+    }
+
     final hintText = _suggestedBaseName ?? 'converted_document';
+
     return TextField(
       controller: _fileNameController,
       textInputAction: TextInputAction.done,
@@ -553,6 +584,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
 
   Widget _buildConvertButton() {
     final canConvert = _selectedFile != null && !_isConverting;
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -628,7 +660,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
 
   Widget _buildResultCard() {
     final result = _conversionResult!;
-    final isSaved = _savedFilePath != null;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -688,69 +720,42 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage> {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Flexible(
-                flex: isSaved ? 3 : 1,
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveTextFile,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.textPrimary,
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.save_outlined, size: 18),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Save Document',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 12,
-                    ),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : _saveTextFile,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Save File',
+                  style: TextStyle(fontSize: 14),
                 ),
               ),
-              if (isSaved) ...[
-                const SizedBox(width: 12),
-                Flexible(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: _shareTextFile,
-                    icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share', style: TextStyle(fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.backgroundSurface,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 12,
-                      ),
-                      minimumSize: const Size(0, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.backgroundSurface,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 12,
                 ),
-              ],
-            ],
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
           ),
         ],
       ),
