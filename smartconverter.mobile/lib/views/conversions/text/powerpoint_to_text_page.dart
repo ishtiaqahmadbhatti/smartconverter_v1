@@ -383,36 +383,38 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 68,
+            height: 68,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.backgroundSurface.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
-            ),
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: Icon(
-                      Icons.slideshow,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Icon(
-                      Icons.text_fields,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
-                  ),
-                ],
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
               ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 4,
+                  left: 4,
+                  child: Icon(
+                    Icons.slideshow,
+                    color: AppColors.textPrimary,
+                    size: 24,
+                  ),
+                ),
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Icon(
+                    Icons.text_fields,
+                    color: AppColors.textPrimary,
+                    size: 24,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 16),
