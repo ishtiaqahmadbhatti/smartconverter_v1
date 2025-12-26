@@ -1,22 +1,6 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../constants/app_colors.dart';
-import '../../../services/conversion_service.dart';
-import '../../../widgets/persistent_result_card.dart';
-import '../../../widgets/conversion_status_display.dart';
-import '../../../widgets/conversion_result_save_card.dart';
-import '../../../widgets/conversion_header_card.dart';
-import '../../../widgets/conversion_action_buttons.dart';
-import '../../../widgets/conversion_selected_file_card.dart';
-import '../../../widgets/conversion_file_name_field.dart';
-import '../../../widgets/conversion_convert_button.dart';
-import '../../../utils/file_manager.dart';
-import '../../../utils/ad_helper.dart';
-import '../../../models/conversion_model.dart';
-import '../../../mixins/text_conversion_mixin.dart';
+import 'text_conversion_imports.dart';
 
 class VttToTextFromTextPage extends StatefulWidget {
   const VttToTextFromTextPage({super.key});
