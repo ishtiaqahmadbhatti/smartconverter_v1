@@ -1,6 +1,6 @@
 import 'package:path/path.dart' as p;
 
-import 'text_conversion_imports.dart';
+import '../conversion_imports.dart';
 
 class PdfToTextTextPage extends StatefulWidget {
   const PdfToTextTextPage({super.key});

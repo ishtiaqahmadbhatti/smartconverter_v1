@@ -1,6 +1,6 @@
 import 'package:path/path.dart' as p;
 
-import 'text_conversion_imports.dart';
+import '../conversion_imports.dart';
 
 class VttToTextFromTextPage extends StatefulWidget {
   const VttToTextFromTextPage({super.key});
