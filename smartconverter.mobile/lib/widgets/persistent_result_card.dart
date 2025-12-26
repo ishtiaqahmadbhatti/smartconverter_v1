@@ -73,7 +73,7 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
           const SizedBox(height: 12),
           const Center(
             child: Text(
-              '⭐ Saved File – Quick Access ⭐',
+              '⭐ Quick Access – Saved File ⭐',
               style: TextStyle(
                 color: AppColors.primaryBlue,
                 fontWeight: FontWeight.bold,
@@ -257,14 +257,29 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
 
     // 1. Drawer Menu Icon
     widgets.add(
-      Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(6),
+
+      Text.rich(
+        TextSpan(
+          children: [
+            WidgetSpan(
+              child: Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.menu, color: AppColors.textPrimary, size: 14),
+              ),
+              alignment: PlaceholderAlignment.middle,
+            ),
+            const TextSpan(
+              text: 'App Menu',
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
-        child: const Icon(Icons.menu, color: AppColors.textPrimary, size: 14),
       ),
     );
 
@@ -273,16 +288,22 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
 
     // 2. My Files Group
     widgets.add(
-      const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_open, size: 16, color: AppColors.primaryBlue),
-          SizedBox(width: 2),
-          Text(
-            'My Files',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
-          ),
-        ],
+      const Text.rich(
+        TextSpan(
+          children: [
+            WidgetSpan(
+              child: Padding(
+                padding: EdgeInsets.only(right: 2),
+                child: Icon(Icons.folder_open, size: 16, color: AppColors.primaryBlue),
+              ),
+              alignment: PlaceholderAlignment.middle,
+            ),
+            TextSpan(
+              text: 'My Files',
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -314,24 +335,31 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
         final isLast = i == segments.length - 1;
         
         widgets.add(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-               Icon(
-                  isLast ? Icons.insert_drive_file : Icons.folder,
-                  size: 16, 
-                  color: isLast ? AppColors.textPrimary : AppColors.primaryBlue
-              ),
-              const SizedBox(width: 2),
-              Text(
-                segments[i],
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
+          Text.rich(
+            TextSpan(
+              children: [
+                WidgetSpan(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 2),
+                    child: Icon(
+                      isLast ? Icons.insert_drive_file : Icons.folder,
+                      size: 16, 
+                      color: isLast ? AppColors.textPrimary : AppColors.primaryBlue
+                    ),
+                  ),
+                  alignment: PlaceholderAlignment.middle,
                 ),
-              ),
-            ],
+                TextSpan(
+                  text: segments[i],
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
         
