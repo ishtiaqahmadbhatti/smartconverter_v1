@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../constants/app_colors.dart';
-import '../widgets/futuristic_card.dart';
+import '../app_widgets/futuristic_card_widget.dart';
 import '../utils/file_manager.dart';
 import '../utils/permission_manager.dart';
 import 'package:path/path.dart' as path;

@@ -14,14 +14,14 @@ import '../views/terms_service_page.dart';
 import '../views/about_page.dart';
 import '../services/auth_service.dart';
 
-class CustomDrawer extends StatefulWidget {
-  const CustomDrawer({super.key});
+class DrawerMenuWidget extends StatefulWidget {
+  const DrawerMenuWidget({super.key});
 
   @override
-  State<CustomDrawer> createState() => _CustomDrawerState();
+  State<DrawerMenuWidget> createState() => _DrawerMenuWidgetState();
 }
 
-class _CustomDrawerState extends State<CustomDrawer> {
+class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
   bool _isCheckingHealth = false;
   String _healthStatus = '';
   Color _healthStatusColor = AppColors.textSecondary;

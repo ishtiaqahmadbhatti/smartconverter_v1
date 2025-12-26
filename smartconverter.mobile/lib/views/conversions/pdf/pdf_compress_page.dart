@@ -7,7 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
-import '../../../widgets/persistent_result_card.dart';
+import '../../../app_widgets/conversion_result_card_widget.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 

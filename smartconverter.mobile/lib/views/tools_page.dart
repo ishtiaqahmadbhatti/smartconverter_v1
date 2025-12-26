@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
-import '../widgets/custom_drawer.dart';
+import '../app_widgets/drawer_menu_widget.dart';
 import 'category_tools_page.dart';
 
 class ToolsPage extends StatefulWidget {

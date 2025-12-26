@@ -7,7 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
-// import '../../../widgets/persistent_result_card.dart'; // Not using for split as it returns a list/folder
+// import '../../../app_widgets/conversion_result_card_widget.dart'; // Not using for split as it returns a list/folder
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 import '../../../models/conversion_tool.dart';

@@ -5,7 +5,7 @@ import 'tools_page.dart';
 import 'profile_page.dart';
 import 'history_page.dart';
 import 'settings_page.dart';
-import '../widgets/custom_drawer.dart';
+import '../app_widgets/drawer_menu_widget.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -49,7 +49,7 @@ class MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(),
-      drawer: const CustomDrawer(),
+      drawer: const DrawerMenuWidget(),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
