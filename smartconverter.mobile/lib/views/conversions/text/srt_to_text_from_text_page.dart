@@ -14,6 +14,7 @@ import '../../../services/notification_service.dart';
 import '../../../widgets/persistent_result_card.dart';
 import '../../../widgets/conversion_status_display.dart';
 import '../../../widgets/conversion_result_save_card.dart';
+import '../../../widgets/conversion_header_card.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -381,83 +382,11 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
   }
 
   Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 4,
-                  left: 4,
-                  child: Icon(
-                    Icons.insert_drive_file,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
-                ),
-                Positioned(
-                  bottom: 4,
-                  right: 4,
-                  child: Icon(
-                    Icons.text_fields,
-                    color: AppColors.textPrimary,
-                    size: 24,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Convert SRT to Text',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Extract captions from SRT subtitles and save as .txt',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return const ConversionHeaderCard(
+      title: 'Convert SRT to Text',
+      description: 'Extract captions from SRT subtitles and save as .txt',
+      iconSource: Icons.insert_drive_file,
+      iconTarget: Icons.text_fields,
     );
   }
 
