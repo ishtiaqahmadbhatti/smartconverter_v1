@@ -421,7 +421,7 @@ class _CsvToXmlFromXmlCategoryPageState extends State<CsvToXmlFromXmlCategoryPag
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareXmlFile,
                       )

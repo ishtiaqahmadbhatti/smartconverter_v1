@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionActionButtons extends StatelessWidget {
+class ConversionActionButtonWidget extends StatelessWidget {
   final VoidCallback onPickFile;
   final VoidCallback? onReset;
   final bool isFileSelected;
   final bool isConverting;
   final String buttonText;
 
-  const ConversionActionButtons({
+  const ConversionActionButtonWidget({
     super.key,
     required this.onPickFile,
     this.onReset,

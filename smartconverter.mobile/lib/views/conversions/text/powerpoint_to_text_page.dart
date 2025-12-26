@@ -79,7 +79,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ConversionHeaderCard(
+                ConversionHeaderCardWidget(
                   title: 'PowerPoint to Text',
                   description: 'Extract text from slides and tables in PowerPoint (.ppt, .pptx) and save as .txt',
                   iconSource: Icons.slideshow,
@@ -87,7 +87,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
                 ),
                 const SizedBox(height: 20),
 
-                ConversionActionButtons(
+                ConversionActionButtonWidget(
                   isFileSelected: model.selectedFile != null,
                   onPickFile: pickFile,
                   onReset: resetForNewConversion,
@@ -97,18 +97,18 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
                 const SizedBox(height: 16),
 
                 if (model.selectedFile != null) ...[
-                  ConversionSelectedFileCard(
+                  ConversionSelectedFileCardWidget(
                     fileName: p.basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
                     fileIcon: Icons.slideshow,
                   ),
                   const SizedBox(height: 16),
-                  ConversionFileNameField(
+                  ConversionFileNameFieldWidget(
                     controller: fileNameController,
                     hintText: model.suggestedBaseName ?? 'converted_presentation',
                   ),
                   const SizedBox(height: 20),
-                  ConversionConvertButton(
+                  ConversionConvertButtonWidget(
                     isConverting: model.isConverting,
                     onConvert: convert,
                     isEnabled: model.selectedFile != null && !model.isConverting,
@@ -116,7 +116,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
                   const SizedBox(height: 16),
                 ],
 
-                ConversionStatusDisplay(
+                ConversionStatusDisplayWidget(
                     message: model.statusMessage,
                     isConverting: model.isConverting,
                     isSuccess: model.conversionResult != null,
@@ -125,14 +125,14 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
                   if (model.savedFilePath == null)
-                    ConversionResultSaveCard(
+                    ConversionFileSaveCardWidget(
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
                       title: 'Text File Ready',
                     )
                   else
-                    PersistentResultCard(
+                    ConversionResultCardWidget(
                         savedFilePath: model.savedFilePath!,
                         onShare: shareTextFile,
                     ),

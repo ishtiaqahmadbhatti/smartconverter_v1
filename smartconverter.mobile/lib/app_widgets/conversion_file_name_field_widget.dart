@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionFileNameField extends StatelessWidget {
+class ConversionFileNameFieldWidget extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final String labelText;
 
-  const ConversionFileNameField({
+  const ConversionFileNameFieldWidget({
     super.key,
     required this.controller,
     this.hintText = 'converted_document',

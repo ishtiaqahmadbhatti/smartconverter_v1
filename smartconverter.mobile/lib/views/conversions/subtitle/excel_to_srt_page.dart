@@ -336,7 +336,7 @@ class _ExcelToSrtPageState extends State<ExcelToSrtPage> with AdHelper {
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareSrtFile,
                       )

@@ -8,12 +8,12 @@ import '../constants/app_colors.dart';
 import '../services/notification_service.dart';
 import '../views/my_files_page.dart';
 
-class PersistentResultCard extends StatefulWidget {
+class ConversionResultCardWidget extends StatefulWidget {
   final String savedFilePath;
   final VoidCallback onShare;
   final String title;
 
-  const PersistentResultCard({
+  const ConversionResultCardWidget({
     super.key,
     required this.savedFilePath,
     required this.onShare,
@@ -21,10 +21,10 @@ class PersistentResultCard extends StatefulWidget {
   });
 
   @override
-  State<PersistentResultCard> createState() => _PersistentResultCardState();
+  State<ConversionResultCardWidget> createState() => _ConversionResultCardWidgetState();
 }
 
-class _PersistentResultCardState extends State<PersistentResultCard> {
+class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(

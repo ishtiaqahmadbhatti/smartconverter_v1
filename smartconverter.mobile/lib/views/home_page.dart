@@ -282,28 +282,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFeaturedToolCard(
+                  _buildFeaturedToolCardWidget(
                     'PDF Conversion',
                     Icons.picture_as_pdf_outlined,
                     'Convert PDF to various formats',
                     AppColors.primaryBlue,
                   ),
                   const SizedBox(width: 12),
-                  _buildFeaturedToolCard(
+                  _buildFeaturedToolCardWidget(
                     'Image Tools',
                     Icons.image_outlined,
                     'Process and convert images',
                     AppColors.secondaryGreen,
                   ),
                   const SizedBox(width: 12),
-                  _buildFeaturedToolCard(
+                  _buildFeaturedToolCardWidget(
                     'Office Docs',
                     Icons.description_outlined,
                     'Word, Excel, PowerPoint',
                     AppColors.primaryPurple,
                   ),
                   const SizedBox(width: 12),
-                  _buildFeaturedToolCard(
+                  _buildFeaturedToolCardWidget(
                     'Media Files',
                     Icons.movie_creation_outlined,
                     'Video & Audio conversion',
@@ -319,7 +319,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         .slideY(begin: 0.3, duration: 800.ms, delay: 400.ms);
   }
 
-  Widget _buildFeaturedToolCard(
+  Widget _buildFeaturedToolCardWidget(
     String title,
     IconData icon,
     String description,

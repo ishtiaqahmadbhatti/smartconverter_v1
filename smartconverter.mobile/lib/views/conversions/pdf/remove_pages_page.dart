@@ -212,7 +212,7 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
                 if (_resultFile != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareResult,
                       )

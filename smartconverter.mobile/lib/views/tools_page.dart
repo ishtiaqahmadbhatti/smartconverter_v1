@@ -541,14 +541,14 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           itemCount: _allTools.length,
           itemBuilder: (context, index) {
             final tool = _allTools[index];
-            return _buildToolCard(tool, index);
+            return _buildToolCardWidget(tool, index);
           },
         ),
       ],
     );
   }
 
-  Widget _buildToolCard(Map<String, dynamic> tool, int index) {
+  Widget _buildToolCardWidget(Map<String, dynamic> tool, int index) {
     return GestureDetector(
           onTap: () => _onToolSelected(tool),
           child: Container(

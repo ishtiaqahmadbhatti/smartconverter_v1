@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionStatusDisplay extends StatelessWidget {
+class ConversionStatusDisplayWidget extends StatelessWidget {
   final bool isConverting;
   final bool isSuccess;
   final String message;
 
-  const ConversionStatusDisplay({
+  const ConversionStatusDisplayWidget({
     super.key,
     required this.isConverting,
     required this.isSuccess,

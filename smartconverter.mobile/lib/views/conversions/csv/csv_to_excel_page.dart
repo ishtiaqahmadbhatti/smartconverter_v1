@@ -389,7 +389,7 @@ class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper {
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareExcelFile,
                       )

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionConvertButton extends StatelessWidget {
+class ConversionConvertButtonWidget extends StatelessWidget {
   final VoidCallback onConvert;
   final bool isConverting;
   final bool isEnabled;
   final String buttonText;
 
-  const ConversionConvertButton({
+  const ConversionConvertButtonWidget({
     super.key,
     required this.onConvert,
     required this.isConverting,

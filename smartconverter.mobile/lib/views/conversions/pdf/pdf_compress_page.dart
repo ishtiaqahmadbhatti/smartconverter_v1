@@ -292,7 +292,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
                 if (_result != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareCompressedFile,
                       )

@@ -451,7 +451,7 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> with AdHelper<Jso
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? _buildPersistentResultCard() 
+                    ? _buildConversionResultCardWidget() 
                     : _buildResultCard(),
                 ],
               ],
@@ -1189,7 +1189,7 @@ class _JsonFormatterPageState extends State<JsonFormatterPage> with AdHelper<Jso
     );
   }
 
-  Widget _buildPersistentResultCard() {
+  Widget _buildConversionResultCardWidget() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

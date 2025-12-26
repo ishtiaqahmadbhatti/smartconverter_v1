@@ -221,7 +221,7 @@ class _AddPageNumbersPageState extends State<AddPageNumbersPage> with AdHelper {
                 if (_resultFile != null) ...[
                    const SizedBox(height: 20),
                    _savedFilePath != null
-                     ? PersistentResultCard(
+                     ? ConversionResultCardWidget(
                          savedFilePath: _savedFilePath!,
                          onShare: _shareResult,
                        )

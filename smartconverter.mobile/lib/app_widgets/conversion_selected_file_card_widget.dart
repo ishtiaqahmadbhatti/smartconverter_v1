@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionSelectedFileCard extends StatelessWidget {
+class ConversionSelectedFileCardWidget extends StatelessWidget {
   final String fileName;
   final String fileSize;
   final IconData fileIcon;
 
-  const ConversionSelectedFileCard({
+  const ConversionSelectedFileCardWidget({
     super.key,
     required this.fileName,
     required this.fileSize,

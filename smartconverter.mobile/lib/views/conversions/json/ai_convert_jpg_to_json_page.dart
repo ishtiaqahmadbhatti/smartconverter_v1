@@ -400,7 +400,7 @@ class _AiConvertJpgToJsonPageState extends State<AiConvertJpgToJsonPage> with Ad
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareJsonFile,
                       )

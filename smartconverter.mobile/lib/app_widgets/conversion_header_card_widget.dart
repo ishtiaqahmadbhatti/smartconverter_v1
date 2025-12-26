@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionHeaderCard extends StatelessWidget {
+class ConversionHeaderCardWidget extends StatelessWidget {
   final String title;
   final String description;
   final IconData iconSource;
   final IconData iconTarget;
 
-  const ConversionHeaderCard({
+  const ConversionHeaderCardWidget({
     super.key,
     required this.title,
     required this.description,

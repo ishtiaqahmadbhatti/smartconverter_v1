@@ -380,7 +380,7 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper<AiPdfToCs
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareCsvFile,
                       )

@@ -365,7 +365,7 @@ class _ToolDetailPageState extends State<ToolDetailPage>
   }
 
   Widget _buildToolInfo() {
-    return FuturisticCard(
+    return FuturisticCardWidget(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -460,7 +460,7 @@ class _ToolDetailPageState extends State<ToolDetailPage>
   }
 
   Widget _buildFileSelection() {
-    return FuturisticCard(
+    return FuturisticCardWidget(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -583,7 +583,7 @@ class _ToolDetailPageState extends State<ToolDetailPage>
   Widget _buildStatusSection() {
     if (_statusMessage.isEmpty) return const SizedBox.shrink();
 
-    return FuturisticCard(
+    return FuturisticCardWidget(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

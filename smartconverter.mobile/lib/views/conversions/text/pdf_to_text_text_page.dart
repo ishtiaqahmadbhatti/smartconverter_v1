@@ -77,7 +77,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ConversionHeaderCard(
+                    ConversionHeaderCardWidget(
                       title: 'PDF to Text',
                       description: 'Extract text from PDF documents',
                       iconSource: Icons.picture_as_pdf,
@@ -85,7 +85,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                     ),
                     const SizedBox(height: 16),
 
-                    ConversionActionButtons(
+                    ConversionActionButtonWidget(
                       isFileSelected: model.selectedFile != null,
                       onPickFile: pickFile,
                       onReset: resetForNewConversion,
@@ -95,17 +95,17 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                     const SizedBox(height: 24),
 
                     if (model.selectedFile != null) ...[
-                      ConversionSelectedFileCard(
+                      ConversionSelectedFileCardWidget(
                         fileName: p.basename(model.selectedFile!.path),
                         fileSize: formatBytes(model.selectedFile!.lengthSync()),
                         fileIcon: Icons.picture_as_pdf,
                       ),
                       const SizedBox(height: 16),
-                      ConversionFileNameField(
+                      ConversionFileNameFieldWidget(
                         controller: fileNameController,
                       ),
                       const SizedBox(height: 24),
-                      ConversionConvertButton(
+                      ConversionConvertButtonWidget(
                         isConverting: model.isConverting,
                         onConvert: convert,
                         buttonText: 'Convert to Text',
@@ -114,7 +114,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                       const SizedBox(height: 24),
                     ],
 
-                    ConversionStatusDisplay(
+                    ConversionStatusDisplayWidget(
                         message: model.statusMessage,
                         isConverting: model.isConverting,
                         isSuccess: model.conversionResult != null,
@@ -123,14 +123,14 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                     if (model.conversionResult != null) ...[
                       const SizedBox(height: 20),
                       if (model.savedFilePath == null)
-                        ConversionResultSaveCard(
+                        ConversionFileSaveCardWidget(
                           fileName: model.conversionResult!.fileName,
                           isSaving: model.isSaving,
                           onSave: saveResult,
                           title: 'Text File Ready', 
                         )
                       else
-                        PersistentResultCard(
+                        ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
                             onShare: shareTextFile,
                         ),

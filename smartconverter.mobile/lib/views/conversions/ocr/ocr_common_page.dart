@@ -396,7 +396,7 @@ class _OcrCommonPageState extends State<OcrCommonPage> with AdHelper {
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareFile,
                       )

@@ -390,7 +390,7 @@ class _ExcelToCsvFromCsvCategoryPageState extends State<ExcelToCsvFromCsvCategor
                 _buildStatusMessage(),
                 if (_savedFilePath != null) ...[
                   const SizedBox(height: 24),
-                  PersistentResultCard(
+                  ConversionResultCardWidget(
                     savedFilePath: _savedFilePath!,
                     onShare: _shareCsvFile,
                   ),

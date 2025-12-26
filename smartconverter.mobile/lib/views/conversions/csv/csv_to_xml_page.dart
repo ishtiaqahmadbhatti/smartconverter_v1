@@ -398,7 +398,7 @@ class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper {
                 _buildStatusMessage(),
                 if (_savedFilePath != null) ...[
                   const SizedBox(height: 24),
-                  PersistentResultCard(
+                  ConversionResultCardWidget(
                     savedFilePath: _savedFilePath!,
                     onShare: _shareXmlFile,
                   ),

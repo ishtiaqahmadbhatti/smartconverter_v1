@@ -3,17 +3,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import '../models/conversion_tool.dart';
 
-class ToolCard extends StatefulWidget {
+class ToolCardWidget extends StatefulWidget {
   final ConversionTool tool;
   final VoidCallback onTap;
 
-  const ToolCard({super.key, required this.tool, required this.onTap});
+  const ToolCardWidget({super.key, required this.tool, required this.onTap});
 
   @override
-  State<ToolCard> createState() => _ToolCardState();
+  State<ToolCardWidget> createState() => _ToolCardWidgetState();
 }
 
-class _ToolCardState extends State<ToolCard>
+class _ToolCardWidgetState extends State<ToolCardWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -267,11 +267,11 @@ class _ToolCardState extends State<ToolCard>
   }
 }
 
-class CompactToolCard extends StatelessWidget {
+class CompactToolCardWidget extends StatelessWidget {
   final ConversionTool tool;
   final VoidCallback onTap;
 
-  const CompactToolCard({super.key, required this.tool, required this.onTap});
+  const CompactToolCardWidget({super.key, required this.tool, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

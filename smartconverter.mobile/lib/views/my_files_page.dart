@@ -863,7 +863,7 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: FuturisticCard(
+      child: FuturisticCardWidget(
         child: ListTile(
           leading: Container(
             padding: const EdgeInsets.all(8),

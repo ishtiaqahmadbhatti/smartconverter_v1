@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 
-class FuturisticCard extends StatefulWidget {
+class FuturisticCardWidget extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
@@ -11,7 +11,7 @@ class FuturisticCard extends StatefulWidget {
   final VoidCallback? onTap;
   final bool enableHoverEffect;
 
-  const FuturisticCard({
+  const FuturisticCardWidget({
     super.key,
     required this.child,
     this.padding,
@@ -23,10 +23,10 @@ class FuturisticCard extends StatefulWidget {
   });
 
   @override
-  State<FuturisticCard> createState() => _FuturisticCardState();
+  State<FuturisticCardWidget> createState() => _FuturisticCardWidgetState();
 }
 
-class _FuturisticCardState extends State<FuturisticCard>
+class _FuturisticCardWidgetState extends State<FuturisticCardWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;

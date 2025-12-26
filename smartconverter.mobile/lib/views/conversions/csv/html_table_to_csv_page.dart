@@ -391,7 +391,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper {
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareCsvFile,
                       )

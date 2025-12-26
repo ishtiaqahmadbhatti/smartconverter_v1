@@ -419,7 +419,7 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> with AdHelper<JsonToCsvPa
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? _buildPersistentResultCard() 
+                    ? _buildConversionResultCardWidget() 
                     : _buildResultCard(),
                 ],
               ],
@@ -843,7 +843,7 @@ class _JsonToCsvPageState extends State<JsonToCsvPage> with AdHelper<JsonToCsvPa
     );
   }
 
-  Widget _buildPersistentResultCard() {
+  Widget _buildConversionResultCardWidget() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

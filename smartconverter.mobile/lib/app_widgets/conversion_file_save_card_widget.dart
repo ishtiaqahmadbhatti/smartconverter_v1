@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-class ConversionResultSaveCard extends StatelessWidget {
+class ConversionFileSaveCardWidget extends StatelessWidget {
   final String fileName;
   final bool isSaving;
   final VoidCallback onSave;
   final String title;
 
-  const ConversionResultSaveCard({
+  const ConversionFileSaveCardWidget({
     super.key,
     required this.fileName,
     required this.isSaving,

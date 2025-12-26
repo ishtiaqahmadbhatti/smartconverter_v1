@@ -402,7 +402,7 @@ class _JsonToXmlPageState extends State<JsonToXmlPage> with AdHelper<JsonToXmlPa
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareXmlFile,
                       )

@@ -375,7 +375,7 @@ class _PdfToExcelPageState extends State<PdfToExcelPage> with AdHelper {
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareExcelFile,
                       )

@@ -388,7 +388,7 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper {
                 _buildStatusMessage(),
                 if (_savedFilePath != null) ...[
                   const SizedBox(height: 24),
-                  PersistentResultCard(
+                  ConversionResultCardWidget(
                     savedFilePath: _savedFilePath!,
                     onShare: _shareCsvFile,
                   ),

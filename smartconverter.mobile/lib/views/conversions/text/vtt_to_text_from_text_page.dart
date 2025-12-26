@@ -82,7 +82,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ConversionHeaderCard(
+                    ConversionHeaderCardWidget(
                       title: 'VTT to Text',
                       description: 'Extract captions from VTT subtitles and save as .txt',
                       iconSource: Icons.insert_drive_file,
@@ -90,7 +90,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                     ),
                     const SizedBox(height: 16),
 
-                    ConversionActionButtons(
+                    ConversionActionButtonWidget(
                       isFileSelected: model.selectedFile != null,
                       onPickFile: pickFile,
                       onReset: resetForNewConversion,
@@ -100,18 +100,18 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                     const SizedBox(height: 24),
 
                     if (model.selectedFile != null) ...[
-                      ConversionSelectedFileCard(
+                      ConversionSelectedFileCardWidget(
                         fileName: p.basename(model.selectedFile!.path),
                         fileSize: formatBytes(model.selectedFile!.lengthSync()),
                         fileIcon: Icons.insert_drive_file,
                       ),
                       const SizedBox(height: 16),
-                      ConversionFileNameField(
+                      ConversionFileNameFieldWidget(
                         controller: fileNameController,
                         hintText: model.suggestedBaseName ?? 'converted_document',
                       ),
                       const SizedBox(height: 24),
-                      ConversionConvertButton(
+                      ConversionConvertButtonWidget(
                         isConverting: model.isConverting,
                         onConvert: convert,
                         isEnabled: model.selectedFile != null && !model.isConverting,
@@ -119,7 +119,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                       const SizedBox(height: 24),
                     ],
 
-                    ConversionStatusDisplay(
+                    ConversionStatusDisplayWidget(
                         message: model.statusMessage,
                         isConverting: model.isConverting,
                         isSuccess: model.conversionResult != null,
@@ -128,14 +128,14 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                     if (model.conversionResult != null) ...[
                       const SizedBox(height: 20),
                       if (model.savedFilePath == null)
-                        ConversionResultSaveCard(
+                        ConversionFileSaveCardWidget(
                           fileName: model.conversionResult!.fileName,
                           isSaving: model.isSaving,
                           onSave: saveResult,
                           title: 'Text File Ready', 
                         )
                       else
-                        PersistentResultCard(
+                        ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
                             onShare: shareTextFile,
                         ),

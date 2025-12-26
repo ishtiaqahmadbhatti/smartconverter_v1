@@ -439,7 +439,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
                 if (_mergeResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareMergedFile,
                       )

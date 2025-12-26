@@ -402,7 +402,7 @@ class _JsonToExcelPageState extends State<JsonToExcelPage> with AdHelper<JsonToE
                 if (_conversionResult != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
-                    ? PersistentResultCard(
+                    ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareExcelFile,
                       )

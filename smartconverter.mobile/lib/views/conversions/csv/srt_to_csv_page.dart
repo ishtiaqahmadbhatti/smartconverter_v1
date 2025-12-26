@@ -398,7 +398,7 @@ class _SrtToCsvPageState extends State<SrtToCsvPage> {
                 _buildStatusMessage(),
                 if (_savedFilePath != null) ...[
                   const SizedBox(height: 20),
-                  PersistentResultCard(
+                  ConversionResultCardWidget(
                     savedFilePath: _savedFilePath!,
                     onShare: _shareCsvFile,
                   ),
