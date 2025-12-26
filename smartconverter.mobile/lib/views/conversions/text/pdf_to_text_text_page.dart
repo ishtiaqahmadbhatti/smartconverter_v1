@@ -2,12 +2,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 
 import '../../../constants/app_colors.dart';
-import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../widgets/persistent_result_card.dart';
@@ -20,6 +18,7 @@ import '../../../widgets/conversion_file_name_field.dart';
 import '../../../widgets/conversion_convert_button.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
+import '../../../models/conversion_model.dart';
 
 class PdfToTextTextPage extends StatefulWidget {
   const PdfToTextTextPage({super.key});
@@ -32,14 +31,9 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
-  File? _selectedFile;
-  ImageToPdfResult? _conversionResult;
-  bool _isConverting = false;
-  bool _isSaving = false;
-  bool _fileNameEdited = false;
-  String _statusMessage = 'Select a PDF file to begin.';
-  String? _suggestedBaseName;
-  String? _savedFilePath;
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select a PDF file to begin.',
+  );
 
   @override
   void initState() {
@@ -58,8 +52,8 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   void _handleFileNameChange() {
     final trimmed = _fileNameController.text.trim();
     final edited = trimmed.isNotEmpty;
-    if (_fileNameEdited != edited) {
-      setState(() => _fileNameEdited = edited);
+    if (_model.fileNameEdited != edited) {
+      setState(() => _model.fileNameEdited = edited);
     }
   }
 
@@ -72,16 +66,16 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
       if (file == null) {
         if (mounted) {
-          setState(() => _statusMessage = 'No file selected.');
+          setState(() => _model.statusMessage = 'No file selected.');
         }
         return;
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
-        _savedFilePath = null;
-        _statusMessage = 'PDF selected: ${p.basename(file.path)}';
+        _model.selectedFile = file;
+        _model.conversionResult = null;
+        _model.savedFilePath = null;
+        _model.statusMessage = 'PDF selected: ${p.basename(file.path)}';
         resetAdStatus(file.path);
       });
 
@@ -89,7 +83,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
     } catch (e) {
       final message = 'Failed to select PDF file: $e';
       if (mounted) {
-        setState(() => _statusMessage = message);
+        setState(() => _model.statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: AppColors.warning),
         );
@@ -98,7 +92,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   }
 
   Future<void> _convertPdfToText() async {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a PDF file first.'),
@@ -109,18 +103,18 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
     }
 
     setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting PDF to Text...';
-      _conversionResult = null;
-      _savedFilePath = null;
+      _model.isConverting = true;
+      _model.statusMessage = 'Converting PDF to Text...';
+      _model.conversionResult = null;
+      _model.savedFilePath = null;
     });
 
     // Validated Load: Show Rewarded Ad Gate
     final adWatched = await showRewardedAdGate(toolName: 'PDF-to-Text');
     if (!adWatched) {
       setState(() {
-        _isConverting = false;
-        _statusMessage = 'Conversion cancelled (Ad required).';
+        _model.isConverting = false;
+        _model.statusMessage = 'Conversion cancelled (Ad required).';
       });
       return;
     }
@@ -131,7 +125,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
           : null;
 
       final result = await _service.convertPdfToText(
-        _selectedFile!,
+        _model.selectedFile!,
         outputFilename: customFilename,
       );
 
@@ -139,7 +133,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
       if (result == null) {
         setState(() {
-          _statusMessage = 'Conversion completed but no file returned.';
+          _model.statusMessage = 'Conversion completed but no file returned.';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -153,33 +147,33 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
       }
 
       setState(() {
-        _conversionResult = result;
-        _statusMessage = 'PDF to Text converted successfully!';
-        _savedFilePath = null;
+        _model.conversionResult = result;
+        _model.statusMessage = 'PDF to Text converted successfully!';
+        _model.savedFilePath = null;
       });
 
 
     } catch (e) {
       if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
+      setState(() => _model.statusMessage = 'Conversion failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) {
-        setState(() => _isConverting = false);
+        setState(() => _model.isConverting = false);
       }
     }
   }
 
   Future<void> _saveTextFile() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
 
     // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
 
-    setState(() => _isSaving = true);
+    setState(() => _model.isSaving = true);
 
     try {
       final directory = await FileManager.getPdfToTextTextDirectory();
@@ -207,7 +201,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
       if (!mounted) return;
 
-      setState(() => _savedFilePath = savedFile.path);
+      setState(() => _model.savedFilePath = savedFile.path);
 
       // Trigger System Notification
       await NotificationService.showFileSavedNotification(
@@ -217,7 +211,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
       if (mounted) {
         setState(() {
-          _statusMessage = 'File saved successfully!';
+          _model.statusMessage = 'File saved successfully!';
         });
       }
 
@@ -232,15 +226,15 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
       );
     } finally {
       if (mounted) {
-        setState(() => _isSaving = false);
+        setState(() => _model.isSaving = false);
       }
     }
   }
 
   Future<void> _shareTextFile() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
-    final pathToShare = _savedFilePath ?? result.file.path;
+    final pathToShare = _model.savedFilePath ?? result.file.path;
     final fileToShare = File(pathToShare);
 
     if (!await fileToShare.exists()) {
@@ -261,22 +255,22 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   }
 
   void _updateSuggestedFileName() {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       setState(() {
-        _suggestedBaseName = null;
-        if (!_fileNameEdited) {
+        _model.suggestedBaseName = null;
+        if (!_model.fileNameEdited) {
           _fileNameController.clear();
         }
       });
       return;
     }
 
-    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
+    final baseName = p.basenameWithoutExtension(_model.selectedFile!.path);
     final sanitized = _sanitizeBaseName(baseName);
 
     setState(() {
-      _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
+      _model.suggestedBaseName = sanitized;
+      if (!_model.fileNameEdited) {
         _fileNameController.text = sanitized;
       }
     });
@@ -303,14 +297,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
 
   void _resetForNewConversion() {
     setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
-      _statusMessage = 'Select a PDF file to begin.';
+      _model.reset(defaultStatusMessage: 'Select a PDF file to begin.');
       _fileNameController.clear();
     });
     // Ad loading handled by AdHelper automatically or on next demand
@@ -363,11 +350,11 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
                 _buildConvertButton(),
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
-                if (_conversionResult != null) ...[
+                if (_model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
+                  _model.savedFilePath != null 
                     ? PersistentResultCard(
-                        savedFilePath: _savedFilePath!,
+                        savedFilePath: _model.savedFilePath!,
                         onShare: _shareTextFile,
                       )
                     : _buildResultCard(),
@@ -394,18 +381,18 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
     return ConversionActionButtons(
       onPickFile: _pickPdfFile,
       onReset: _resetForNewConversion,
-      isFileSelected: _selectedFile != null,
-      isConverting: _isConverting,
+      isFileSelected: _model.selectedFile != null,
+      isConverting: _model.isConverting,
       buttonText: 'Select PDF File',
     );
   }
 
   Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       return const SizedBox.shrink();
     }
 
-    final file = _selectedFile!;
+    final file = _model.selectedFile!;
     final fileName = p.basename(file.path);
     
     String fileSize;
@@ -427,11 +414,11 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       return const SizedBox.shrink();
     }
 
-    final hintText = _suggestedBaseName ?? 'converted_document';
+    final hintText = _model.suggestedBaseName ?? 'converted_document';
 
     return ConversionFileNameField(
       controller: _fileNameController,
@@ -440,27 +427,27 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage> with AdHelper {
   }
 
   Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
+    final canConvert = _model.selectedFile != null && !_model.isConverting;
 
     return ConversionConvertButton(
       onConvert: _convertPdfToText,
-      isConverting: _isConverting,
+      isConverting: _model.isConverting,
       isEnabled: canConvert,
     );
   }
 
   Widget _buildStatusMessage() {
     return ConversionStatusDisplay(
-      isConverting: _isConverting,
-      isSuccess: _conversionResult != null,
-      message: _statusMessage,
+      isConverting: _model.isConverting,
+      isSuccess: _model.conversionResult != null,
+      message: _model.statusMessage,
     );
   }
 
   Widget _buildResultCard() {
     return ConversionResultSaveCard(
-      fileName: _conversionResult!.fileName,
-      isSaving: _isSaving,
+      fileName: _model.conversionResult!.fileName,
+      isSaving: _model.isSaving,
       onSave: _saveTextFile,
       title: 'Text File Ready',
     );

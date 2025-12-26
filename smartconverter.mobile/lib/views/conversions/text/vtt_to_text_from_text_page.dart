@@ -2,13 +2,11 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../../constants/app_colors.dart';
-import '../../../services/admob_service.dart';
 import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../widgets/persistent_result_card.dart';
@@ -21,6 +19,7 @@ import '../../../widgets/conversion_file_name_field.dart';
 import '../../../widgets/conversion_convert_button.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
+import '../../../models/conversion_model.dart';
 
 class VttToTextFromTextPage extends StatefulWidget {
   const VttToTextFromTextPage({super.key});
@@ -34,14 +33,9 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
-  File? _selectedFile;
-  ImageToPdfResult? _conversionResult;
-  bool _isConverting = false;
-  bool _isSaving = false;
-  bool _fileNameEdited = false;
-  String _statusMessage = 'Select a VTT file to begin.';
-  String? _suggestedBaseName;
-  String? _savedFilePath;
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select a VTT file to begin.',
+  );
 
   @override
   void initState() {
@@ -60,8 +54,8 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   void _handleFileNameChange() {
     final trimmed = _fileNameController.text.trim();
     final edited = trimmed.isNotEmpty;
-    if (_fileNameEdited != edited) {
-      setState(() => _fileNameEdited = edited);
+    if (_model.fileNameEdited != edited) {
+      setState(() => _model.fileNameEdited = edited);
     }
   }
 
@@ -74,7 +68,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
       if (result == null || result.files.isEmpty || result.files.single.path == null) {
         if (mounted) {
-          setState(() => _statusMessage = 'No file selected.');
+          setState(() => _model.statusMessage = 'No file selected.');
         }
         return;
       }
@@ -85,7 +79,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
       final ext = p.extension(file.path).toLowerCase();
       if (ext != '.vtt') {
         if (mounted) {
-          setState(() => _statusMessage = 'Please select a VTT file (.vtt).');
+          setState(() => _model.statusMessage = 'Please select a VTT file (.vtt).');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Unsupported file. Please choose a .vtt file.'),
@@ -97,10 +91,10 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
-        _savedFilePath = null;
-        _statusMessage = 'VTT selected: ${p.basename(file.path)}';
+        _model.selectedFile = file;
+        _model.conversionResult = null;
+        _model.savedFilePath = null;
+        _model.statusMessage = 'VTT selected: ${p.basename(file.path)}';
         resetAdStatus(file.path);
       });
 
@@ -108,7 +102,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
     } catch (e) {
       final message = 'Failed to select VTT file: $e';
       if (mounted) {
-        setState(() => _statusMessage = message);
+        setState(() => _model.statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: AppColors.warning),
         );
@@ -117,7 +111,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   }
 
   Future<void> _convertVttToText() async {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a VTT file first.'),
@@ -128,18 +122,18 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
     }
 
     setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting VTT to Text...';
-      _conversionResult = null;
-      _savedFilePath = null;
+      _model.isConverting = true;
+      _model.statusMessage = 'Converting VTT to Text...';
+      _model.conversionResult = null;
+      _model.savedFilePath = null;
     });
 
     // Check for rewarded ad first
     final adWatched = await showRewardedAdGate(toolName: 'VTT-to-Text-Text');
     if (!adWatched) {
       setState(() {
-        _isConverting = false;
-        _statusMessage = 'Conversion cancelled (Ad required).';
+        _model.isConverting = false;
+        _model.statusMessage = 'Conversion cancelled (Ad required).';
       });
       return;
     }
@@ -150,7 +144,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
           : null;
 
       final result = await _service.convertVttToText(
-        _selectedFile!,
+        _model.selectedFile!,
         outputFilename: customFilename,
       );
 
@@ -158,7 +152,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
       if (result == null) {
         setState(() {
-          _statusMessage = 'Conversion completed but no file returned.';
+          _model.statusMessage = 'Conversion completed but no file returned.';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -172,33 +166,33 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
       }
 
       setState(() {
-        _conversionResult = result;
-        _statusMessage = 'VTT to Text converted successfully!';
-        _savedFilePath = null;
+        _model.conversionResult = result;
+        _model.statusMessage = 'VTT to Text converted successfully!';
+        _model.savedFilePath = null;
       });
 
 
     } catch (e) {
       if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
+      setState(() => _model.statusMessage = 'Conversion failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) {
-        setState(() => _isConverting = false);
+        setState(() => _model.isConverting = false);
       }
     }
   }
 
   Future<void> _saveTextFile() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
 
     // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
 
-    setState(() => _isSaving = true);
+    setState(() => _model.isSaving = true);
 
     try {
       final directory = await FileManager.getVttToTextDirectory();
@@ -226,7 +220,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
       if (!mounted) return;
 
-      setState(() => _savedFilePath = savedFile.path);
+      setState(() => _model.savedFilePath = savedFile.path);
 
       // Trigger System Notification
       await NotificationService.showFileSavedNotification(
@@ -236,7 +230,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
       if (mounted) {
         setState(() {
-          _statusMessage = 'File saved successfully!';
+          _model.statusMessage = 'File saved successfully!';
         });
       }
 
@@ -251,15 +245,15 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
       );
     } finally {
       if (mounted) {
-        setState(() => _isSaving = false);
+        setState(() => _model.isSaving = false);
       }
     }
   }
 
   Future<void> _shareTextFile() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
-    final pathToShare = _savedFilePath ?? result.file.path;
+    final pathToShare = _model.savedFilePath ?? result.file.path;
     final fileToShare = File(pathToShare);
 
     if (!await fileToShare.exists()) {
@@ -280,22 +274,22 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   }
 
   void _updateSuggestedFileName() {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       setState(() {
-        _suggestedBaseName = null;
-        if (!_fileNameEdited) {
+        _model.suggestedBaseName = null;
+        if (!_model.fileNameEdited) {
           _fileNameController.clear();
         }
       });
       return;
     }
 
-    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
+    final baseName = p.basenameWithoutExtension(_model.selectedFile!.path);
     final sanitized = _sanitizeBaseName(baseName);
 
     setState(() {
-      _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
+      _model.suggestedBaseName = sanitized;
+      if (!_model.fileNameEdited) {
         _fileNameController.text = sanitized;
       }
     });
@@ -322,14 +316,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
   void _resetForNewConversion() {
     setState(() {
-      _selectedFile = null;
-      _conversionResult = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
-      _statusMessage = 'Select a VTT file to begin.';
+      _model.reset(defaultStatusMessage: 'Select a VTT file to begin.');
       _fileNameController.clear();
     });
     // Ad loading handled by AdHelper automatically or on next demand
@@ -382,11 +369,11 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                 _buildConvertButton(),
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
-                if (_conversionResult != null) ...[
+                if (_model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
+                  _model.savedFilePath != null 
                     ? PersistentResultCard(
-                        savedFilePath: _savedFilePath!,
+                        savedFilePath: _model.savedFilePath!,
                         onShare: _shareTextFile,
                       )
                     : _buildResultCard(),
@@ -413,16 +400,16 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
     return ConversionActionButtons(
       onPickFile: _pickVttFile,
       onReset: _resetForNewConversion,
-      isFileSelected: _selectedFile != null,
-      isConverting: _isConverting,
+      isFileSelected: _model.selectedFile != null,
+      isConverting: _model.isConverting,
       buttonText: 'Select VTT File',
     );
   }
 
   Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_model.selectedFile == null) return const SizedBox.shrink();
 
-    final file = _selectedFile!;
+    final file = _model.selectedFile!;
     final fileName = p.basename(file.path);
     
     String fileSize;
@@ -444,9 +431,9 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) return const SizedBox.shrink();
+    if (_model.selectedFile == null) return const SizedBox.shrink();
 
-    final hintText = _suggestedBaseName ?? 'converted_document';
+    final hintText = _model.suggestedBaseName ?? 'converted_document';
 
     return ConversionFileNameField(
       controller: _fileNameController,
@@ -455,27 +442,27 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   }
 
   Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
+    final canConvert = _model.selectedFile != null && !_model.isConverting;
 
     return ConversionConvertButton(
       onConvert: _convertVttToText,
-      isConverting: _isConverting,
+      isConverting: _model.isConverting,
       isEnabled: canConvert,
     );
   }
 
   Widget _buildStatusMessage() {
     return ConversionStatusDisplay(
-      isConverting: _isConverting,
-      isSuccess: _conversionResult != null,
-      message: _statusMessage,
+      isConverting: _model.isConverting,
+      isSuccess: _model.conversionResult != null,
+      message: _model.statusMessage,
     );
   }
 
   Widget _buildResultCard() {
     return ConversionResultSaveCard(
-      fileName: _conversionResult!.fileName,
-      isSaving: _isSaving,
+      fileName: _model.conversionResult!.fileName,
+      isSaving: _model.isSaving,
       onSave: _saveTextFile,
       title: 'Text File Ready',
     );

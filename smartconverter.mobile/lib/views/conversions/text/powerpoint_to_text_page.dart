@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
 import '../../../services/notification_service.dart';
@@ -17,6 +16,7 @@ import '../../../widgets/conversion_file_name_field.dart';
 import '../../../widgets/conversion_convert_button.dart';
 import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
+import '../../../models/conversion_model.dart';
 
 class PowerPointToTextPage extends StatefulWidget {
   const PowerPointToTextPage({super.key});
@@ -29,14 +29,9 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
-  File? _selectedFile;
-  ImageToPdfResult? _conversionResult;
-  bool _isConverting = false;
-  bool _isSaving = false;
-  bool _fileNameEdited = false;
-  String _statusMessage = 'Select a PowerPoint file to begin.';
-  String? _suggestedBaseName;
-  String? _savedFilePath;
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select a PowerPoint file to begin.',
+  );
 
   @override
   void initState() {
@@ -55,8 +50,8 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   void _handleFileNameChange() {
     final trimmed = _fileNameController.text.trim();
     final edited = trimmed.isNotEmpty;
-    if (_fileNameEdited != edited) {
-      setState(() => _fileNameEdited = edited);
+    if (_model.fileNameEdited != edited) {
+      setState(() => _model.fileNameEdited = edited);
     }
   }
 
@@ -69,16 +64,16 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
 
       if (file == null) {
         if (mounted) {
-          setState(() => _statusMessage = 'No file selected.');
+          setState(() => _model.statusMessage = 'No file selected.');
         }
         return;
       }
 
       setState(() {
-        _selectedFile = file;
-        _conversionResult = null;
-        _savedFilePath = null;
-        _statusMessage = 'PowerPoint selected: ${p.basename(file.path)}';
+        _model.selectedFile = file;
+        _model.conversionResult = null;
+        _model.savedFilePath = null;
+        _model.statusMessage = 'PowerPoint selected: ${p.basename(file.path)}';
         resetAdStatus(file.path);
       });
 
@@ -86,7 +81,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
     } catch (e) {
       final message = 'Failed to select PowerPoint file: $e';
       if (mounted) {
-        setState(() => _statusMessage = message);
+        setState(() => _model.statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: AppColors.warning),
         );
@@ -95,7 +90,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   }
 
   Future<void> _convert() async {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a PowerPoint file first.'),
@@ -106,18 +101,18 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
     }
 
     setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting PowerPoint to Text...';
-      _conversionResult = null;
-      _savedFilePath = null;
+      _model.isConverting = true;
+      _model.statusMessage = 'Converting PowerPoint to Text...';
+      _model.conversionResult = null;
+      _model.savedFilePath = null;
     });
 
     // Check for rewarded ad first
     final adWatched = await showRewardedAdGate(toolName: 'PowerPoint-to-Text');
     if (!adWatched) {
       setState(() {
-        _isConverting = false;
-        _statusMessage = 'Conversion cancelled (Ad required).';
+        _model.isConverting = false;
+        _model.statusMessage = 'Conversion cancelled (Ad required).';
       });
       return;
     }
@@ -128,7 +123,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
           : null;
 
       final result = await _service.convertPowerpointToText(
-        _selectedFile!,
+        _model.selectedFile!,
         outputFilename: customFilename,
       );
 
@@ -136,7 +131,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
 
       if (result == null) {
          setState(() {
-          _statusMessage = 'Conversion completed but no file returned.';
+          _model.statusMessage = 'Conversion completed but no file returned.';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -150,33 +145,33 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
       }
 
       setState(() {
-        _conversionResult = result;
-        _statusMessage = 'PowerPoint to Text converted successfully!';
-        _savedFilePath = null;
+        _model.conversionResult = result;
+        _model.statusMessage = 'PowerPoint to Text converted successfully!';
+        _model.savedFilePath = null;
       });
 
 
     } catch (e) {
       if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
+      setState(() => _model.statusMessage = 'Conversion failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) {
-        setState(() => _isConverting = false);
+        setState(() => _model.isConverting = false);
       }
     }
   }
 
   Future<void> _saveResult() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
     
     // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
 
-    setState(() => _isSaving = true);
+    setState(() => _model.isSaving = true);
     try {
       final dir = await FileManager.getPowerpointToTextDirectory();
       
@@ -203,7 +198,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
       
       if (!mounted) return;
       
-      setState(() => _savedFilePath = savedFile.path);
+      setState(() => _model.savedFilePath = savedFile.path);
       
       // Trigger System Notification
       await NotificationService.showFileSavedNotification(
@@ -213,7 +208,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
 
       if (mounted) {
         setState(() {
-          _statusMessage = 'File saved successfully!';
+          _model.statusMessage = 'File saved successfully!';
         });
       }
 
@@ -227,14 +222,14 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
         ),
       );
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) setState(() => _model.isSaving = false);
     }
   }
   
   Future<void> _shareResult() async {
-    final result = _conversionResult;
+    final result = _model.conversionResult;
     if (result == null) return;
-    final pathToShare = _savedFilePath ?? result.file.path;
+    final pathToShare = _model.savedFilePath ?? result.file.path;
     final fileToShare = File(pathToShare);
 
     if (!await fileToShare.exists()) {
@@ -272,22 +267,22 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   }
 
   void _updateSuggestedFileName() {
-    if (_selectedFile == null) {
+    if (_model.selectedFile == null) {
       setState(() {
-        _suggestedBaseName = null;
-        if (!_fileNameEdited) {
+        _model.suggestedBaseName = null;
+        if (!_model.fileNameEdited) {
           _fileNameController.clear();
         }
       });
       return;
     }
 
-    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
+    final baseName = p.basenameWithoutExtension(_model.selectedFile!.path);
     final sanitized = _sanitizeBaseName(baseName);
 
     setState(() {
-      _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
+      _model.suggestedBaseName = sanitized;
+      if (!_model.fileNameEdited) {
         _fileNameController.text = sanitized;
       }
     });
@@ -295,14 +290,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
 
   void _resetForNewConversion() {
       setState(() {
-        _selectedFile = null;
-        _conversionResult = null;
-        _isConverting = false;
-        _isSaving = false;
-        _fileNameEdited = false;
-        _suggestedBaseName = null;
-        _savedFilePath = null;
-        _statusMessage = 'Select a PowerPoint file to begin.';
+        _model.reset(defaultStatusMessage: 'Select a PowerPoint file to begin.');
         _fileNameController.clear();
       });
       // Ad loading is handled by mixin or on demand
@@ -355,11 +343,11 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
                 _buildConvertButton(),
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
-                if (_conversionResult != null) ...[
+                if (_model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
+                  _model.savedFilePath != null 
                     ? PersistentResultCard(
-                        savedFilePath: _savedFilePath!,
+                        savedFilePath: _model.savedFilePath!,
                         onShare: _shareResult,
                       )
                     : _buildResultCard(),
@@ -386,15 +374,15 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
     return ConversionActionButtons(
       onPickFile: _pickFile,
       onReset: _resetForNewConversion,
-      isFileSelected: _selectedFile != null,
-      isConverting: _isConverting,
+      isFileSelected: _model.selectedFile != null,
+      isConverting: _model.isConverting,
       buttonText: 'Select PowerPoint File',
     );
   }
 
   Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-    final file = _selectedFile!;
+    if (_model.selectedFile == null) return const SizedBox.shrink();
+    final file = _model.selectedFile!;
     final fileName = p.basename(file.path);
     
     String fileSize;
@@ -416,8 +404,8 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-    final hintText = _suggestedBaseName ?? 'converted_presentation';
+    if (_model.selectedFile == null) return const SizedBox.shrink();
+    final hintText = _model.suggestedBaseName ?? 'converted_presentation';
     return ConversionFileNameField(
       controller: _fileNameController,
       hintText: hintText,
@@ -425,27 +413,27 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage> with AdHelp
   }
 
   Widget _buildConvertButton() {
-     final canConvert = _selectedFile != null && !_isConverting;
+     final canConvert = _model.selectedFile != null && !_model.isConverting;
 
     return ConversionConvertButton(
       onConvert: _convert,
-      isConverting: _isConverting,
+      isConverting: _model.isConverting,
       isEnabled: canConvert,
     );
   }
 
   Widget _buildStatusMessage() {
     return ConversionStatusDisplay(
-      isConverting: _isConverting,
-      isSuccess: _conversionResult != null,
-      message: _statusMessage,
+      isConverting: _model.isConverting,
+      isSuccess: _model.conversionResult != null,
+      message: _model.statusMessage,
     );
   }
 
   Widget _buildResultCard() {
     return ConversionResultSaveCard(
-      fileName: _conversionResult!.fileName,
-      isSaving: _isSaving,
+      fileName: _model.conversionResult!.fileName,
+      isSaving: _model.isSaving,
       onSave: _saveResult,
       title: 'Text File Ready',
     );
