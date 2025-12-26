@@ -1,13 +1,10 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../services/conversion_service.dart';
-import '../../../services/notification_service.dart';
 import '../../../widgets/persistent_result_card.dart';
 import '../../../widgets/conversion_status_display.dart';
 import '../../../widgets/conversion_result_save_card.dart';
@@ -19,6 +16,7 @@ import '../../../widgets/conversion_convert_button.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 import '../../../models/conversion_model.dart';
+import '../../../mixins/text_conversion_mixin.dart';
 
 class WordToTextTextPage extends StatefulWidget {
   const WordToTextTextPage({super.key});
@@ -27,428 +25,141 @@ class WordToTextTextPage extends StatefulWidget {
   State<WordToTextTextPage> createState() => _WordToTextTextPageState();
 }
 
-class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper {
-  final ConversionService _service = ConversionService();
-  final TextEditingController _fileNameController = TextEditingController();
-
-  final ConversionModel _model = ConversionModel(
+class _WordToTextTextPageState extends State<WordToTextTextPage> 
+    with AdHelper, TextConversionMixin {
+  
+  @override
+  final ConversionService service = ConversionService();
+  
+  @override
+  final TextEditingController fileNameController = TextEditingController();
+  
+  @override
+  final ConversionModel model = ConversionModel(
     statusMessage: 'Select a Word file (.doc/.docx) to begin.',
   );
 
   @override
+  String get fileTypeLabel => 'Word';
+  
+  @override
+  List<String> get allowedExtensions => ['doc', 'docx'];
+  
+  @override
+  String get conversionToolName => 'Word-to-Text';
+  
+  @override
+  Future<Directory> get saveDirectory => FileManager.getWordToTextDirectory();
+
+  @override
   void initState() {
     super.initState();
-    _fileNameController.addListener(_handleFileNameChange);
+    fileNameController.addListener(handleFileNameChange);
   }
 
   @override
   void dispose() {
-    _fileNameController
-      ..removeListener(_handleFileNameChange)
+    fileNameController
+      ..removeListener(handleFileNameChange)
       ..dispose();
     super.dispose();
   }
-
-  void _handleFileNameChange() {
-    final trimmed = _fileNameController.text.trim();
-    final edited = trimmed.isNotEmpty;
-    if (_model.fileNameEdited != edited) {
-      setState(() => _model.fileNameEdited = edited);
-    }
-  }
-
-  Future<void> _pickFile() async {
-    try {
-      final file = await _service.pickFile(
-        allowedExtensions: ['doc', 'docx'],
-        type: 'custom',
-      );
-
-      if (file == null) {
-        if (mounted) {
-          setState(() => _model.statusMessage = 'No file selected.');
-        }
-        return;
-      }
-
-      setState(() {
-        _model.selectedFile = file;
-        _model.conversionResult = null;
-        _model.savedFilePath = null;
-        _model.statusMessage = 'Word file selected: ${p.basename(file.path)}';
-        resetAdStatus(file.path);
-      });
-
-      _updateSuggestedFileName();
-    } catch (e) {
-      final message = 'Failed to select Word file: $e';
-      if (mounted) {
-        setState(() => _model.statusMessage = message);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
-        );
-      }
-    }
-  }
-
-  Future<void> _convert() async {
-    if (_model.selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a Word file first.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _model.isConverting = true;
-      _model.statusMessage = 'Converting Word to Text...';
-      _model.conversionResult = null;
-      _model.savedFilePath = null;
-    });
-
-    // Check for rewarded ad first
-    final adWatched = await showRewardedAdGate(toolName: 'Word-to-Text');
-    if (!adWatched) {
-      setState(() {
-        _model.isConverting = false;
-        _model.statusMessage = 'Conversion cancelled (Ad required).';
-      });
-      return;
-    }
-
-    try {
-      final customFilename = _fileNameController.text.trim().isNotEmpty
-          ? _sanitizeBaseName(_fileNameController.text.trim())
-          : null;
-
-      final result = await _service.convertWordToText(
-        _model.selectedFile!,
-        outputFilename: customFilename,
-      );
-
-      if (!mounted) return;
-
-      if (result == null) {
-        setState(() {
-          _model.statusMessage = 'Conversion completed but no file returned.';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Conversion completed, but unable to download the file.',
-            ),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-        return;
-      }
-
-      setState(() {
-        _model.conversionResult = result;
-        _model.statusMessage = 'Word to Text converted successfully!';
-        _model.savedFilePath = null;
-      });
-
-
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _model.statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _model.isConverting = false);
-      }
-    }
-  }
-
-  Future<void> _saveResult() async {
-    final result = _model.conversionResult;
-    if (result == null) return;
-
-    // Show Interstitial Ad before saving if ready
-    await showInterstitialAd();
-
-    setState(() => _model.isSaving = true);
-
-    try {
-      final directory = await FileManager.getWordToTextDirectory();
-
-      String targetFileName;
-      if (_fileNameController.text.trim().isNotEmpty) {
-        final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensureTxtExtension(customName);
-      } else {
-        targetFileName = result.fileName;
-      }
-
-      File destinationFile = File(p.join(directory.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          'txt',
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(directory.path, targetFileName));
-      }
-
-      final savedFile = await result.file.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _model.savedFilePath = savedFile.path);
-
-      // Trigger System Notification
-      await NotificationService.showFileSavedNotification(
-        fileName: targetFileName,
-        filePath: savedFile.path,
-      );
-
-      if (mounted) {
-        setState(() {
-          _model.statusMessage = 'File saved successfully!';
-        });
-      }
-
-
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Save failed: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _model.isSaving = false);
-      }
-    }
-  }
-
-  Future<void> _shareTextFile() async {
-    final result = _model.conversionResult;
-    if (result == null) return;
-    final pathToShare = _model.savedFilePath ?? result.file.path;
-    final fileToShare = File(pathToShare);
-
-    if (!await fileToShare.exists()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Text file is not available on disk.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-      return;
-    }
-
-    await Share.shareXFiles([
-      XFile(fileToShare.path),
-    ], text: 'Converted Text: ${result.fileName}');
-  }
-
-  void _updateSuggestedFileName() {
-    if (_model.selectedFile == null) {
-      setState(() {
-        _model.suggestedBaseName = null;
-        if (!_model.fileNameEdited) {
-          _fileNameController.clear();
-        }
-      });
-      return;
-    }
-
-    final baseName = p.basenameWithoutExtension(_model.selectedFile!.path);
-    final sanitized = _sanitizeBaseName(baseName);
-
-    setState(() {
-      _model.suggestedBaseName = sanitized;
-      if (!_model.fileNameEdited) {
-        _fileNameController.text = sanitized;
-      }
-    });
-  }
-
-  String _sanitizeBaseName(String input) {
-    var base = input.trim();
-    if (base.toLowerCase().endsWith('.txt')) {
-      base = base.substring(0, base.length - 4);
-    }
-    base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    base = base.replaceAll(RegExp(r'_+'), '_');
-    base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) {
-      base = 'converted_document';
-    }
-    return base.substring(0, min(base.length, 80));
-  }
-
-  String _ensureTxtExtension(String base) {
-    final trimmed = base.trim();
-    return trimmed.toLowerCase().endsWith('.txt') ? trimmed : '$trimmed.txt';
-  }
-
-  void _resetForNewConversion() {
-    setState(() {
-      _model.reset(defaultStatusMessage: 'Select a Word file to begin.');
-      _fileNameController.clear();
-    });
-    // Ad loading handled by AdHelper automatically or on next demand
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  
+  @override
+  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
+    return service.convertWordToText(file, outputFilename: outputName);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
+        title: const Text('Word to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Word to Text',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
+      extendBodyBehindAppBar: true,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderCard(),
-                const SizedBox(height: 20),
-                _buildActionButtons(),
-                const SizedBox(height: 16),
-                _buildSelectedFileCard(),
-                const SizedBox(height: 16),
-                _buildFileNameField(),
-                const SizedBox(height: 20),
-                _buildConvertButton(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(),
-                if (_model.conversionResult != null) ...[
-                  const SizedBox(height: 20),
-                  _model.savedFilePath != null 
-                    ? PersistentResultCard(
-                        savedFilePath: _model.savedFilePath!,
-                        onShare: _shareTextFile,
-                      )
-                    : _buildResultCard(),
-                ],
-              ],
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: kToolbarHeight + 20),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ConversionHeaderCard(
+                      title: 'Word to Text',
+                      description: 'Extract text from Word documents',
+                      iconSource: Icons.description,
+                      iconTarget: Icons.text_fields,
+                    ),
+                    const SizedBox(height: 16),
+
+                    ConversionActionButtons(
+                      isFileSelected: model.selectedFile != null,
+                      onPickFile: pickFile,
+                      onReset: resetForNewConversion,
+                      isConverting: model.isConverting,
+                      buttonText: 'Select Word File',
+                    ),
+                    const SizedBox(height: 24),
+
+                    if (model.selectedFile != null) ...[
+                      ConversionSelectedFileCard(
+                        fileName: p.basename(model.selectedFile!.path),
+                        fileSize: formatBytes(model.selectedFile!.lengthSync()),
+                        fileIcon: Icons.description,
+                      ),
+                      const SizedBox(height: 16),
+                      ConversionFileNameField(
+                        controller: fileNameController,
+                      ),
+                      const SizedBox(height: 24),
+                      ConversionConvertButton(
+                        isConverting: model.isConverting,
+                        onConvert: convert,
+                        buttonText: 'Convert to Text',
+                        isEnabled: !model.isConverting,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    ConversionStatusDisplay(
+                        message: model.statusMessage,
+                        isConverting: model.isConverting,
+                        isSuccess: model.conversionResult != null,
+                    ),
+                    
+                    if (model.conversionResult != null) ...[
+                      const SizedBox(height: 20),
+                      if (model.savedFilePath == null)
+                        ConversionResultSaveCard(
+                          fileName: model.conversionResult!.fileName,
+                          isSaving: model.isSaving,
+                          onSave: saveResult,
+                          title: 'Text File Ready',
+                        )
+                      else
+                        PersistentResultCard(
+                            savedFilePath: model.savedFilePath!,
+                            onShare: shareTextFile,
+                        ),
+                    ],
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
     );
   }
-
-  Widget _buildHeaderCard() {
-    return const ConversionHeaderCard(
-      title: 'Convert Word to Text',
-      description: 'Extract text from Word documents (.doc, .docx) and save as .txt',
-      iconSource: Icons.description,
-      iconTarget: Icons.text_fields,
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return ConversionActionButtons(
-      onPickFile: _pickFile,
-      onReset: _resetForNewConversion,
-      isFileSelected: _model.selectedFile != null,
-      isConverting: _model.isConverting,
-    );
-  }
-
-  Widget _buildSelectedFileCard() {
-    if (_model.selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final file = _model.selectedFile!;
-    final fileName = p.basename(file.path);
-    
-    String fileSize;
-    try {
-      if (file.existsSync()) {
-        fileSize = _formatBytes(file.lengthSync());
-      } else {
-        fileSize = 'File no longer available';
-      }
-    } catch (e) {
-      fileSize = 'Unknown size';
-    }
-
-    return ConversionSelectedFileCard(
-      fileName: fileName,
-      fileSize: fileSize,
-    );
-  }
-
-  Widget _buildFileNameField() {
-    if (_model.selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final hintText = _model.suggestedBaseName ?? 'converted_document';
-
-    return ConversionFileNameField(
-      controller: _fileNameController,
-      hintText: hintText,
-    );
-  }
-
-  Widget _buildConvertButton() {
-    final canConvert = _model.selectedFile != null && !_model.isConverting;
-
-    return ConversionConvertButton(
-      onConvert: _convert,
-      isConverting: _model.isConverting,
-      isEnabled: canConvert,
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return ConversionStatusDisplay(
-      isConverting: _model.isConverting,
-      isSuccess: _model.conversionResult != null,
-      message: _model.statusMessage,
-    );
-  }
-
-  Widget _buildResultCard() {
-    return ConversionResultSaveCard(
-      fileName: _model.conversionResult!.fileName,
-      isSaving: _model.isSaving,
-      onSave: _saveResult,
-      title: 'Text File Ready',
-    );
-  }
-
 }
