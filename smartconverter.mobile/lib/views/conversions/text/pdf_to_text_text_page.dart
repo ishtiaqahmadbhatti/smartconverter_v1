@@ -58,7 +58,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PDF to Text', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Convert PDF to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),

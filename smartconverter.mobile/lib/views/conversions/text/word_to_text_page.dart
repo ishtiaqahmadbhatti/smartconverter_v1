@@ -58,7 +58,7 @@ class _WordToTextTextPageState extends State<WordToTextTextPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Word to Text', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Convert Word to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),

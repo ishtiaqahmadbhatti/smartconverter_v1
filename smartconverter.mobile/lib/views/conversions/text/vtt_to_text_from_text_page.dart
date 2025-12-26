@@ -59,7 +59,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        title: const Text('VTT to Text', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Convert VTT to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
@@ -83,7 +83,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ConversionHeaderCard(
-                      title: 'Convert VTT to Text',
+                      title: 'VTT to Text',
                       description: 'Extract captions from VTT subtitles and save as .txt',
                       iconSource: Icons.insert_drive_file,
                       iconTarget: Icons.text_fields,

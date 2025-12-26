@@ -59,7 +59,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PowerPoint to Text', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Convert PowerPoint to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
@@ -80,7 +80,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ConversionHeaderCard(
-                  title: 'Convert PowerPoint to Text',
+                  title: 'PowerPoint to Text',
                   description: 'Extract text from slides and tables in PowerPoint (.ppt, .pptx) and save as .txt',
                   iconSource: Icons.slideshow,
                   iconTarget: Icons.text_fields,

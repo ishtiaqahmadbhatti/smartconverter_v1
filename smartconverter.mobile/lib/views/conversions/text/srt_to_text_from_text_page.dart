@@ -60,7 +60,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        title: const Text('SRT to Text', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Convert SRT to Text', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
@@ -84,7 +84,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ConversionHeaderCard(
-                      title: 'Convert SRT to Text',
+                      title: 'SRT to Text',
                       description: 'Extract captions from SRT subtitles and save as .txt',
                       iconSource: Icons.insert_drive_file,
                       iconTarget: Icons.text_fields,
