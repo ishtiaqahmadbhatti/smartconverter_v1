@@ -6,6 +6,7 @@ import 'package:open_filex/open_filex.dart';
 
 import '../constants/app_colors.dart';
 import '../services/notification_service.dart';
+import '../views/my_files_page.dart';
 
 class PersistentResultCard extends StatefulWidget {
   final String savedFilePath;
@@ -67,10 +68,12 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Divider(color: AppColors.success.withOpacity(0.5), thickness: 2, height: 1),
+          const SizedBox(height: 12),
           const Center(
             child: Text(
-              'FILE SAVED AT',
+              '⭐ Saved File – Quick Access ⭐',
               style: TextStyle(
                 color: AppColors.primaryBlue,
                 fontWeight: FontWeight.bold,
@@ -86,6 +89,7 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
@@ -93,6 +97,46 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
              child: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: _buildAppLocationPath(widget.savedFilePath),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              height: 48,
+              width: 260,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyFilesPage(
+                        initialPath: p.dirname(widget.savedFilePath),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward, size: 25, color: Colors.white),
+                label: const Text(
+                  'Go To App Location', 
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -113,73 +157,95 @@ class _PersistentResultCardState extends State<PersistentResultCard> {
               style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontFamily: 'monospace'),
             ),
           ),
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              height: 48,
+              width: 260,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                   final folderPath = p.dirname(widget.savedFilePath);
+                   await NotificationService.openFile(folderPath);
+                },
+                icon: const Icon(Icons.arrow_forward, size: 25, color: Colors.white),
+                label: const Text(
+                  'Go To Device Location', 
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                     if (!await File(widget.savedFilePath).exists()) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('File no longer exists.')),
-                          );
-                        }
-                        return;
-                     }
-                     await NotificationService.openFile(widget.savedFilePath);
-                  },
-                  icon: const Icon(Icons.open_in_new, size: 14),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Open File'),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryBlue,
-                    side: const BorderSide(color: AppColors.primaryBlue),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                    textStyle: const TextStyle(fontSize: 11),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final folderPath = p.dirname(widget.savedFilePath);
-                    await NotificationService.openFile(folderPath);
-                  },
-                  icon: const Icon(Icons.folder_open, size: 14),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Open Folder'),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.warning,
-                    side: const BorderSide(color: AppColors.warning),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                    textStyle: const TextStyle(fontSize: 11),
+          Divider(color: AppColors.success.withOpacity(0.5), thickness: 2, height: 1),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 130,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                       if (!await File(widget.savedFilePath).exists()) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('File no longer exists.')),
+                            );
+                          }
+                          return;
+                       }
+                       await NotificationService.openFile(widget.savedFilePath);
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 14),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Open File'),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryBlue,
+                      side: const BorderSide(color: AppColors.primaryBlue),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      textStyle: const TextStyle(fontSize: 11),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: widget.onShare,
-                  icon: const Icon(Icons.share, size: 14),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Share'),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.secondaryGreen,
-                    side: const BorderSide(color: AppColors.secondaryGreen),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                    textStyle: const TextStyle(fontSize: 11),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 130,
+                  child: OutlinedButton.icon(
+                    onPressed: widget.onShare,
+                    icon: const Icon(Icons.share, size: 14),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Share'),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      textStyle: const TextStyle(fontSize: 11),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

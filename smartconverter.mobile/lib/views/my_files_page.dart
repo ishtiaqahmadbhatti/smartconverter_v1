@@ -9,7 +9,8 @@ import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
 class MyFilesPage extends StatefulWidget {
-  const MyFilesPage({super.key});
+  final String? initialPath;
+  const MyFilesPage({super.key, this.initialPath});
 
   @override
   State<MyFilesPage> createState() => _MyFilesPageState();
@@ -66,22 +67,35 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
 
     try {
       final smartConverterDir = await FileManager.getSmartConverterDirectory();
-      print('DEBUG: SmartConverter directory path: ${smartConverterDir.path}');
-      print(
-        'DEBUG: SmartConverter directory exists: ${await smartConverterDir.exists()}',
-      );
+      
+      Directory targetDir = smartConverterDir;
+      if (widget.initialPath != null) {
+          final initialDir = Directory(widget.initialPath!);
+          if (await initialDir.exists()) {
+             targetDir = initialDir;
+          }
+      }
 
-      if (await smartConverterDir.exists()) {
+      print('DEBUG: Loading directory path: ${targetDir.path}');
+
+      if (await targetDir.exists()) {
         setState(() {
-          _currentDirectory = smartConverterDir;
-          _currentPath = 'SmartConverter';
+          _currentDirectory = targetDir;
         });
-        await _loadDirectoryContents(smartConverterDir);
+        await _loadDirectoryContents(targetDir);
       } else {
-        setState(() {
-          _currentItems = [];
-          _currentPath = 'SmartConverter (Empty)';
-        });
+        // Fallback to root if specific dir fails
+         if (await smartConverterDir.exists()) {
+            setState(() {
+              _currentDirectory = smartConverterDir;
+            });
+            await _loadDirectoryContents(smartConverterDir);
+         } else {
+            setState(() {
+              _currentItems = [];
+              _currentPath = 'SmartConverter (Empty)';
+            });
+         }
       }
     } catch (e) {
       _showErrorDialog('Error Loading Directory', e.toString());
@@ -236,6 +250,12 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
   }
 
   void _handleBack() async {
+    // If we deep linked to a specific location, back should return to previous screen immediately
+    if (widget.initialPath != null) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
     final smartConverterDir = await FileManager.getSmartConverterDirectory();
     if (_currentDirectory != null && _currentDirectory!.path != smartConverterDir.path) {
       _navigateToParent();
@@ -929,8 +949,11 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final isAtRoot = _currentPath == 'SmartConverter' || _currentPath == 'SmartConverter (Empty)';
+    final canPop = widget.initialPath != null || (!_isSearching && isAtRoot);
+
     return PopScope(
-      canPop: false,
+      canPop: canPop,
       onPopInvoked: (didPop) async {
         if (didPop) return;
         _handleBack();
