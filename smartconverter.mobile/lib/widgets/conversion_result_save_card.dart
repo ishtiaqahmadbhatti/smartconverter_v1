@@ -90,7 +90,7 @@ class ConversionResultSaveCard extends StatelessWidget {
                         ),
                       ),
                     )
-                  : const Icon(Icons.save_outlined, size: 18),
+                  : const Icon(Icons.save_alt_outlined, size: 18),
               label: const Text(
                 'Save File',
                 style: TextStyle(fontSize: 14),

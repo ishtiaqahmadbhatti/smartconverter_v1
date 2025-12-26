@@ -14,6 +14,10 @@ import '../../../widgets/persistent_result_card.dart';
 import '../../../widgets/conversion_status_display.dart';
 import '../../../widgets/conversion_result_save_card.dart';
 import '../../../widgets/conversion_header_card.dart';
+import '../../../widgets/conversion_action_buttons.dart';
+import '../../../widgets/conversion_selected_file_card.dart';
+import '../../../widgets/conversion_file_name_field.dart';
+import '../../../widgets/conversion_convert_button.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
 
@@ -387,44 +391,11 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper {
   }
 
   Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickFile,
-            icon: const Icon(Icons.file_open_outlined),
-            label: Text(
-              _selectedFile == null ? 'Select Word File' : 'Change File',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFile != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isConverting ? null : _resetForNewConversion,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
+    return ConversionActionButtons(
+      onPickFile: _pickFile,
+      onReset: _resetForNewConversion,
+      isFileSelected: _selectedFile != null,
+      isConverting: _isConverting,
     );
   }
 
@@ -447,55 +418,9 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper {
       fileSize = 'Unknown size';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.description,
-              color: AppColors.primaryBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  fileSize,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return ConversionSelectedFileCard(
+      fileName: fileName,
+      fileSize: fileSize,
     );
   }
 
@@ -506,55 +431,19 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper {
 
     final hintText = _suggestedBaseName ?? 'converted_document';
 
-    return TextField(
+    return ConversionFileNameField(
       controller: _fileNameController,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(
-        labelText: 'Output file name',
-        hintText: hintText,
-        prefixIcon: const Icon(Icons.edit_outlined),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppColors.backgroundSurface,
-        helperText: '.txt extension is added automatically',
-        helperStyle: const TextStyle(color: AppColors.textSecondary),
-      ),
-      style: const TextStyle(color: AppColors.textPrimary),
+      hintText: hintText,
     );
   }
 
   Widget _buildConvertButton() {
     final canConvert = _selectedFile != null && !_isConverting;
 
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canConvert ? _convert : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 4,
-        ),
-        child: _isConverting
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.textPrimary,
-                  ),
-                ),
-              )
-            : const Text(
-                'Convert to Text',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-      ),
+    return ConversionConvertButton(
+      onConvert: _convert,
+      isConverting: _isConverting,
+      isEnabled: canConvert,
     );
   }
 
@@ -574,7 +463,5 @@ class _WordToTextTextPageState extends State<WordToTextTextPage> with AdHelper {
       title: 'Text File Ready',
     );
   }
-
-
 
 }
