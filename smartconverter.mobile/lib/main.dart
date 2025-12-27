@@ -1,15 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'constants/app_strings.dart';
-import 'constants/app_theme.dart';
-import 'services/conversion_service.dart';
-import 'services/admob_service.dart';
-import 'services/favorites_provider.dart';
-import 'services/notification_service.dart';
-import 'views/splash_screen.dart';
-import 'views/sign_in_page.dart';
-import 'views/sign_up_page.dart';
+
+import 'app_modules/imports_module.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
