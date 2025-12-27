@@ -31,7 +31,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
   String get conversionToolName => 'Pdf-to-Text'; // Match existing if strict, or use consistent name
   
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfToTextDirectory();
+  Future<Directory> get saveDirectory => FileManager.getPdfToTextTextDirectory();
 
   @override
   void initState() {
