@@ -10,7 +10,7 @@ import '../../../services/notification_service.dart';
 // import '../../../app_widgets/conversion_result_card_widget.dart'; // Not using for split as it returns a list/folder
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
-import '../../../models/conversion_tool.dart';
+import '../../../app_models/conversion_tool.dart';
 
 class PdfSplitPage extends StatefulWidget {
   const PdfSplitPage({super.key});
