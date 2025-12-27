@@ -4,9 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import '../models/conversion_tool.dart';
-import '../constants/api_config.dart';
-import '../utils/file_manager.dart';
+import '../app_controllers/models_controller.dart';
+import '../app_controllers/constants_controller.dart';
+import '../app_controllers/utils_controller.dart';
 
 class MergePdfResult {
   final File file;

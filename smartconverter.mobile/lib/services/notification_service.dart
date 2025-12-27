@@ -5,7 +5,7 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as p;
-import '../constants/app_colors.dart';
+import '../app_controllers/constants_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {

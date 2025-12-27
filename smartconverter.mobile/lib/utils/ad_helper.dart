@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/admob_service.dart';
-import '../constants/app_colors.dart';
+import '../app_controllers/services_controller.dart';
+import '../app_controllers/constants_controller.dart';
 
 /// Mixin to handle common AdMob logic across conversion pages
 mixin AdHelper<T extends StatefulWidget> on State<T> {

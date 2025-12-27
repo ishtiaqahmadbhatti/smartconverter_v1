@@ -5,12 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 
-import '../constants/app_colors.dart';
-import '../services/conversion_service.dart';
-import '../services/notification_service.dart';
-import '../models/conversion_model.dart';
-import '../utils/file_manager.dart';
-import '../utils/ad_helper.dart';
+import '../app_controllers/constants_controller.dart';
+import '../app_controllers/services_controller.dart';
+import '../app_controllers/models_controller.dart';
+import '../app_controllers/utils_controller.dart';
 
 /// Mixin to handle common logic for Text Conversion pages
 mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
