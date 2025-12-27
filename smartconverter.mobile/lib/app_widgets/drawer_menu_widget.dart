@@ -1,13 +1,13 @@
 import '../app_modules/imports_module.dart';
-import '../views/my_files_page.dart';
-import '../views/settings_page.dart';
-import '../views/history_page.dart';
-import '../views/main_navigation.dart';
-import '../views/favorites_page.dart';
-import '../views/help_support_page.dart';
-import '../views/privacy_policy_page.dart';
-import '../views/terms_service_page.dart';
-import '../views/about_page.dart';
+import '../app_views/my_files_page.dart';
+import '../app_views/settings_page.dart';
+import '../app_views/history_page.dart';
+import '../app_views/main_navigation.dart';
+import '../app_views/favorites_page.dart';
+import '../app_views/help_support_page.dart';
+import '../app_views/privacy_policy_page.dart';
+import '../app_views/terms_service_page.dart';
+import '../app_views/about_page.dart';
 
 class DrawerMenuWidget extends StatefulWidget {
   const DrawerMenuWidget({super.key});

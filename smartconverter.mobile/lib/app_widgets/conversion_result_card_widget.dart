@@ -1,5 +1,5 @@
 import '../app_modules/imports_module.dart';
-import '../views/my_files_page.dart';
+import '../app_views/my_files_page.dart';
 
 class ConversionResultCardWidget extends StatefulWidget {
   final String savedFilePath;
