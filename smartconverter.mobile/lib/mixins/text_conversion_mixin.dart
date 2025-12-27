@@ -1,10 +1,4 @@
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-
+import '../app_controllers/core_controller.dart';
 import '../app_controllers/constants_controller.dart';
 import '../app_controllers/services_controller.dart';
 import '../app_controllers/models_controller.dart';
@@ -52,7 +46,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
         model.selectedFile = file;
         model.conversionResult = null;
         model.savedFilePath = null;
-        model.statusMessage = '$fileTypeLabel file selected: ${p.basename(file.path)}';
+        model.statusMessage = '$fileTypeLabel file selected: ${basename(file.path)}';
         resetAdStatus(file.path);
       });
 
@@ -162,15 +156,15 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
         targetFileName = result.fileName;
       }
 
-      File destinationFile = File(p.join(directory.path, targetFileName));
+      File destinationFile = File(join(directory.path, targetFileName));
 
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
+          basenameWithoutExtension(targetFileName),
           'txt',
         );
         targetFileName = fallbackName;
-        destinationFile = File(p.join(directory.path, targetFileName));
+        destinationFile = File(join(directory.path, targetFileName));
       }
 
       final savedFile = await result.file.copy(destinationFile.path);
@@ -240,7 +234,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
       return;
     }
 
-    final baseName = p.basenameWithoutExtension(model.selectedFile!.path);
+    final baseName = basenameWithoutExtension(model.selectedFile!.path);
     final sanitized = sanitizeBaseName(baseName);
 
     setState(() {

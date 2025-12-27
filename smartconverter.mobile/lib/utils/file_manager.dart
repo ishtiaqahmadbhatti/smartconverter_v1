@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import '../app_controllers/core_controller.dart';
 
 /// Utility class for managing file organization in SmartConverter
 class FileManager {

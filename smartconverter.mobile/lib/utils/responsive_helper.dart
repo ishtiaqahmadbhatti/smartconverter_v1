@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../app_controllers/core_controller.dart';
 
 class ResponsiveHelper {
   static bool isMobile(BuildContext context) {

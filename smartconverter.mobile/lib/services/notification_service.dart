@@ -1,12 +1,5 @@
-import 'dart:io';
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path/path.dart' as p;
+import '../app_controllers/core_controller.dart';
 import '../app_controllers/constants_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static Future<void> initialize() async {
@@ -67,7 +60,7 @@ class NotificationService {
 
     debugPrint('🔔 Showing notification for $fileName at $filePath');
     final relativePath = filePath.replaceFirst('/storage/emulated/0/', '');
-    final folderPath = p.dirname(relativePath);
+    final folderPath = dirname(relativePath);
     
     final success = await AwesomeNotifications().createNotification(
       content: NotificationContent(
@@ -223,7 +216,7 @@ Future<void> onActionReceivedMethod(
   try {
     if (receivedAction.buttonKeyPressed == 'VIEW') {
       debugPrint('🔔 Action: VIEW (Open Folder)');
-      final directoryPath = p.dirname(filePath);
+      final directoryPath = dirname(filePath);
       debugPrint('🔔 Opening directory: $directoryPath');
       await NotificationService.openFile(directoryPath);
     } else {

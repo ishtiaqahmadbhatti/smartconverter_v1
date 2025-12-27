@@ -1,9 +1,4 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
+import '../app_controllers/core_controller.dart';
 import '../app_controllers/models_controller.dart';
 import '../app_controllers/constants_controller.dart';
 import '../app_controllers/utils_controller.dart';
@@ -150,14 +145,14 @@ class ConversionService {
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -177,7 +172,7 @@ class ConversionService {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.docx';
+            '${basenameWithoutExtension(pdfFile.path)}.docx';
 
         _debugLog('✅ PDF converted to Word successfully!');
         _debugLog('📥 Downloading Word document: $fileName');
@@ -186,7 +181,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'PdfToWord',
-          extension: 'docx',
+          fileExtension: 'docx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -223,7 +218,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'WordToPdf',
-          extension: 'pdf',
+          fileExtension: 'pdf',
         );
       }
 
@@ -261,7 +256,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'ImageToPdf',
-          extension: 'pdf',
+          fileExtension: 'pdf',
         );
       }
 
@@ -309,14 +304,14 @@ class ConversionService {
         throw Exception('Word file does not exist');
       }
 
-      final extension = p.extension(wordFile.path).toLowerCase();
-      if (extension != '.doc' && extension != '.docx') {
+      final ext = extension(wordFile.path).toLowerCase();
+      if (ext != '.doc' && ext != '.docx') {
         throw Exception('Only .doc or .docx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         wordFile.path,
-        filename: p.basename(wordFile.path),
+        filename: basename(wordFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -336,12 +331,12 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(wordFile.path)}.txt';
+            '${basenameWithoutExtension(wordFile.path)}.txt';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          extension: 'txt',
+          fileExtension: 'txt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -363,14 +358,14 @@ class ConversionService {
       if (!srtFile.existsSync()) {
         throw Exception('SRT file does not exist');
       }
-      final extension = p.extension(srtFile.path).toLowerCase();
-      if (extension != '.srt') {
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
         throw Exception('Only .srt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         srtFile.path,
-        filename: p.basename(srtFile.path),
+        filename: basename(srtFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -390,13 +385,13 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(srtFile.path)}.csv';
+            '${basenameWithoutExtension(srtFile.path)}.csv';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'SrtToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -418,14 +413,14 @@ class ConversionService {
       if (!srtFile.existsSync()) {
         throw Exception('SRT file does not exist');
       }
-      final extension = p.extension(srtFile.path).toLowerCase();
-      if (extension != '.srt') {
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
         throw Exception('Only .srt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         srtFile.path,
-        filename: p.basename(srtFile.path),
+        filename: basename(srtFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -445,13 +440,13 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(srtFile.path)}.xlsx';
+            '${basenameWithoutExtension(srtFile.path)}.xlsx';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'SrtToExcel',
-          extension: 'xlsx',
+          fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -491,13 +486,13 @@ class ConversionService {
         if (!htmlFile.existsSync()) {
           throw Exception('HTML file does not exist');
         }
-        final extension = p.extension(htmlFile.path).toLowerCase();
-        if (extension != '.html' && extension != '.htm') {
+        final ext = extension(htmlFile.path).toLowerCase();
+        if (ext != '.html' && ext != '.htm') {
           throw Exception('Only .html or .htm files are supported');
         }
         map['file'] = await MultipartFile.fromFile(
           htmlFile.path,
-          filename: p.basename(htmlFile.path),
+          filename: basename(htmlFile.path),
         );
       }
 
@@ -522,7 +517,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'HtmlToPdf',
-          extension: 'pdf',
+          fileExtension: 'pdf',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -558,14 +553,14 @@ class ConversionService {
         if (!htmlFile.existsSync()) {
           throw Exception('HTML file does not exist');
         }
-        final extension = p.extension(htmlFile.path).toLowerCase();
+        final ext = extension(htmlFile.path).toLowerCase();
         // Allow .html and .htm files
-        if (extension != '.html' && extension != '.htm') {
+        if (ext != '.html' && ext != '.htm') {
              // throw Exception('Only .html or .htm files are supported');
         }
         map['file'] = await MultipartFile.fromFile(
             htmlFile.path,
-            filename: p.basename(htmlFile.path),
+            filename: basename(htmlFile.path),
         );
       }
 
@@ -590,7 +585,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'HtmlTableToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -612,15 +607,15 @@ class ConversionService {
       if (!excelFile.existsSync()) {
         throw Exception('Excel file does not exist');
       }
-      final extension = p.extension(excelFile.path).toLowerCase();
+      final ext = extension(excelFile.path).toLowerCase();
       // Allow .xls and .xlsx files
-      if (extension != '.xls' && extension != '.xlsx') {
+      if (ext != '.xls' && ext != '.xlsx') {
          // throw Exception('Only .xls or .xlsx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         excelFile.path,
-        filename: p.basename(excelFile.path),
+        filename: basename(excelFile.path),
       );
 
       final Map<String, dynamic> map = {'file': file};
@@ -649,7 +644,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'ExcelToHtml',
-          extension: 'html',
+          fileExtension: 'html',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -671,14 +666,14 @@ class ConversionService {
       if (!wordFile.existsSync()) {
         throw Exception('Word file does not exist');
       }
-      final extension = p.extension(wordFile.path).toLowerCase();
-      if (extension != '.docx' && extension != '.doc') {
+      final ext = extension(wordFile.path).toLowerCase();
+      if (ext != '.docx' && ext != '.doc') {
         throw Exception('Only .docx and .doc files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         wordFile.path,
-        filename: p.basename(wordFile.path),
+        filename: basename(wordFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -697,13 +692,13 @@ class ConversionService {
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(wordFile.path)}.html';
+            '${basenameWithoutExtension(wordFile.path)}.html';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'WordToHtml',
-          extension: 'html',
+          fileExtension: 'html',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -724,14 +719,14 @@ class ConversionService {
       if (!pptFile.existsSync()) {
         throw Exception('PowerPoint file does not exist');
       }
-      final extension = p.extension(pptFile.path).toLowerCase();
-      if (extension != '.pptx' && extension != '.ppt') {
+      final ext = extension(pptFile.path).toLowerCase();
+      if (ext != '.pptx' && ext != '.ppt') {
         throw Exception('Only .pptx and .ppt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pptFile.path,
-        filename: p.basename(pptFile.path),
+        filename: basename(pptFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -750,13 +745,13 @@ class ConversionService {
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pptFile.path)}.html';
+            '${basenameWithoutExtension(pptFile.path)}.html';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'PowerPointToHtml',
-          extension: 'html',
+          fileExtension: 'html',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -777,14 +772,14 @@ class ConversionService {
       if (!mdFile.existsSync()) {
         throw Exception('Markdown file does not exist');
       }
-      final extension = p.extension(mdFile.path).toLowerCase();
-      if (extension != '.md' && extension != '.markdown') {
+      final ext = extension(mdFile.path).toLowerCase();
+      if (ext != '.md' && ext != '.markdown') {
         throw Exception('Only .md and .markdown files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         mdFile.path,
-        filename: p.basename(mdFile.path),
+        filename: basename(mdFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -803,13 +798,13 @@ class ConversionService {
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(mdFile.path)}.html';
+            '${basenameWithoutExtension(mdFile.path)}.html';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'MarkdownToHtml',
-          extension: 'html',
+          fileExtension: 'html',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -874,7 +869,7 @@ class ConversionService {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           htmlFile.path,
-          filename: p.basename(htmlFile.path),
+          filename: basename(htmlFile.path),
         ),
         'width': width,
         'height': height,
@@ -999,7 +994,7 @@ class ConversionService {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           htmlFile.path,
-          filename: p.basename(htmlFile.path),
+          filename: basename(htmlFile.path),
         ),
         'width': width,
         'height': height,
@@ -1106,7 +1101,7 @@ class ConversionService {
         pdfFiles.map(
           (file) => MultipartFile.fromFile(
             file.path,
-            filename: p.basename(file.path),
+            filename: basename(file.path),
           ),
         ),
       );
@@ -1137,7 +1132,7 @@ class ConversionService {
           fileName,
           downloadUrl,
           toolName: 'MergePdf',
-          extension: 'pdf',
+          fileExtension: 'pdf',
         );
         
         if (file == null) {
@@ -1169,14 +1164,14 @@ class ConversionService {
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -1260,14 +1255,14 @@ class ConversionService {
       }
 
       // Validate file extension
-      final extension = p.extension(markdownFile.path).toLowerCase();
-      if (extension != '.md' && extension != '.markdown') {
+      final ext = extension(markdownFile.path).toLowerCase();
+      if (ext != '.md' && ext != '.markdown') {
         throw Exception('Only .md and .markdown files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         markdownFile.path,
-        filename: p.basename(markdownFile.path),
+        filename: basename(markdownFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1287,7 +1282,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(markdownFile.path)}.pdf';
+            '${basenameWithoutExtension(markdownFile.path)}.pdf';
 
         _debugLog('✅ Markdown converted to PDF successfully!');
         _debugLog('📥 Downloading PDF: $fileName');
@@ -1322,14 +1317,14 @@ class ConversionService {
       }
 
       // Validate file extension
-      final extension = p.extension(jpgFile.path).toLowerCase();
-      if (extension != '.jpg' && extension != '.jpeg') {
+      final ext = extension(jpgFile.path).toLowerCase();
+      if (ext != '.jpg' && ext != '.jpeg') {
         throw Exception('Only .jpg and .jpeg files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jpgFile.path,
-        filename: p.basename(jpgFile.path),
+        filename: basename(jpgFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1349,7 +1344,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jpgFile.path)}.pdf';
+            '${basenameWithoutExtension(jpgFile.path)}.pdf';
 
         _debugLog('✅ JPG converted to PDF successfully!');
         _debugLog('📥 Downloading PDF: $fileName');
@@ -1384,14 +1379,14 @@ class ConversionService {
       }
 
       // Validate file extension
-      final extension = p.extension(pngFile.path).toLowerCase();
-      if (extension != '.png') {
+      final ext = extension(pngFile.path).toLowerCase();
+      if (ext != '.png') {
         throw Exception('Only .png files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pngFile.path,
-        filename: p.basename(pngFile.path),
+        filename: basename(pngFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1411,7 +1406,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pngFile.path)}.pdf';
+            '${basenameWithoutExtension(pngFile.path)}.pdf';
 
         _debugLog('✅ PNG converted to PDF successfully!');
         _debugLog('📥 Downloading PDF: $fileName');
@@ -1498,14 +1493,14 @@ class ConversionService {
       }
 
       // Validate file extension
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1525,7 +1520,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.html';
+            '${basenameWithoutExtension(pdfFile.path)}.html';
 
         _debugLog('✅ PDF converted to HTML successfully!');
         _debugLog('📥 Downloading HTML: $fileName');
@@ -1560,14 +1555,14 @@ class ConversionService {
       }
 
       // Validate file extension
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1587,7 +1582,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.xlsx';
+            '${basenameWithoutExtension(pdfFile.path)}.xlsx';
 
         _debugLog('✅ PDF converted to Excel successfully!');
         _debugLog('📥 Downloading Excel: $fileName');
@@ -1621,14 +1616,14 @@ class ConversionService {
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -1648,7 +1643,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.json';
+            '${basenameWithoutExtension(pdfFile.path)}.json';
 
         _debugLog('✅ PDF converted to JSON successfully!');
         _debugLog('📥 Downloading JSON: $fileName');
@@ -1680,14 +1675,14 @@ Future<ImageToPdfResult?> convertPngToJson(
       throw Exception('Image file does not exist');
     }
 
-    final extension = p.extension(imageFile.path).toLowerCase();
-    if (extension != '.png') {
+    final ext = extension(imageFile.path).toLowerCase();
+    if (ext != '.png') {
       throw Exception('Only PNG files are supported');
     }
 
     final file = await MultipartFile.fromFile(
       imageFile.path,
-      filename: p.basename(imageFile.path),
+      filename: basename(imageFile.path),
     );
 
     FormData formData = FormData.fromMap({
@@ -1707,7 +1702,7 @@ Future<ImageToPdfResult?> convertPngToJson(
       String downloadUrl = response.data[ApiConfig.downloadUrlKey];
       String fileName =
           response.data['output_filename'] ??
-          '${p.basenameWithoutExtension(imageFile.path)}.json';
+          '${basenameWithoutExtension(imageFile.path)}.json';
 
       _debugLog('✅ Image converted to JSON successfully!');
       _debugLog('📥 Downloading JSON: $fileName');
@@ -1739,14 +1734,14 @@ Future<ImageToPdfResult?> convertJpgToJson(
       throw Exception('Image file does not exist');
     }
 
-    final extension = p.extension(imageFile.path).toLowerCase();
-    if (!['.jpg', '.jpeg'].contains(extension)) {
+    final ext = extension(imageFile.path).toLowerCase();
+    if (!['.jpg', '.jpeg'].contains(ext)) {
       throw Exception('Only JPG/JPEG files are supported');
     }
 
     final file = await MultipartFile.fromFile(
       imageFile.path,
-      filename: p.basename(imageFile.path),
+      filename: basename(imageFile.path),
     );
 
     FormData formData = FormData.fromMap({
@@ -1766,7 +1761,7 @@ Future<ImageToPdfResult?> convertJpgToJson(
       String downloadUrl = response.data[ApiConfig.downloadUrlKey];
       String fileName =
           response.data['output_filename'] ??
-          '${p.basenameWithoutExtension(imageFile.path)}.json';
+          '${basenameWithoutExtension(imageFile.path)}.json';
 
       _debugLog('✅ JPG converted to JSON successfully!');
       _debugLog('📥 Downloading JSON: $fileName');
@@ -1798,14 +1793,14 @@ Future<ImageToPdfResult?> convertXmlToJson(
       throw Exception('XML file does not exist');
     }
 
-    final extension = p.extension(xmlFile.path).toLowerCase();
-    if (extension != '.xml') {
+    final ext = extension(xmlFile.path).toLowerCase();
+    if (ext != '.xml') {
       throw Exception('Only XML files are supported');
     }
 
     final file = await MultipartFile.fromFile(
       xmlFile.path,
-      filename: p.basename(xmlFile.path),
+      filename: basename(xmlFile.path),
     );
 
     FormData formData = FormData.fromMap({
@@ -1825,7 +1820,7 @@ Future<ImageToPdfResult?> convertXmlToJson(
       String downloadUrl = response.data[ApiConfig.downloadUrlKey];
       String fileName =
           response.data['output_filename'] ??
-          '${p.basenameWithoutExtension(xmlFile.path)}.json';
+          '${basenameWithoutExtension(xmlFile.path)}.json';
 
       _debugLog('✅ XML converted to JSON successfully!');
       _debugLog('📥 Downloading JSON: $fileName');
@@ -1860,14 +1855,14 @@ Future<ImageToPdfResult?> convertJsonToCsv(
       throw Exception('JSON file does not exist');
     }
 
-    final extension = p.extension(jsonFile.path).toLowerCase();
-    if (extension != '.json') {
+    final ext = extension(jsonFile.path).toLowerCase();
+    if (ext != '.json') {
       throw Exception('Only JSON files are supported');
     }
 
     final file = await MultipartFile.fromFile(
       jsonFile.path,
-      filename: p.basename(jsonFile.path),
+      filename: basename(jsonFile.path),
     );
 
     FormData formData = FormData.fromMap({
@@ -1888,7 +1883,7 @@ Future<ImageToPdfResult?> convertJsonToCsv(
       String downloadUrl = response.data[ApiConfig.downloadUrlKey];
       String fileName =
           response.data['output_filename'] ??
-          '${p.basenameWithoutExtension(jsonFile.path)}.csv';
+          '${basenameWithoutExtension(jsonFile.path)}.csv';
 
       _debugLog('✅ JSON converted to CSV successfully!');
       _debugLog('📥 Downloading CSV: $fileName');
@@ -1920,14 +1915,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       throw Exception('JSON file does not exist');
     }
 
-    final extension = p.extension(jsonFile.path).toLowerCase();
-    if (extension != '.json') {
+    final ext = extension(jsonFile.path).toLowerCase();
+    if (ext != '.json') {
       throw Exception('Only JSON files are supported');
     }
 
     final file = await MultipartFile.fromFile(
       jsonFile.path,
-      filename: p.basename(jsonFile.path),
+      filename: basename(jsonFile.path),
     );
 
     final formData = FormData.fromMap({
@@ -1978,14 +1973,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         throw Exception('Excel file does not exist');
       }
 
-      final extension = p.extension(excelFile.path).toLowerCase();
-      if (!['.xls', '.xlsx'].contains(extension)) {
+      final ext = extension(excelFile.path).toLowerCase();
+      if (!['.xls', '.xlsx'].contains(ext)) {
         throw Exception('Only Excel files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         excelFile.path,
-        filename: p.basename(excelFile.path),
+        filename: basename(excelFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2035,14 +2030,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         throw Exception('CSV file does not exist');
       }
 
-      final extension = p.extension(csvFile.path).toLowerCase();
-      if (extension != '.csv') {
+      final ext = extension(csvFile.path).toLowerCase();
+      if (ext != '.csv') {
         throw Exception('Only CSV files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         csvFile.path,
-        filename: p.basename(csvFile.path),
+        filename: basename(csvFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2092,14 +2087,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2119,7 +2114,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.md';
+            '${basenameWithoutExtension(pdfFile.path)}.md';
 
         _debugLog('✅ PDF converted to Markdown successfully!');
         _debugLog('📥 Downloading Markdown: $fileName');
@@ -2152,14 +2147,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2179,7 +2174,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.csv';
+            '${basenameWithoutExtension(pdfFile.path)}.csv';
 
         _debugLog('✅ PDF converted to CSV successfully!');
         _debugLog('📥 Downloading CSV: $fileName');
@@ -2213,14 +2208,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       }
 
       // Validate file extension
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2240,7 +2235,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pdfFile.path)}.txt';
+            '${basenameWithoutExtension(pdfFile.path)}.txt';
 
         _debugLog('✅ PDF converted to Text successfully!');
         _debugLog('📥 Downloading Text: $fileName');
@@ -2274,14 +2269,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!pptFile.existsSync()) {
         throw Exception('PowerPoint file does not exist');
       }
-      final extension = p.extension(pptFile.path).toLowerCase();
-      if (extension != '.ppt' && extension != '.pptx') {
+      final ext = extension(pptFile.path).toLowerCase();
+      if (ext != '.ppt' && ext != '.pptx') {
         throw Exception('Only .ppt or .pptx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pptFile.path,
-        filename: p.basename(pptFile.path),
+        filename: basename(pptFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2301,7 +2296,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(pptFile.path)}.txt';
+            '${basenameWithoutExtension(pptFile.path)}.txt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2327,14 +2322,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!srtFile.existsSync()) {
         throw Exception('SRT file does not exist');
       }
-      final extension = p.extension(srtFile.path).toLowerCase();
-      if (extension != '.srt') {
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
         throw Exception('Only .srt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         srtFile.path,
-        filename: p.basename(srtFile.path),
+        filename: basename(srtFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2354,7 +2349,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(srtFile.path)}.txt';
+            '${basenameWithoutExtension(srtFile.path)}.txt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2380,14 +2375,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!vttFile.existsSync()) {
         throw Exception('VTT file does not exist');
       }
-      final extension = p.extension(vttFile.path).toLowerCase();
-      if (extension != '.vtt') {
+      final ext = extension(vttFile.path).toLowerCase();
+      if (ext != '.vtt') {
         throw Exception('Only .vtt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         vttFile.path,
-        filename: p.basename(vttFile.path),
+        filename: basename(vttFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -2407,7 +2402,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(vttFile.path)}.txt';
+            '${basenameWithoutExtension(vttFile.path)}.txt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2433,14 +2428,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!srtFile.existsSync()) {
         throw Exception('SRT file does not exist');
       }
-      final extension = p.extension(srtFile.path).toLowerCase();
-      if (extension != '.srt') {
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
         throw Exception('Only .srt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         srtFile.path,
-        filename: p.basename(srtFile.path),
+        filename: basename(srtFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2459,7 +2454,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(srtFile.path)}.vtt';
+            '${basenameWithoutExtension(srtFile.path)}.vtt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2485,14 +2480,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!vttFile.existsSync()) {
         throw Exception('VTT file does not exist');
       }
-      final extension = p.extension(vttFile.path).toLowerCase();
-      if (extension != '.vtt') {
+      final ext = extension(vttFile.path).toLowerCase();
+      if (ext != '.vtt') {
         throw Exception('Only .vtt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         vttFile.path,
-        filename: p.basename(vttFile.path),
+        filename: basename(vttFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2511,7 +2506,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(vttFile.path)}.srt';
+            '${basenameWithoutExtension(vttFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2537,14 +2532,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!csvFile.existsSync()) {
         throw Exception('CSV file does not exist');
       }
-      final extension = p.extension(csvFile.path).toLowerCase();
-      if (extension != '.csv') {
+      final ext = extension(csvFile.path).toLowerCase();
+      if (ext != '.csv') {
         throw Exception('Only .csv files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         csvFile.path,
-        filename: p.basename(csvFile.path),
+        filename: basename(csvFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2563,7 +2558,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(csvFile.path)}.srt';
+            '${basenameWithoutExtension(csvFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -2589,14 +2584,14 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (!excelFile.existsSync()) {
         throw Exception('Excel file does not exist');
       }
-      final extension = p.extension(excelFile.path).toLowerCase();
-      if (extension != '.xls' && extension != '.xlsx') {
+      final ext = extension(excelFile.path).toLowerCase();
+      if (ext != '.xls' && ext != '.xlsx') {
         throw Exception('Only .xls or .xlsx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         excelFile.path,
-        filename: p.basename(excelFile.path),
+        filename: basename(excelFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -2615,7 +2610,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
         final fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(excelFile.path)}.srt';
+            '${basenameWithoutExtension(excelFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
         if (downloadedFile == null) return null;
@@ -3021,7 +3016,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
           fileName,
           downloadUrl,
           toolName: 'ExtractTable',
-          extension: 'csv',
+          fileExtension: 'csv',
         );
       }
       return null;
@@ -3063,7 +3058,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
           fileName,
           downloadUrl,
           toolName: 'PdfToImage',
-          extension: 'jpg',
+          fileExtension: 'jpg',
         );
       }
       return null;
@@ -3102,7 +3097,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
             fileName,
             downloadUrl,
             toolName: 'MetadataPDF',
-            extension: 'json',
+            fileExtension: 'json',
           );
         }
       }
@@ -3170,7 +3165,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
           final file = File(pickedFile.path!);
           // Verify file exists
           if (await file.exists()) {
-            final ext = p.extension(file.path).toLowerCase();
+            final ext = extension(file.path).toLowerCase();
             if (fileType == FileType.custom &&
                 (allowedExtensions?.contains('pdf') ?? false)) {
               if (ext != '.pdf') {
@@ -3188,7 +3183,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
           final tempDir = await Directory.systemTemp.createTemp();
           final file = File('${tempDir.path}/${pickedFile.name}');
           await file.writeAsBytes(pickedFile.bytes!);
-          final ext = p.extension(file.path).toLowerCase();
+          final ext = extension(file.path).toLowerCase();
           if (fileType == FileType.custom &&
               (allowedExtensions?.contains('pdf') ?? false)) {
             if (ext != '.pdf') {
@@ -3242,7 +3237,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
           if (pickedFile.path != null && pickedFile.path!.isNotEmpty) {
             final file = File(pickedFile.path!);
             if (await file.exists()) {
-              final ext = p.extension(file.path).toLowerCase();
+              final ext = extension(file.path).toLowerCase();
               if (fileType == FileType.custom &&
                   (allowedExtensions?.contains('pdf') ?? false)) {
                 if (ext != '.pdf') {
@@ -3256,7 +3251,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
             final tempDir = await Directory.systemTemp.createTemp();
             final file = File('${tempDir.path}/${pickedFile.name}');
             await file.writeAsBytes(pickedFile.bytes!);
-            final ext = p.extension(file.path).toLowerCase();
+            final ext = extension(file.path).toLowerCase();
             if (fileType == FileType.custom &&
                 (allowedExtensions?.contains('pdf') ?? false)) {
               if (ext != '.pdf') {
@@ -3304,7 +3299,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
     String fileName,
     String originalUrl, {
     String? toolName,
-    String? extension,
+    String? fileExtension,
   }) async {
     final apiBaseUrl = _baseUrl ?? await ApiConfig.baseUrl;
     List<String> possibleUrls = [
@@ -3344,7 +3339,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
     if (result != null && toolName != null) {
       try {
         final finalExtension =
-            extension ?? p.extension(fileName).replaceFirst('.', '');
+            fileExtension ?? extension(fileName).replaceFirst('.', '');
         final savedFile = await saveFileToOrganizedDirectory(
           result,
           toolName,
@@ -3440,14 +3435,14 @@ async def download_file(filename: str):
         throw Exception('PDF file does not exist');
       }
 
-      final extension = p.extension(pdfFile.path).toLowerCase();
-      if (extension != '.pdf') {
+      final ext = extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
 
       final formData = FormData.fromMap({
@@ -3483,7 +3478,7 @@ async def download_file(filename: str):
 
       final data = response.data as Map<String, dynamic>;
       final folderName =
-          (data['output_filename'] ?? p.basenameWithoutExtension(pdfFile.path))
+          (data['output_filename'] ?? basenameWithoutExtension(pdfFile.path))
               .toString();
       final rawDownloadUrl =
           data[ApiConfig.downloadUrlKey]?.toString() ??
@@ -3512,7 +3507,7 @@ async def download_file(filename: str):
           fileName,
           originalUrl,
           toolName: endpoint.contains('png') ? 'PdfToPng' : 'PdfToJpg',
-          extension: imageExtension,
+          fileExtension: imageExtension,
         );
         if (fileResult != null) {
           downloadedFiles.add(fileResult);
@@ -4016,13 +4011,13 @@ async def download_file(filename: str):
       if (!pdfFile.existsSync()) {
         throw Exception('PDF file does not exist');
       }
-      final ext = p.extension(pdfFile.path).toLowerCase();
+      final ext = extension(pdfFile.path).toLowerCase();
       if (ext != '.pdf') {
         throw Exception('Only .pdf files are supported');
       }
       final file = await MultipartFile.fromFile(
         pdfFile.path,
-        filename: p.basename(pdfFile.path),
+        filename: basename(pdfFile.path),
       );
       final form = <String, dynamic>{
         'file': file,
@@ -4157,14 +4152,14 @@ async def download_file(filename: str):
       if (!srtFile.existsSync()) {
         throw Exception('SRT file does not exist');
       }
-      final extension = p.extension(srtFile.path).toLowerCase();
-      if (extension != '.srt') {
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
         throw Exception('Only .srt files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         srtFile.path,
-        filename: p.basename(srtFile.path),
+        filename: basename(srtFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4186,13 +4181,13 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(srtFile.path)}_$targetLanguage.srt';
+            '${basenameWithoutExtension(srtFile.path)}_$targetLanguage.srt';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'SrtTranslate',
-          extension: 'srt',
+          fileExtension: 'srt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4215,14 +4210,14 @@ async def download_file(filename: str):
         throw Exception('JSON file does not exist');
       }
 
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4242,7 +4237,7 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jsonFile.path)}.yaml';
+            '${basenameWithoutExtension(jsonFile.path)}.yaml';
 
         _debugLog('✅ JSON converted to YAML successfully!');
         _debugLog('📥 Downloading YAML: $fileName');
@@ -4251,7 +4246,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'YamlConversion',
-          extension: 'yaml',
+          fileExtension: 'yaml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4276,14 +4271,14 @@ async def download_file(filename: str):
         throw Exception('JSON file does not exist');
       }
 
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4304,7 +4299,7 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jsonFile.path)}.csv';
+            '${basenameWithoutExtension(jsonFile.path)}.csv';
 
         _debugLog('✅ JSON successfully converted to CSV!');
         _debugLog('📥 Downloading CSV: $fileName');
@@ -4313,7 +4308,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'JsonToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4337,14 +4332,14 @@ async def download_file(filename: str):
         throw Exception('JSON file does not exist');
       }
 
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4364,7 +4359,7 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jsonFile.path)}.xlsx';
+            '${basenameWithoutExtension(jsonFile.path)}.xlsx';
 
         _debugLog('✅ JSON successfully converted to Excel!');
         _debugLog('📥 Downloading Excel: $fileName');
@@ -4373,7 +4368,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'JsonToExcel',
-          extension: 'xlsx',
+          fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4397,14 +4392,14 @@ async def download_file(filename: str):
         throw Exception('YAML file does not exist');
       }
 
-      final extension = p.extension(yamlFile.path).toLowerCase();
-      if (extension != '.yaml' && extension != '.yml') {
+      final ext = extension(yamlFile.path).toLowerCase();
+      if (ext != '.yaml' && ext != '.yml') {
         throw Exception('Only .yaml or .yml files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         yamlFile.path,
-        filename: p.basename(yamlFile.path),
+        filename: basename(yamlFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4424,7 +4419,7 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(yamlFile.path)}.json';
+            '${basenameWithoutExtension(yamlFile.path)}.json';
 
         _debugLog('✅ YAML successfully converted to JSON!');
         _debugLog('📥 Downloading JSON: $fileName');
@@ -4433,7 +4428,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'YamlToJson',
-          extension: 'json',
+          fileExtension: 'json',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4458,14 +4453,14 @@ async def download_file(filename: str):
         throw Exception('JSON file does not exist');
       }
 
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4486,7 +4481,7 @@ async def download_file(filename: str):
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jsonFile.path)}_formatted.json';
+            '${basenameWithoutExtension(jsonFile.path)}_formatted.json';
 
         _debugLog('✅ JSON file formatted successfully!');
         _debugLog('📥 Downloading formatted JSON: $fileName');
@@ -4495,7 +4490,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'JsonFormatter',
-          extension: 'json',
+          fileExtension: 'json',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4561,14 +4556,14 @@ async def download_file(filename: str):
         throw Exception('JSON file does not exist');
       }
 
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4641,14 +4636,14 @@ async def download_file(filename: str):
       if (!xmlFile.existsSync()) {
         throw Exception('XML file does not exist');
       }
-      final extension = p.extension(xmlFile.path).toLowerCase();
-      if (extension != '.xml') {
+      final ext = extension(xmlFile.path).toLowerCase();
+      if (ext != '.xml') {
         throw Exception('Only .xml files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         xmlFile.path,
-        filename: p.basename(xmlFile.path),
+        filename: basename(xmlFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4667,13 +4662,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(xmlFile.path)}.csv';
+            '${basenameWithoutExtension(xmlFile.path)}.csv';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'XmlToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4695,14 +4690,14 @@ async def download_file(filename: str):
       if (!xmlFile.existsSync()) {
         throw Exception('XML file does not exist');
       }
-      final extension = p.extension(xmlFile.path).toLowerCase();
-      if (extension != '.xml') {
+      final ext = extension(xmlFile.path).toLowerCase();
+      if (ext != '.xml') {
         throw Exception('Only .xml files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         xmlFile.path,
-        filename: p.basename(xmlFile.path),
+        filename: basename(xmlFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4721,13 +4716,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(xmlFile.path)}.xlsx';
+            '${basenameWithoutExtension(xmlFile.path)}.xlsx';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'XmlToExcel',
-          extension: 'xlsx',
+          fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4751,14 +4746,14 @@ async def download_file(filename: str):
       if (!csvFile.existsSync()) {
         throw Exception('CSV file does not exist');
       }
-      final extension = p.extension(csvFile.path).toLowerCase();
-      if (extension != '.csv') {
+      final ext = extension(csvFile.path).toLowerCase();
+      if (ext != '.csv') {
         throw Exception('Only .csv files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         csvFile.path,
-        filename: p.basename(csvFile.path),
+        filename: basename(csvFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4779,13 +4774,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(csvFile.path)}.xml';
+            '${basenameWithoutExtension(csvFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'CsvToXml',
-          extension: 'xml',
+          fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4809,14 +4804,14 @@ async def download_file(filename: str):
       if (!excelFile.existsSync()) {
         throw Exception('Excel file does not exist');
       }
-      final extension = p.extension(excelFile.path).toLowerCase();
-      if (extension != '.xls' && extension != '.xlsx') {
+      final ext = extension(excelFile.path).toLowerCase();
+      if (ext != '.xls' && ext != '.xlsx') {
         throw Exception('Only .xls and .xlsx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         excelFile.path,
-        filename: p.basename(excelFile.path),
+        filename: basename(excelFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4837,13 +4832,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(excelFile.path)}.xml';
+            '${basenameWithoutExtension(excelFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'ExcelToXml',
-          extension: 'xml',
+          fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4866,14 +4861,14 @@ async def download_file(filename: str):
       if (!jsonFile.existsSync()) {
         throw Exception('JSON file does not exist');
       }
-      final extension = p.extension(jsonFile.path).toLowerCase();
-      if (extension != '.json') {
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
         throw Exception('Only .json files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         jsonFile.path,
-        filename: p.basename(jsonFile.path),
+        filename: basename(jsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4893,13 +4888,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(jsonFile.path)}.xml';
+            '${basenameWithoutExtension(jsonFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'JsonToXml',
-          extension: 'xml',
+          fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4921,14 +4916,14 @@ async def download_file(filename: str):
       if (!xmlFile.existsSync()) {
         throw Exception('XML file does not exist');
       }
-      final extension = p.extension(xmlFile.path).toLowerCase();
-      if (extension != '.xml') {
+      final ext = extension(xmlFile.path).toLowerCase();
+      if (ext != '.xml') {
         throw Exception('Only .xml files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         xmlFile.path,
-        filename: p.basename(xmlFile.path),
+        filename: basename(xmlFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -4947,13 +4942,13 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(xmlFile.path)}_fixed.xml';
+            '${basenameWithoutExtension(xmlFile.path)}_fixed.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'XmlEscapingFix',
-          extension: 'xml',
+          fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -4975,15 +4970,15 @@ async def download_file(filename: str):
       if (!xmlFile.existsSync()) {
         throw Exception('XML file does not exist');
       }
-      final extension = p.extension(xmlFile.path).toLowerCase();
-      if (extension != '.xml') {
+      final ext = extension(xmlFile.path).toLowerCase();
+      if (ext != '.xml') {
         throw Exception('Only .xml files are supported');
       }
 
       final formDataMap = <String, dynamic>{
         'file_xml': await MultipartFile.fromFile(
           xmlFile.path,
-          filename: p.basename(xmlFile.path),
+          filename: basename(xmlFile.path),
         ),
       };
 
@@ -4991,14 +4986,14 @@ async def download_file(filename: str):
         if (!xsdFile.existsSync()) {
           throw Exception('XSD file does not exist');
         }
-        final xsdExtension = p.extension(xsdFile.path).toLowerCase();
+        final xsdExtension = extension(xsdFile.path).toLowerCase();
         if (xsdExtension != '.xsd') {
           throw Exception('Only .xsd files are supported');
         }
 
         formDataMap['file_xsd'] = await MultipartFile.fromFile(
           xsdFile.path,
-          filename: p.basename(xsdFile.path),
+          filename: basename(xsdFile.path),
         );
       }
 
@@ -5040,14 +5035,14 @@ async def download_file(filename: str):
       if (!csvFile.existsSync()) {
         throw Exception('CSV file does not exist');
       }
-      final extension = p.extension(csvFile.path).toLowerCase();
-      if (extension != '.csv') {
+      final ext = extension(csvFile.path).toLowerCase();
+      if (ext != '.csv') {
         throw Exception('Only .csv files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         csvFile.path,
-        filename: p.basename(csvFile.path),
+        filename: basename(csvFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -5067,7 +5062,7 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(csvFile.path)}.xlsx';
+            '${basenameWithoutExtension(csvFile.path)}.xlsx';
 
         _debugLog('✅ CSV successfully converted to Excel!');
 
@@ -5075,7 +5070,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'CsvToExcel',
-          extension: 'xlsx',
+          fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -5101,14 +5096,14 @@ async def download_file(filename: str):
       if (!excelFile.existsSync()) {
         throw Exception('Excel file does not exist');
       }
-      final extension = p.extension(excelFile.path).toLowerCase();
-      if (!['.xls', '.xlsx'].contains(extension)) {
+      final ext = extension(excelFile.path).toLowerCase();
+      if (!['.xls', '.xlsx'].contains(ext)) {
         throw Exception('Only Excel files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         excelFile.path,
-        filename: p.basename(excelFile.path),
+        filename: basename(excelFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -5127,7 +5122,7 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(excelFile.path)}.csv';
+            '${basenameWithoutExtension(excelFile.path)}.csv';
 
         _debugLog('✅ Excel successfully converted to CSV!');
 
@@ -5135,7 +5130,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'ExcelToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -5159,14 +5154,14 @@ async def download_file(filename: str):
       if (!odsFile.existsSync()) {
         throw Exception('ODS file does not exist');
       }
-      final extension = p.extension(odsFile.path).toLowerCase();
-      if (extension != '.ods') {
+      final ext = extension(odsFile.path).toLowerCase();
+      if (ext != '.ods') {
         throw Exception('Only .ods files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         odsFile.path,
-        filename: p.basename(odsFile.path),
+        filename: basename(odsFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -5185,7 +5180,7 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(odsFile.path)}.csv';
+            '${basenameWithoutExtension(odsFile.path)}.csv';
 
         _debugLog('✅ ODS successfully converted to CSV!');
 
@@ -5193,7 +5188,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'OdsToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,
@@ -5217,14 +5212,14 @@ async def download_file(filename: str):
       if (!bsonFile.existsSync()) {
         throw Exception('BSON file does not exist');
       }
-      final extension = p.extension(bsonFile.path).toLowerCase();
-      if (extension != '.bson') {
+      final ext = extension(bsonFile.path).toLowerCase();
+      if (ext != '.bson') {
         throw Exception('Only .bson files are supported');
       }
 
       final file = await MultipartFile.fromFile(
         bsonFile.path,
-        filename: p.basename(bsonFile.path),
+        filename: basename(bsonFile.path),
       );
 
       FormData formData = FormData.fromMap({
@@ -5243,7 +5238,7 @@ async def download_file(filename: str):
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
         String fileName = response.data['output_filename'] ??
-            '${p.basenameWithoutExtension(bsonFile.path)}.csv';
+            '${basenameWithoutExtension(bsonFile.path)}.csv';
 
         _debugLog('✅ BSON successfully converted to CSV!');
 
@@ -5251,7 +5246,7 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           toolName: 'BsonToCsv',
-          extension: 'csv',
+          fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
           fileName: fileName,

@@ -1,6 +1,4 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../app_controllers/core_controller.dart';
 import '../app_controllers/services_controller.dart';
 import '../app_controllers/constants_controller.dart';
 

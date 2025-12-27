@@ -1,6 +1,4 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../app_controllers/core_controller.dart';
 import '../app_controllers/constants_controller.dart';
 
 class AuthService {
@@ -57,7 +55,7 @@ class AuthService {
     final url = Uri.parse('$baseUrl${ApiConfig.registerEndpoint}');
 
     try {
-      final response = await http.post(
+      final response = await post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -93,7 +91,7 @@ class AuthService {
     final url = Uri.parse('$baseUrl${ApiConfig.loginUserListEndpoint}');
 
     try {
-      final response = await http.post(
+      final response = await post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({

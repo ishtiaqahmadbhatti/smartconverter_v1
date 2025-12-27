@@ -1,6 +1,4 @@
-import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import '../app_controllers/core_controller.dart';
 
 class PermissionManager {
   /// Checks if storage permissions are granted based on Android version

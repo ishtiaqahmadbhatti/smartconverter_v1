@@ -1,8 +1,4 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:flutter/foundation.dart';
+import '../app_controllers/core_controller.dart';
 
 /// AdMob Service for managing rewarded ads
 /// Uses test ad unit IDs for testing
