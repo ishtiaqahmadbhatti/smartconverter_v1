@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
-import '../app_widgets/drawer_menu_widget.dart';
 import 'about_page.dart';
 import 'privacy_policy_page.dart';
 import 'terms_service_page.dart';

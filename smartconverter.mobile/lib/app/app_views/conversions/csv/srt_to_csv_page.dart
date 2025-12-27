@@ -11,10 +11,8 @@ import '../../../app_constants/app_colors.dart';
 import '../../../app_constants/api_config.dart';
 import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
 import '../../../app_widgets/conversion_result_card_widget.dart';
 import '../../../app_utils/file_manager.dart';
-import 'package:open_filex/open_filex.dart';
 
 class SrtToCsvPage extends StatefulWidget {
   const SrtToCsvPage({super.key});

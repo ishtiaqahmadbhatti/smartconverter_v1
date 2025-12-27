@@ -794,8 +794,9 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -936,7 +937,7 @@ class _MyFilesPageState extends State<MyFilesPage> with WidgetsBindingObserver {
           onTap: () {
             if (isDirectory) {
               print('DEBUG: Tapping on directory: ${item.path}');
-              _navigateToDirectory(item as Directory);
+              _navigateToDirectory(item);
             } else {
               print('DEBUG: Tapping on file/item: ${item.path}');
               _openFile(item.path);

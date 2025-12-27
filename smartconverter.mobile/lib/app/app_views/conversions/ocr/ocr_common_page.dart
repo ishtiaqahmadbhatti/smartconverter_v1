@@ -2,14 +2,12 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:dio/dio.dart';
 
 import '../../../app_constants/app_colors.dart';
 import '../../../app_constants/api_config.dart';
-import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
 import '../../../app_services/notification_service.dart';
 import '../../../app_widgets/conversion_result_card_widget.dart';

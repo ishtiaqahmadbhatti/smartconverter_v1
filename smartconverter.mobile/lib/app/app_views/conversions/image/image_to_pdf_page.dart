@@ -1,15 +1,7 @@
-import 'dart:io';
-import 'dart:math';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:dio/dio.dart';
 
 import '../../../app_modules/imports_module.dart';
-import '../../../app_constants/api_config.dart';
 
 class ImageToPdfPage extends StatefulWidget {
   const ImageToPdfPage({super.key});
@@ -22,7 +14,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
-  List<File> _selectedFiles = [];
+  final List<File> _selectedFiles = [];
   File? _convertedFile;
   String? _downloadUrl;
   bool _isConverting = false;

@@ -460,7 +460,7 @@ class _GetVideoInfoPageState extends State<GetVideoInfoPage> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

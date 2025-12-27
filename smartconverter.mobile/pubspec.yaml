@@ -54,6 +54,7 @@ dependencies:
   image_picker: ^1.1.2
   font_awesome_flutter: ^10.9.1
 
+  archive: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

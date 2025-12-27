@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import '../../../app_utils/ad_helper.dart';
 import '../../../app_services/conversion_service.dart';
@@ -27,10 +26,6 @@ class _JsonValidationPageState extends State<JsonValidationPage> with AdHelper<J
   String _statusMessage = 'Select input method to begin.';
   Map<String, dynamic>? _validationResult;
 
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void dispose() {
@@ -143,7 +138,7 @@ class _JsonValidationPageState extends State<JsonValidationPage> with AdHelper<J
             : '❌ JSON is invalid!';
       });
 
-      final isValid = (result?['valid'] ?? false) == true;
+      final isValid = (result['valid'] ?? false) == true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isValid ? 'JSON is valid!' : 'JSON is invalid!'),

@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dio/dio.dart';
 
 import '../../../app_constants/app_colors.dart';
@@ -33,7 +32,7 @@ class _AiPngToJsonPageState extends State<AiPngToJsonPage> with AdHelper<AiPngTo
   String _statusMessage = 'Select a PNG file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  bool _isBannerReady = false;
+  final bool _isBannerReady = false;
 
   @override
   void initState() {

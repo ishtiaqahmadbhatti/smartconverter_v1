@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:dio/dio.dart';
 import 'dart:convert';
 
 import '../../../app_constants/app_colors.dart';
 import '../../../app_constants/api_config.dart';
-import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
 import '../../../app_utils/ad_helper.dart';
 
@@ -47,10 +45,6 @@ class _FileValidatorCommonPageState extends State<FileValidatorCommonPage> with 
     _service.initialize();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   Future<void> _pickFile(bool isSchema) async {
     try {

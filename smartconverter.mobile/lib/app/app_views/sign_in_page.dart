@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
 import 'sign_up_page.dart';
-import 'home_page.dart';
 import 'main_navigation.dart';
 import '../app_services/auth_service.dart';
 
@@ -160,10 +159,12 @@ class _SignInPageState extends State<SignInPage> {
                               prefixIcon: Icon(Icons.email_outlined),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty)
+                              if (v == null || v.isEmpty) {
                                 return 'Email is required';
-                              if (!v.contains('@'))
+                              }
+                              if (!v.contains('@')) {
                                 return 'Enter a valid email';
+                              }
                               return null;
                             },
                           )
@@ -188,8 +189,9 @@ class _SignInPageState extends State<SignInPage> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty)
+                              if (v == null || v.isEmpty) {
                                 return 'Password is required';
+                              }
                               if (v.length < 6) return 'Minimum 6 characters';
                               return null;
                             },

@@ -1,22 +1,7 @@
-import 'dart:io';
-import 'dart:math';
-import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:dio/dio.dart';
 
-import '../../../app_constants/app_colors.dart';
-import '../../../app_constants/api_config.dart';
 import '../../../app_modules/imports_module.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/permission_manager.dart';
-import '../../../app_utils/ad_helper.dart';
-import 'package:file_picker/file_picker.dart';
 
 class XmlToJsonFromXmlCategoryPage extends StatefulWidget {
   const XmlToJsonFromXmlCategoryPage({super.key});

@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dio/dio.dart';
 import 'package:archive/archive.dart';
 
@@ -12,7 +11,6 @@ import '../../../app_constants/app_colors.dart';
 import '../../../app_constants/api_config.dart';
 import '../../../app_utils/ad_helper.dart';
 import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/ad_helper.dart';
 import '../../../app_services/conversion_service.dart';
 
 class PdfToImagePage extends StatefulWidget {
@@ -839,7 +837,7 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_selectedFormat} Ready',
+                      '$_selectedFormat Ready',
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 16,

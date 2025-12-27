@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../app_constants/app_colors.dart';
-import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
 import '../../../app_services/notification_service.dart';
 // import '../../../app_widgets/conversion_result_card_widget.dart'; // Not using for split as it returns a list/folder
@@ -28,7 +27,7 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
   bool _zip = false;
   bool _isProcessing = false;
   BannerAd? _bannerAd;
-  bool _isBannerReady = false;
+  final bool _isBannerReady = false;
   List<SplitFileResult> _results = [];
   String? _savedFolderPath;
   String _statusMessage = 'Select a PDF file to begin.';
@@ -40,10 +39,6 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
     _loadTargetDirectoryPath();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   Future<void> _loadTargetDirectoryPath() async {
     try {

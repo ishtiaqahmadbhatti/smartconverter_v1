@@ -1944,14 +1944,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         if (downloadUrl != null) {
           final resultFile =
               await _downloadFile(downloadUrl, outputName);
-          if (resultFile != null) {
-            return ImageToPdfResult(
-              file: resultFile,
-              fileName: outputName,
-              downloadUrl: downloadUrl,
-            );
-          }
-        }
+          return ImageToPdfResult(
+            file: resultFile,
+            fileName: outputName,
+            downloadUrl: downloadUrl,
+          );
+                }
     }
     return null;
   } catch (e) {
@@ -2002,14 +2000,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
         if (downloadUrl != null) {
           final resultFile =
               await _downloadFile(downloadUrl, outputName);
-          if (resultFile != null) {
-            return ImageToPdfResult(
-              file: resultFile,
-              fileName: outputName,
-              downloadUrl: downloadUrl,
-            );
-          }
-        }
+          return ImageToPdfResult(
+            file: resultFile,
+            fileName: outputName,
+            downloadUrl: downloadUrl,
+          );
+                }
       }
       return null;
     } catch (e) {
@@ -2059,14 +2055,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
         if (downloadUrl != null) {
           final resultFile = await _downloadFile(downloadUrl, outputName);
-          if (resultFile != null) {
-            return ImageToPdfResult(
-              file: resultFile,
-              fileName: outputName,
-              downloadUrl: downloadUrl,
-            );
-          }
-        }
+          return ImageToPdfResult(
+            file: resultFile,
+            fileName: outputName,
+            downloadUrl: downloadUrl,
+          );
+                }
       }
       return null;
     } catch (e) {
@@ -3333,7 +3327,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
     }
 
     // If toolName is provided, save to organized directory
-    if (result != null && toolName != null) {
+    if (toolName != null) {
       try {
         final finalExtension =
             fileExtension ?? extension(fileName).replaceFirst('.', '');
@@ -4081,7 +4075,7 @@ async def download_file(filename: str):
       if (zipUrlRaw != null && zipUrlRaw.isNotEmpty) {
         zipUrl = zipUrlRaw.startsWith('http')
             ? zipUrlRaw
-            : '${baseUrl}${zipUrlRaw.startsWith('/') ? '' : '/'}$zipUrlRaw';
+            : '$baseUrl${zipUrlRaw.startsWith('/') ? '' : '/'}$zipUrlRaw';
       }
       final count =
           int.tryParse('${data['count'] ?? results.length}') ?? results.length;

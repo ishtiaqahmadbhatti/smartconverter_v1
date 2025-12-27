@@ -1,12 +1,6 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import '../app_constants/app_colors.dart';
 import '../app_modules/imports_module.dart';
 
-import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
-import '../app_utils/permission_manager.dart';
-import '../app_utils/ad_helper.dart';
 
 class ToolActionPage extends StatefulWidget {
   final String categoryId;
@@ -32,16 +26,7 @@ class _ToolActionPageState extends State<ToolActionPage> with AdHelper {
   String? _savedFilePath;
   String? _lastFilePath; // Track last processed file path
 
-  @override
-  void initState() {
-    super.initState();
-    // AdHelper handles preloading and banner loading
-  }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   bool _isMp4ToMp3Conversion() {
     // DRY principle: Detect MP4 to MP3 from both Audio and Video categories
@@ -65,10 +50,12 @@ class _ToolActionPageState extends State<ToolActionPage> with AdHelper {
     if (widget.categoryId.contains('csv')) return ['csv', 'txt'];
     if (widget.categoryId.contains('pdf')) return ['pdf'];
     if (widget.categoryId.contains('image')) return ['png', 'jpg', 'jpeg'];
-    if (widget.categoryId.contains('audio'))
+    if (widget.categoryId.contains('audio')) {
       return ['mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a', 'wma'];
-    if (widget.categoryId.contains('video'))
+    }
+    if (widget.categoryId.contains('video')) {
       return ['mp4', 'mov', 'mkv', 'avi', 'wmv', 'flv', 'webm', 'm4v'];
+    }
     if (widget.categoryId.contains('ebook')) return ['epub', 'mobi', 'pdf'];
     return [];
   }

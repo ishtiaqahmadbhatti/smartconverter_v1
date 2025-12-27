@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../app_constants/app_colors.dart';
 import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
@@ -275,8 +274,9 @@ class _SrtToCsvFromSubtitlePageState extends State<SrtToCsvFromSubtitlePage> wit
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.csv'))
+    if (base.toLowerCase().endsWith('.csv')) {
       base = base.substring(0, base.length - 4);
+    }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
