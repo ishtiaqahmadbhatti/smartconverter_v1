@@ -7,10 +7,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../../../constants/app_colors.dart';
+import '../../../app_constants/app_colors.dart';
 import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
-import '../../../utils/file_manager.dart';
+import '../../../app_utils/file_manager.dart';
 
 class HtmlToPdfPage extends StatefulWidget {
   final String? categoryId;

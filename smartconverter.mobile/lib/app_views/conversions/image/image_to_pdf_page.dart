@@ -9,7 +9,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dio/dio.dart';
 
 import '../../../app_modules/imports_module.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/api_config.dart';
 
 class ImageToPdfPage extends StatefulWidget {
   const ImageToPdfPage({super.key});

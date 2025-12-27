@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../../../constants/app_colors.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/app_colors.dart';
+import '../../../app_constants/api_config.dart';
 
 class SupportedFormatsPage extends StatefulWidget {
   const SupportedFormatsPage({super.key});

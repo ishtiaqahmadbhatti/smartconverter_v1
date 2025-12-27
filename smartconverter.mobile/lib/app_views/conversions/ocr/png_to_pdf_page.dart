@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/api_config.dart';
 import 'ocr_common_page.dart';
 
 class OcrPngToPdfPage extends StatelessWidget {

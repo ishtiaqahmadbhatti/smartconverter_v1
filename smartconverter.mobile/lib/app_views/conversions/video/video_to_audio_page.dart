@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../constants/api_config.dart';
-import '../../../constants/app_colors.dart';
+import '../../../app_constants/api_config.dart';
+import '../../../app_constants/app_colors.dart';
 import 'video_common_page.dart';
 
 class VideoToAudioPage extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../constants/app_colors.dart';
+import '../app_constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
 import 'main_navigation.dart';

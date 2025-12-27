@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import '../app_services/favorites_provider.dart';
-import '../constants/app_colors.dart';
-import '../constants/api_config.dart';
+import '../app_constants/app_colors.dart';
+import '../app_constants/api_config.dart';
 import 'tool_action_page.dart';
 // JSON pages
 import 'conversions/json/json_to_xml_page.dart';

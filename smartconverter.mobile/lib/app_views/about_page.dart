@@ -1,8 +1,8 @@
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_strings.dart';
+import '../app_constants/app_colors.dart';
+import '../app_constants/app_strings.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});

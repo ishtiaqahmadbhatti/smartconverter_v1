@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import '../../../constants/app_colors.dart';
+import '../../../app_constants/app_colors.dart';
 
 import '../../../app_modules/imports_module.dart';
-import '../../../utils/ad_helper.dart';
+import '../../../app_utils/ad_helper.dart';
 
 class XmlXsdValidatorPage extends StatefulWidget {
   const XmlXsdValidatorPage({super.key});

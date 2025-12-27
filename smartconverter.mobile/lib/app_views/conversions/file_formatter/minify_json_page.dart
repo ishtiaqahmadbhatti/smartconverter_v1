@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/api_config.dart';
 import 'file_formatter_common_page.dart';
 
 class JsonMinifierPage extends StatelessWidget {

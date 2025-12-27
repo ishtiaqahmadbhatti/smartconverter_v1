@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/api_config.dart';
 import 'file_validator_common_page.dart';
 
 class XsdValidatorPage extends StatelessWidget {

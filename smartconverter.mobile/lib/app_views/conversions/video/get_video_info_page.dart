@@ -4,8 +4,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:dio/dio.dart';
 
-import '../../../constants/app_colors.dart';
-import '../../../constants/api_config.dart';
+import '../../../app_constants/app_colors.dart';
+import '../../../app_constants/api_config.dart';
 import '../../../app_services/admob_service.dart';
 import '../../../app_services/conversion_service.dart';
 

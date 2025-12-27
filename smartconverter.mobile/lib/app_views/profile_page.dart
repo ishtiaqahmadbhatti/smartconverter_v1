@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
-import '../constants/app_colors.dart';
+import '../app_constants/app_colors.dart';
 import '../app_widgets/drawer_menu_widget.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';

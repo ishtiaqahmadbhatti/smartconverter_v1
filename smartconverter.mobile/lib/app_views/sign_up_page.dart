@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../constants/app_colors.dart';
+import '../app_constants/app_colors.dart';
 import 'sign_in_page.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../app_services/auth_service.dart';
