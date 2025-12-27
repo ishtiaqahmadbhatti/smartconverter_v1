@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class HtmlToJpgPage extends StatefulWidget {
-  const HtmlToJpgPage({super.key});
+class HtmlToPngPage extends StatefulWidget {
+  const HtmlToPngPage({super.key});
 
   @override
-  State<HtmlToJpgPage> createState() => _HtmlToJpgPageState();
+  State<HtmlToPngPage> createState() => _HtmlToPngPageState();
 }
 
-class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
+class _HtmlToPngPageState extends State<HtmlToPngPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -138,7 +138,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting HTML to JPG...';
+      _statusMessage = 'Converting HTML to PNG...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -148,7 +148,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertHtmlToJpg(
+      final result = await _service.convertHtmlToPng(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -178,7 +178,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('JPG ready: ${result.fileName}'),
+          content: Text('PNG ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -198,11 +198,11 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getHtmlToJpgDirectory();
+      final directory = await FileManager.getHtmlToPngDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensureJpgExtension(customName);
+        targetFileName = _ensurePngExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -211,7 +211,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'jpg',
+          'png',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -259,7 +259,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
     }
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted JPG: ${result.fileName}');
+    ], text: 'Converted PNG: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
@@ -284,7 +284,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.jpg') || base.toLowerCase().endsWith('.jpeg')) {
+    if (base.toLowerCase().endsWith('.png')) {
       base = base.substring(0, base.lastIndexOf('.'));
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
@@ -294,11 +294,11 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensureJpgExtension(String base) {
+  String _ensurePngExtension(String base) {
     final trimmed = base.trim();
-    return (trimmed.toLowerCase().endsWith('.jpg') || trimmed.toLowerCase().endsWith('.jpeg')) 
+    return (trimmed.toLowerCase().endsWith('.png')) 
         ? trimmed 
-        : '$trimmed.jpg';
+        : '$trimmed.png';
   }
 
   String _formatBytes(int bytes) {
@@ -318,7 +318,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'HTML to JPG',
+          'HTML to PNG',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -399,7 +399,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert HTML to JPG',
+                  'Convert HTML to PNG',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -408,7 +408,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Convert HTML files (.html, .htm) to JPG images',
+                  'Convert HTML files (.html, .htm) to PNG images',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -559,7 +559,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.jpg extension is added automatically',
+        helperText: '.png extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -593,7 +593,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
                 ),
               )
             : const Text(
-                'Convert to JPG',
+                'Convert to PNG',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -680,7 +680,7 @@ class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'JPG Ready',
+                      'PNG Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,

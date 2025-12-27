@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class WordToHtmlPage extends StatefulWidget {
-  const WordToHtmlPage({super.key});
+class MarkdownToHtmlPage extends StatefulWidget {
+  const MarkdownToHtmlPage({super.key});
 
   @override
-  State<WordToHtmlPage> createState() => _WordToHtmlPageState();
+  State<MarkdownToHtmlPage> createState() => _MarkdownToHtmlPageState();
 }
 
-class _WordToHtmlPageState extends State<WordToHtmlPage> {
+class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -27,7 +27,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Select a Word document to begin.';
+  String _statusMessage = 'Select a Markdown file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -94,7 +94,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['doc', 'docx'],
+        allowedExtensions: ['md', 'markdown'],
       );
 
       if (result != null && result.files.single.path != null) {
@@ -104,7 +104,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
           _selectedFile = file;
           _conversionResult = null;
           _savedFilePath = null;
-          _statusMessage = 'Word document selected: ${p.basename(file.path)}';
+          _statusMessage = 'Markdown file selected: ${p.basename(file.path)}';
         });
         _updateSuggestedFileName();
       } else {
@@ -138,7 +138,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting Word to HTML...';
+      _statusMessage = 'Converting Markdown to HTML...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -148,7 +148,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertWordToHtml(
+      final result = await _service.convertMarkdownToHtml(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -176,13 +176,6 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
         _savedFilePath = null;
       });
 
-      // Auto-save logic similar to other tools if desired, or just notify
-      // SrtToVttPage doesn't auto-save to disk in the same way, it lets user save manually
-      // But the previous WordToHtml implementation had auto-save.
-      // Let's stick to the SrtToVttPage pattern which is manual save/share for better UX control,
-      // OR we can auto-save to a temp location.
-      // The result.file is already a temp file.
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('HTML ready: ${result.fileName}'),
@@ -205,7 +198,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getWordToHtmlDirectory();
+      final directory = await FileManager.getMarkdownToHtmlDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
@@ -323,7 +316,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Word to HTML',
+          'Markdown to HTML',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -393,7 +386,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.description_outlined,
+              Icons.code_outlined,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -404,7 +397,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert Word to HTML',
+                  'Convert MD to HTML',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -413,7 +406,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Convert Word documents (.doc, .docx) to HTML format',
+                  'Convert Markdown files (.md) to HTML format',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -436,7 +429,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
             onPressed: _isConverting ? null : _pickFile,
             icon: const Icon(Icons.file_open_outlined),
             label: Text(
-              _selectedFile == null ? 'Select Word File' : 'Change File',
+              _selectedFile == null ? 'Select MD File' : 'Change File',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -464,7 +457,7 @@ class _WordToHtmlPageState extends State<WordToHtmlPage> {
                         _fileNameEdited = false;
                         _suggestedBaseName = null;
                         _savedFilePath = null;
-                        _statusMessage = 'Select a Word document to begin.';
+                        _statusMessage = 'Select a Markdown file to begin.';
                         _fileNameController.clear();
                       });
                       _admobService.preloadAd();

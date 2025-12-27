@@ -1,32 +1,33 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class WebsiteToJpgPage extends StatefulWidget {
-  const WebsiteToJpgPage({super.key});
+class HtmlToJpgPage extends StatefulWidget {
+  const HtmlToJpgPage({super.key});
 
   @override
-  State<WebsiteToJpgPage> createState() => _WebsiteToJpgPageState();
+  State<HtmlToJpgPage> createState() => _HtmlToJpgPageState();
 }
 
-class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
+class _HtmlToJpgPageState extends State<HtmlToJpgPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
-  final TextEditingController _urlController = TextEditingController();
   final TextEditingController _fileNameController = TextEditingController();
 
+  File? _selectedFile;
   ImageToPdfResult? _conversionResult;
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Enter a website URL to begin.';
+  String _statusMessage = 'Select an HTML file to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -36,7 +37,6 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
-    _urlController.addListener(_handleUrlChange);
     _admobService.preloadAd();
     _loadBannerAd();
   }
@@ -45,9 +45,6 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   void dispose() {
     _fileNameController
       ..removeListener(_handleFileNameChange)
-      ..dispose();
-    _urlController
-      ..removeListener(_handleUrlChange)
       ..dispose();
     _admobService.dispose();
     _bannerAd?.dispose();
@@ -59,12 +56,6 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
     final edited = trimmed.isNotEmpty;
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
-    }
-  }
-
-  void _handleUrlChange() {
-    if (_urlController.text.isNotEmpty && !_fileNameEdited) {
-      _updateSuggestedFileName();
     }
   }
 
@@ -99,22 +90,46 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
     ad.load();
   }
 
-  Future<void> _convertUrl() async {
-    final url = _urlController.text.trim();
-    if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid URL.'),
-          backgroundColor: AppColors.warning,
-        ),
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['html', 'htm'],
       );
-      return;
-    }
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+
+        setState(() {
+          _selectedFile = file;
+          _conversionResult = null;
+          _savedFilePath = null;
+          _statusMessage = 'HTML file selected: ${p.basename(file.path)}';
+        });
+        _updateSuggestedFileName();
+      } else {
+        if (mounted) setState(() => _statusMessage = 'No file selected.');
+      }
+    } catch (e) {
+      final message = 'Failed to select file: $e';
+      if (mounted) {
+        setState(() => _statusMessage = message);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
+        );
+      }
+    }
+  }
+
+  Future<void> _convertFile() async {
+    if (_selectedFile == null || !await _selectedFile!.exists()) {
+      setState(() {
+        _selectedFile = null;
+        _statusMessage = 'File not found. Please select again.';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('URL must start with http:// or https://'),
+          content: Text('File not found. Please select the file again.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -123,7 +138,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting website to JPG...';
+      _statusMessage = 'Converting HTML to JPG...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -133,8 +148,8 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertWebsiteToJpg(
-        url,
+      final result = await _service.convertHtmlToJpg(
+        _selectedFile!,
         outputFilename: customFilename,
       );
 
@@ -183,7 +198,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getWebsiteToJpgDirectory();
+      final directory = await FileManager.getHtmlToJpgDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
@@ -248,8 +263,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   }
 
   void _updateSuggestedFileName() {
-    final url = _urlController.text.trim();
-    if (url.isEmpty) {
+    if (_selectedFile == null) {
       setState(() {
         _suggestedBaseName = null;
         if (!_fileNameEdited) {
@@ -258,27 +272,14 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
       });
       return;
     }
-    
-    try {
-      final uri = Uri.parse(url);
-      String baseName = uri.host;
-      if (baseName.startsWith('www.')) {
-        baseName = baseName.substring(4);
+    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
+    final sanitized = _sanitizeBaseName(baseName);
+    setState(() {
+      _suggestedBaseName = sanitized;
+      if (!_fileNameEdited) {
+        _fileNameController.text = sanitized;
       }
-      if (uri.path.length > 1) {
-        baseName += uri.path.replaceAll('/', '_');
-      }
-      
-      final sanitized = _sanitizeBaseName(baseName);
-      setState(() {
-        _suggestedBaseName = sanitized;
-        if (!_fileNameEdited) {
-          _fileNameController.text = sanitized;
-        }
-      });
-    } catch (e) {
-      // Invalid URL, ignore
-    }
+    });
   }
 
   String _sanitizeBaseName(String input) {
@@ -289,7 +290,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) base = 'website_screenshot';
+    if (base.isEmpty) base = 'converted_image';
     return base.substring(0, min(base.length, 80));
   }
 
@@ -300,6 +301,15 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
         : '$trimmed.jpg';
   }
 
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -308,7 +318,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Website to JPG',
+          'HTML to JPG',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -326,7 +336,9 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
               children: [
                 _buildHeaderCard(),
                 const SizedBox(height: 20),
-                _buildUrlInput(),
+                _buildActionButtons(),
+                const SizedBox(height: 16),
+                _buildSelectedFileCard(),
                 const SizedBox(height: 16),
                 _buildFileNameField(),
                 const SizedBox(height: 20),
@@ -376,7 +388,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.web,
+              Icons.image_outlined,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -387,7 +399,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert Website to JPG',
+                  'Convert HTML to JPG',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -396,7 +408,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Capture full-page screenshots of websites as JPG images',
+                  'Convert HTML files (.html, .htm) to JPG images',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -411,25 +423,132 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
     );
   }
 
-  Widget _buildUrlInput() {
-    return TextField(
-      controller: _urlController,
-      textInputAction: TextInputAction.next,
-      keyboardType: TextInputType.url,
-      decoration: InputDecoration(
-        labelText: 'Website URL',
-        hintText: 'https://example.com',
-        prefixIcon: const Icon(Icons.link),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppColors.backgroundSurface,
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isConverting ? null : _pickFile,
+            icon: const Icon(Icons.file_open_outlined),
+            label: Text(
+              _selectedFile == null ? 'Select HTML File' : 'Change File',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.textPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        if (_selectedFile != null) ...[
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 56,
+            child: ElevatedButton(
+              onPressed: _isConverting
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedFile = null;
+                        _conversionResult = null;
+                        _isConverting = false;
+                        _isSaving = false;
+                        _fileNameEdited = false;
+                        _suggestedBaseName = null;
+                        _savedFilePath = null;
+                        _statusMessage = 'Select an HTML file to begin.';
+                        _fileNameController.clear();
+                      });
+                      _admobService.preloadAd();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Icon(Icons.refresh),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSelectedFileCard() {
+    if (_selectedFile == null) return const SizedBox.shrink();
+    final file = _selectedFile!;
+    final fileName = p.basename(file.path);
+    String fileSize;
+    try {
+      if (file.existsSync()) {
+        fileSize = _formatBytes(file.lengthSync());
+      } else {
+        fileSize = 'File not found';
+      }
+    } catch (e) {
+      fileSize = 'Unknown size';
+    }
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
       ),
-      style: const TextStyle(color: AppColors.textPrimary),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.code,
+              color: AppColors.primaryBlue,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  fileSize,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildFileNameField() {
-    final hintText = _suggestedBaseName ?? 'website_screenshot';
+    if (_selectedFile == null) return const SizedBox.shrink();
+    final hintText = _suggestedBaseName ?? 'converted_image';
     return TextField(
       controller: _fileNameController,
       textInputAction: TextInputAction.done,
@@ -448,11 +567,11 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   }
 
   Widget _buildConvertButton() {
-    final canConvert = !_isConverting;
+    final canConvert = _selectedFile != null && !_isConverting;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertUrl : null,
+        onPressed: canConvert ? _convertFile : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,

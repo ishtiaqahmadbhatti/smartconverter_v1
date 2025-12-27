@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
 class PowerPointToHtmlPage extends StatefulWidget {
   const PowerPointToHtmlPage({super.key});

@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class HtmlToPngPage extends StatefulWidget {
-  const HtmlToPngPage({super.key});
+class WordToHtmlPage extends StatefulWidget {
+  const WordToHtmlPage({super.key});
 
   @override
-  State<HtmlToPngPage> createState() => _HtmlToPngPageState();
+  State<WordToHtmlPage> createState() => _WordToHtmlPageState();
 }
 
-class _HtmlToPngPageState extends State<HtmlToPngPage> {
+class _WordToHtmlPageState extends State<WordToHtmlPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
@@ -27,7 +27,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Select an HTML file to begin.';
+  String _statusMessage = 'Select a Word document to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -94,7 +94,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['html', 'htm'],
+        allowedExtensions: ['doc', 'docx'],
       );
 
       if (result != null && result.files.single.path != null) {
@@ -104,7 +104,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
           _selectedFile = file;
           _conversionResult = null;
           _savedFilePath = null;
-          _statusMessage = 'HTML file selected: ${p.basename(file.path)}';
+          _statusMessage = 'Word document selected: ${p.basename(file.path)}';
         });
         _updateSuggestedFileName();
       } else {
@@ -138,7 +138,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting HTML to PNG...';
+      _statusMessage = 'Converting Word to HTML...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -148,7 +148,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertHtmlToPng(
+      final result = await _service.convertWordToHtml(
         _selectedFile!,
         outputFilename: customFilename,
       );
@@ -176,9 +176,16 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
         _savedFilePath = null;
       });
 
+      // Auto-save logic similar to other tools if desired, or just notify
+      // SrtToVttPage doesn't auto-save to disk in the same way, it lets user save manually
+      // But the previous WordToHtml implementation had auto-save.
+      // Let's stick to the SrtToVttPage pattern which is manual save/share for better UX control,
+      // OR we can auto-save to a temp location.
+      // The result.file is already a temp file.
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PNG ready: ${result.fileName}'),
+          content: Text('HTML ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -198,11 +205,11 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getHtmlToPngDirectory();
+      final directory = await FileManager.getWordToHtmlDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensurePngExtension(customName);
+        targetFileName = _ensureHtmlExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -211,7 +218,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'png',
+          'html',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -259,7 +266,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
     }
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted PNG: ${result.fileName}');
+    ], text: 'Converted HTML: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
@@ -284,21 +291,19 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.png')) {
-      base = base.substring(0, base.lastIndexOf('.'));
+    if (base.toLowerCase().endsWith('.html')) {
+      base = base.substring(0, base.length - 5);
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) base = 'converted_image';
+    if (base.isEmpty) base = 'converted_document';
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensurePngExtension(String base) {
+  String _ensureHtmlExtension(String base) {
     final trimmed = base.trim();
-    return (trimmed.toLowerCase().endsWith('.png')) 
-        ? trimmed 
-        : '$trimmed.png';
+    return trimmed.toLowerCase().endsWith('.html') ? trimmed : '$trimmed.html';
   }
 
   String _formatBytes(int bytes) {
@@ -318,7 +323,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'HTML to PNG',
+          'Word to HTML',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -388,7 +393,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.image_outlined,
+              Icons.description_outlined,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -399,7 +404,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert HTML to PNG',
+                  'Convert Word to HTML',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -408,7 +413,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Convert HTML files (.html, .htm) to PNG images',
+                  'Convert Word documents (.doc, .docx) to HTML format',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -431,7 +436,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
             onPressed: _isConverting ? null : _pickFile,
             icon: const Icon(Icons.file_open_outlined),
             label: Text(
-              _selectedFile == null ? 'Select HTML File' : 'Change File',
+              _selectedFile == null ? 'Select Word File' : 'Change File',
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
@@ -459,7 +464,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                         _fileNameEdited = false;
                         _suggestedBaseName = null;
                         _savedFilePath = null;
-                        _statusMessage = 'Select an HTML file to begin.';
+                        _statusMessage = 'Select a Word document to begin.';
                         _fileNameController.clear();
                       });
                       _admobService.preloadAd();
@@ -510,7 +515,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
-              Icons.code,
+              Icons.description,
               color: AppColors.primaryBlue,
               size: 24,
             ),
@@ -548,7 +553,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
 
   Widget _buildFileNameField() {
     if (_selectedFile == null) return const SizedBox.shrink();
-    final hintText = _suggestedBaseName ?? 'converted_image';
+    final hintText = _suggestedBaseName ?? 'converted_document';
     return TextField(
       controller: _fileNameController,
       textInputAction: TextInputAction.done,
@@ -559,7 +564,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.png extension is added automatically',
+        helperText: '.html extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -593,7 +598,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                 ),
               )
             : const Text(
-                'Convert to PNG',
+                'Convert to HTML',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -669,7 +674,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.image,
+                  Icons.code,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -680,7 +685,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'PNG Ready',
+                      'HTML Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -724,7 +729,7 @@ class _HtmlToPngPageState extends State<HtmlToPngPage> {
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Save Image',
+                      'Save Document',
                       style: TextStyle(fontSize: 14),
                     ),
                   ),

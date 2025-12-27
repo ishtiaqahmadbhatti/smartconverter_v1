@@ -1,33 +1,32 @@
 import 'dart:io';
 import 'dart:math';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class MarkdownToHtmlPage extends StatefulWidget {
-  const MarkdownToHtmlPage({super.key});
+class WebsiteToPngPage extends StatefulWidget {
+  const WebsiteToPngPage({super.key});
 
   @override
-  State<MarkdownToHtmlPage> createState() => _MarkdownToHtmlPageState();
+  State<WebsiteToPngPage> createState() => _WebsiteToPngPageState();
 }
 
-class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
+class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
+  final TextEditingController _urlController = TextEditingController();
   final TextEditingController _fileNameController = TextEditingController();
 
-  File? _selectedFile;
   ImageToPdfResult? _conversionResult;
   bool _isConverting = false;
   bool _isSaving = false;
   bool _fileNameEdited = false;
-  String _statusMessage = 'Select a Markdown file to begin.';
+  String _statusMessage = 'Enter a website URL to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
   BannerAd? _bannerAd;
@@ -37,6 +36,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
   void initState() {
     super.initState();
     _fileNameController.addListener(_handleFileNameChange);
+    _urlController.addListener(_handleUrlChange);
     _admobService.preloadAd();
     _loadBannerAd();
   }
@@ -45,6 +45,9 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
   void dispose() {
     _fileNameController
       ..removeListener(_handleFileNameChange)
+      ..dispose();
+    _urlController
+      ..removeListener(_handleUrlChange)
       ..dispose();
     _admobService.dispose();
     _bannerAd?.dispose();
@@ -56,6 +59,12 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
     final edited = trimmed.isNotEmpty;
     if (_fileNameEdited != edited) {
       setState(() => _fileNameEdited = edited);
+    }
+  }
+
+  void _handleUrlChange() {
+    if (_urlController.text.isNotEmpty && !_fileNameEdited) {
+      _updateSuggestedFileName();
     }
   }
 
@@ -90,46 +99,22 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
     ad.load();
   }
 
-  Future<void> _pickFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['md', 'markdown'],
-      );
-
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-
-        setState(() {
-          _selectedFile = file;
-          _conversionResult = null;
-          _savedFilePath = null;
-          _statusMessage = 'Markdown file selected: ${p.basename(file.path)}';
-        });
-        _updateSuggestedFileName();
-      } else {
-        if (mounted) setState(() => _statusMessage = 'No file selected.');
-      }
-    } catch (e) {
-      final message = 'Failed to select file: $e';
-      if (mounted) {
-        setState(() => _statusMessage = message);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
-        );
-      }
-    }
-  }
-
-  Future<void> _convertFile() async {
-    if (_selectedFile == null || !await _selectedFile!.exists()) {
-      setState(() {
-        _selectedFile = null;
-        _statusMessage = 'File not found. Please select again.';
-      });
+  Future<void> _convertUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('File not found. Please select the file again.'),
+          content: Text('Please enter a valid URL.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('URL must start with http:// or https://'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -138,7 +123,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting Markdown to HTML...';
+      _statusMessage = 'Converting website to PNG...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -148,8 +133,8 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertMarkdownToHtml(
-        _selectedFile!,
+      final result = await _service.convertWebsiteToPng(
+        url,
         outputFilename: customFilename,
       );
 
@@ -178,7 +163,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('HTML ready: ${result.fileName}'),
+          content: Text('PNG ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -198,11 +183,11 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getMarkdownToHtmlDirectory();
+      final directory = await FileManager.getWebsiteToPngDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensureHtmlExtension(customName);
+        targetFileName = _ensurePngExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -211,7 +196,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'html',
+          'png',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -259,11 +244,12 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
     }
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted HTML: ${result.fileName}');
+    ], text: 'Converted PNG: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
-    if (_selectedFile == null) {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
       setState(() {
         _suggestedBaseName = null;
         if (!_fileNameEdited) {
@@ -272,40 +258,46 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
       });
       return;
     }
-    final baseName = p.basenameWithoutExtension(_selectedFile!.path);
-    final sanitized = _sanitizeBaseName(baseName);
-    setState(() {
-      _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
-        _fileNameController.text = sanitized;
+    
+    try {
+      final uri = Uri.parse(url);
+      String baseName = uri.host;
+      if (baseName.startsWith('www.')) {
+        baseName = baseName.substring(4);
       }
-    });
+      if (uri.path.length > 1) {
+        baseName += uri.path.replaceAll('/', '_');
+      }
+      
+      final sanitized = _sanitizeBaseName(baseName);
+      setState(() {
+        _suggestedBaseName = sanitized;
+        if (!_fileNameEdited) {
+          _fileNameController.text = sanitized;
+        }
+      });
+    } catch (e) {
+      // Invalid URL, ignore
+    }
   }
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.html')) {
-      base = base.substring(0, base.length - 5);
+    if (base.toLowerCase().endsWith('.png')) {
+      base = base.substring(0, base.lastIndexOf('.'));
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-    if (base.isEmpty) base = 'converted_document';
+    if (base.isEmpty) base = 'website_screenshot';
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensureHtmlExtension(String base) {
+  String _ensurePngExtension(String base) {
     final trimmed = base.trim();
-    return trimmed.toLowerCase().endsWith('.html') ? trimmed : '$trimmed.html';
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+    return (trimmed.toLowerCase().endsWith('.png')) 
+        ? trimmed 
+        : '$trimmed.png';
   }
 
   @override
@@ -316,7 +308,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Markdown to HTML',
+          'Website to PNG',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -334,9 +326,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
               children: [
                 _buildHeaderCard(),
                 const SizedBox(height: 20),
-                _buildActionButtons(),
-                const SizedBox(height: 16),
-                _buildSelectedFileCard(),
+                _buildUrlInput(),
                 const SizedBox(height: 16),
                 _buildFileNameField(),
                 const SizedBox(height: 20),
@@ -386,7 +376,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.code_outlined,
+              Icons.web,
               color: AppColors.textPrimary,
               size: 32,
             ),
@@ -397,7 +387,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert MD to HTML',
+                  'Convert Website to PNG',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -406,7 +396,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Convert Markdown files (.md) to HTML format',
+                  'Capture full-page screenshots of websites as PNG images',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -421,132 +411,25 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickFile,
-            icon: const Icon(Icons.file_open_outlined),
-            label: Text(
-              _selectedFile == null ? 'Select MD File' : 'Change File',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFile != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isConverting
-                  ? null
-                  : () {
-                      setState(() {
-                        _selectedFile = null;
-                        _conversionResult = null;
-                        _isConverting = false;
-                        _isSaving = false;
-                        _fileNameEdited = false;
-                        _suggestedBaseName = null;
-                        _savedFilePath = null;
-                        _statusMessage = 'Select a Markdown file to begin.';
-                        _fileNameController.clear();
-                      });
-                      _admobService.preloadAd();
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-    final file = _selectedFile!;
-    final fileName = p.basename(file.path);
-    String fileSize;
-    try {
-      if (file.existsSync()) {
-        fileSize = _formatBytes(file.lengthSync());
-      } else {
-        fileSize = 'File not found';
-      }
-    } catch (e) {
-      fileSize = 'Unknown size';
-    }
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+  Widget _buildUrlInput() {
+    return TextField(
+      controller: _urlController,
+      textInputAction: TextInputAction.next,
+      keyboardType: TextInputType.url,
+      decoration: InputDecoration(
+        labelText: 'Website URL',
+        hintText: 'https://example.com',
+        prefixIcon: const Icon(Icons.link),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: AppColors.backgroundSurface,
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.description,
-              color: AppColors.primaryBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  fileSize,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      style: const TextStyle(color: AppColors.textPrimary),
     );
   }
 
   Widget _buildFileNameField() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-    final hintText = _suggestedBaseName ?? 'converted_document';
+    final hintText = _suggestedBaseName ?? 'website_screenshot';
     return TextField(
       controller: _fileNameController,
       textInputAction: TextInputAction.done,
@@ -557,7 +440,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.html extension is added automatically',
+        helperText: '.png extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -565,11 +448,11 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
   }
 
   Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
+    final canConvert = !_isConverting;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canConvert ? _convertFile : null,
+        onPressed: canConvert ? _convertUrl : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.textPrimary,
@@ -591,7 +474,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
                 ),
               )
             : const Text(
-                'Convert to HTML',
+                'Convert to PNG',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -667,7 +550,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.code,
+                  Icons.image,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -678,7 +561,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'HTML Ready',
+                      'PNG Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -722,7 +605,7 @@ class _MarkdownToHtmlPageState extends State<MarkdownToHtmlPage> {
                   label: const FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Save Document',
+                      'Save Image',
                       style: TextStyle(fontSize: 14),
                     ),
                   ),

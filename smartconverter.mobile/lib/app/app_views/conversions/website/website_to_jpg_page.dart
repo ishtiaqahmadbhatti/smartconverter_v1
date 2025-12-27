@@ -4,19 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
-import 'package:smartconverter/app_constants/app_colors.dart';
-import 'package:smartconverter/app_services/admob_service.dart';
-import 'package:smartconverter/app_services/conversion_service.dart';
-import 'package:smartconverter/app_utils/file_manager.dart';
+import 'package:smartconverter/app/app_constants/app_colors.dart';
+import 'package:smartconverter/app/app_services/admob_service.dart';
+import 'package:smartconverter/app/app_services/conversion_service.dart';
+import 'package:smartconverter/app/app_utils/file_manager.dart';
 
-class WebsiteToPngPage extends StatefulWidget {
-  const WebsiteToPngPage({super.key});
+class WebsiteToJpgPage extends StatefulWidget {
+  const WebsiteToJpgPage({super.key});
 
   @override
-  State<WebsiteToPngPage> createState() => _WebsiteToPngPageState();
+  State<WebsiteToJpgPage> createState() => _WebsiteToJpgPageState();
 }
 
-class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
+class _WebsiteToJpgPageState extends State<WebsiteToJpgPage> {
   final ConversionService _service = ConversionService();
   final AdMobService _admobService = AdMobService();
   final TextEditingController _urlController = TextEditingController();
@@ -123,7 +123,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting website to PNG...';
+      _statusMessage = 'Converting website to JPG...';
       _conversionResult = null;
       _savedFilePath = null;
     });
@@ -133,7 +133,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
           ? _sanitizeBaseName(_fileNameController.text.trim())
           : null;
 
-      final result = await _service.convertWebsiteToPng(
+      final result = await _service.convertWebsiteToJpg(
         url,
         outputFilename: customFilename,
       );
@@ -163,7 +163,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PNG ready: ${result.fileName}'),
+          content: Text('JPG ready: ${result.fileName}'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -183,11 +183,11 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
     if (result == null) return;
     setState(() => _isSaving = true);
     try {
-      final directory = await FileManager.getWebsiteToPngDirectory();
+      final directory = await FileManager.getWebsiteToJpgDirectory();
       String targetFileName;
       if (_fileNameController.text.trim().isNotEmpty) {
         final customName = _sanitizeBaseName(_fileNameController.text.trim());
-        targetFileName = _ensurePngExtension(customName);
+        targetFileName = _ensureJpgExtension(customName);
       } else {
         targetFileName = result.fileName;
       }
@@ -196,7 +196,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
           p.basenameWithoutExtension(targetFileName),
-          'png',
+          'jpg',
         );
         targetFileName = fallbackName;
         destinationFile = File(p.join(directory.path, targetFileName));
@@ -244,7 +244,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
     }
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted PNG: ${result.fileName}');
+    ], text: 'Converted JPG: ${result.fileName}');
   }
 
   void _updateSuggestedFileName() {
@@ -283,7 +283,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.png')) {
+    if (base.toLowerCase().endsWith('.jpg') || base.toLowerCase().endsWith('.jpeg')) {
       base = base.substring(0, base.lastIndexOf('.'));
     }
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
@@ -293,11 +293,11 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
     return base.substring(0, min(base.length, 80));
   }
 
-  String _ensurePngExtension(String base) {
+  String _ensureJpgExtension(String base) {
     final trimmed = base.trim();
-    return (trimmed.toLowerCase().endsWith('.png')) 
+    return (trimmed.toLowerCase().endsWith('.jpg') || trimmed.toLowerCase().endsWith('.jpeg')) 
         ? trimmed 
-        : '$trimmed.png';
+        : '$trimmed.jpg';
   }
 
   @override
@@ -308,7 +308,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Website to PNG',
+          'Website to JPG',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         leading: IconButton(
@@ -387,7 +387,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Convert Website to PNG',
+                  'Convert Website to JPG',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -396,7 +396,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Capture full-page screenshots of websites as PNG images',
+                  'Capture full-page screenshots of websites as JPG images',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -440,7 +440,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: AppColors.backgroundSurface,
-        helperText: '.png extension is added automatically',
+        helperText: '.jpg extension is added automatically',
         helperStyle: const TextStyle(color: AppColors.textSecondary),
       ),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -474,7 +474,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
                 ),
               )
             : const Text(
-                'Convert to PNG',
+                'Convert to JPG',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -561,7 +561,7 @@ class _WebsiteToPngPageState extends State<WebsiteToPngPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'PNG Ready',
+                      'JPG Ready',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
