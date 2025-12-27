@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../services/conversion_service.dart';
-import '../services/admob_service.dart';
-import '../services/notification_service.dart';
+import '../app_modules/imports_module.dart';
+
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import '../utils/permission_manager.dart';

@@ -12,7 +12,7 @@ import '../../../constants/api_config.dart';
 import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
 import '../../../utils/ad_helper.dart';
-import '../../../services/conversion_service.dart';
+import '../../../app_services/conversion_service.dart';
 
 class AiJpgToJsonPage extends StatefulWidget {
   const AiJpgToJsonPage({super.key});

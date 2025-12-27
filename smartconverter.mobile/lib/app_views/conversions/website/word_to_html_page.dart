@@ -6,8 +6,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:smartconverter/constants/app_colors.dart';
-import 'package:smartconverter/services/admob_service.dart';
-import 'package:smartconverter/services/conversion_service.dart';
+import 'package:smartconverter/app_services/admob_service.dart';
+import 'package:smartconverter/app_services/conversion_service.dart';
 import 'package:smartconverter/utils/file_manager.dart';
 
 class WordToHtmlPage extends StatefulWidget {

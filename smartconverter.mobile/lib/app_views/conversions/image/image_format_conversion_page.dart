@@ -11,7 +11,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
 import '../../../utils/ad_helper.dart';
 import '../../../utils/file_manager.dart';
-import '../../../services/conversion_service.dart';
+import '../../../app_services/conversion_service.dart';
 
 class ImageFormatConversionPage extends StatefulWidget {
   final String toolName;

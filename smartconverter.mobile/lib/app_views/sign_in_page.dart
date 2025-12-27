@@ -4,7 +4,7 @@ import '../constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
 import 'main_navigation.dart';
-import '../services/auth_service.dart';
+import '../app_services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});

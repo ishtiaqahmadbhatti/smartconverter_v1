@@ -6,7 +6,7 @@ import '../constants/app_colors.dart';
 import '../app_widgets/drawer_menu_widget.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';
-import '../services/auth_service.dart';
+import '../app_services/auth_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

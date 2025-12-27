@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
-import '../services/admob_service.dart';
-import '../services/auth_service.dart';
+import '../app_services/admob_service.dart';
+import '../app_services/auth_service.dart';
 import 'main_navigation.dart';
 import 'sign_in_page.dart';
 

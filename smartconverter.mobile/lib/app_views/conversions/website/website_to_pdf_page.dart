@@ -5,8 +5,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import '../../../constants/app_colors.dart';
-import '../../../services/admob_service.dart';
-import '../../../services/conversion_service.dart';
+import '../../../app_services/admob_service.dart';
+import '../../../app_services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
 class WebsiteToPdfPage extends StatefulWidget {

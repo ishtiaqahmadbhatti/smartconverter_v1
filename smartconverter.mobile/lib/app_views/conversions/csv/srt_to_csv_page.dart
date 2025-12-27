@@ -9,9 +9,9 @@ import 'package:dio/dio.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../constants/api_config.dart';
-import '../../../services/admob_service.dart';
-import '../../../services/conversion_service.dart';
-import '../../../services/notification_service.dart';
+import '../../../app_services/admob_service.dart';
+import '../../../app_services/conversion_service.dart';
+import '../../../app_services/notification_service.dart';
 import '../../../app_widgets/conversion_result_card_widget.dart';
 import '../../../utils/file_manager.dart';
 import 'package:open_filex/open_filex.dart';

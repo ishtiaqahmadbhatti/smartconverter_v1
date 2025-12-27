@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
-import '../services/favorites_provider.dart';
+import '../app_services/favorites_provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/api_config.dart';
 import 'tool_action_page.dart';

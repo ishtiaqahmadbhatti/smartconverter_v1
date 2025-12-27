@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
-import '../models/conversion_tool.dart';
-import '../services/conversion_service.dart';
+import '../app_models/conversion_tool.dart';
+import '../app_services/conversion_service.dart';
 import '../app_widgets/futuristic_card_widget.dart';
 import '../utils/file_manager.dart';
 

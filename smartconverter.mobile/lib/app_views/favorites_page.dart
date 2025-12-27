@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../constants/app_colors.dart';
-import '../services/favorites_provider.dart';
+import '../app_services/favorites_provider.dart';
 import 'category_tools_page.dart';
 
 class FavoritesPage extends StatelessWidget {

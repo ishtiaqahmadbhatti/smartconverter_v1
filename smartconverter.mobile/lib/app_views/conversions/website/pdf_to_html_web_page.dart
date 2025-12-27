@@ -6,8 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../constants/app_colors.dart';
-import '../../../services/admob_service.dart';
-import '../../../services/conversion_service.dart';
+import '../../../app_services/admob_service.dart';
+import '../../../app_services/conversion_service.dart';
 import '../../../utils/file_manager.dart';
 
 class PdfToHtmlWebPage extends StatefulWidget {
