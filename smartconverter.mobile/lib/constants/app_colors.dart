@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../app_modules/imports_module.dart';
 
 class AppColors {
   // Primary Colors - Futuristic Blue/Purple Gradient

@@ -1,4 +1,4 @@
-import '../app_controllers/core_controller.dart';
+import '../app_modules/imports_module.dart';
 
 /// AdMob Service for managing rewarded ads
 /// Uses test ad unit IDs for testing

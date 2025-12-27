@@ -1,4 +1,4 @@
-import 'file_manager.dart';
+import '../app_modules/imports_module.dart';
 
 /// Demo class to showcase the file organization system
 class FileOrganizationDemo {

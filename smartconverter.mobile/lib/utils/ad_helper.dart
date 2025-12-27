@@ -1,6 +1,4 @@
-import '../app_controllers/core_controller.dart';
-import '../app_controllers/services_controller.dart';
-import '../app_controllers/constants_controller.dart';
+import '../app_modules/imports_module.dart';
 
 /// Mixin to handle common AdMob logic across conversion pages
 mixin AdHelper<T extends StatefulWidget> on State<T> {

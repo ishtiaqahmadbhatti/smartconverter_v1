@@ -1,8 +1,4 @@
-import '../app_controllers/core_controller.dart';
-import '../app_controllers/constants_controller.dart';
-import '../app_controllers/services_controller.dart';
-import '../app_controllers/models_controller.dart';
-import '../app_controllers/utils_controller.dart';
+import '../app_modules/imports_module.dart';
 
 /// Mixin to handle common logic for Text Conversion pages
 mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {

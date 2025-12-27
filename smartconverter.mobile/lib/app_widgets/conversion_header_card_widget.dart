@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../app_modules/imports_module.dart';
 
 class ConversionHeaderCardWidget extends StatelessWidget {
   final String title;

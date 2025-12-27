@@ -1,11 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:open_filex/open_filex.dart';
-
-import '../constants/app_colors.dart';
-import '../services/notification_service.dart';
+import '../app_modules/imports_module.dart';
 import '../views/my_files_page.dart';
 
 class ConversionResultCardWidget extends StatefulWidget {
@@ -121,7 +114,7 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
                     context,
                     MaterialPageRoute(
                       builder: (context) => MyFilesPage(
-                        initialPath: p.dirname(widget.savedFilePath),
+                        initialPath: dirname(widget.savedFilePath),
                       ),
                     ),
                   );
@@ -175,7 +168,7 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
               ),
               child: ElevatedButton.icon(
                 onPressed: () async {
-                   final folderPath = p.dirname(widget.savedFilePath);
+                   final folderPath = dirname(widget.savedFilePath);
                    await NotificationService.openFile(folderPath);
                 },
                 icon: const Icon(Icons.arrow_forward, size: 25, color: Colors.white),
@@ -320,7 +313,7 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
         relativePath = 'SmartConverter';
       }
     } else {
-      relativePath = p.basename(fullPath);
+      relativePath = basename(fullPath);
     }
 
     // Split and add segments

@@ -1,5 +1,4 @@
-import '../app_controllers/core_controller.dart';
-import '../app_controllers/services_controller.dart';
+import '../app_modules/imports_module.dart';
 
 class ConversionModel {
   File? selectedFile;

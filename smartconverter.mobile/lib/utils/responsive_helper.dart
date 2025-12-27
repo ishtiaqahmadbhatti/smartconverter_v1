@@ -1,4 +1,4 @@
-import '../app_controllers/core_controller.dart';
+import '../app_modules/imports_module.dart';
 
 class ResponsiveHelper {
   static bool isMobile(BuildContext context) {

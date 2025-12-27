@@ -19,4 +19,7 @@ export 'package:open_filex/open_filex.dart';
 export 'package:awesome_notifications/awesome_notifications.dart';
 export 'package:android_intent_plus/android_intent.dart';
 export 'package:android_intent_plus/flag.dart';
+export 'package:flutter_animate/flutter_animate.dart';
+export 'package:google_fonts/google_fonts.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 

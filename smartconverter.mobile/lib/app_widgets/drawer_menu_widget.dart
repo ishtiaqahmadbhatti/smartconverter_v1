@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_strings.dart';
-import '../services/conversion_service.dart';
+import '../app_modules/imports_module.dart';
 import '../views/my_files_page.dart';
 import '../views/settings_page.dart';
 import '../views/history_page.dart';
@@ -12,7 +8,6 @@ import '../views/help_support_page.dart';
 import '../views/privacy_policy_page.dart';
 import '../views/terms_service_page.dart';
 import '../views/about_page.dart';
-import '../services/auth_service.dart';
 
 class DrawerMenuWidget extends StatefulWidget {
   const DrawerMenuWidget({super.key});

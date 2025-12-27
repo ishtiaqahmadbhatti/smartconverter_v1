@@ -1,5 +1,4 @@
-import '../app_controllers/core_controller.dart';
-import '../app_controllers/constants_controller.dart';
+import '../app_modules/imports_module.dart';
 
 class AuthService {
   static const String _accessTokenKey = 'access_token';

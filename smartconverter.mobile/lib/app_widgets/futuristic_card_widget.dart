@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../constants/app_colors.dart';
+import '../app_modules/imports_module.dart';
 
 class FuturisticCardWidget extends StatefulWidget {
   final Widget child;
