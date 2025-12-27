@@ -1,6 +1,4 @@
-import 'package:path/path.dart' as p;
-
-import '../conversion_imports.dart';
+import '../../../app_modules/imports_module.dart';
 
 class PdfToTextTextPage extends StatefulWidget {
   const PdfToTextTextPage({super.key});
@@ -96,7 +94,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
 
                     if (model.selectedFile != null) ...[
                       ConversionSelectedFileCardWidget(
-                        fileName: p.basename(model.selectedFile!.path),
+                        fileName: basename(model.selectedFile!.path),
                         fileSize: formatBytes(model.selectedFile!.lengthSync()),
                         fileIcon: Icons.picture_as_pdf,
                       ),

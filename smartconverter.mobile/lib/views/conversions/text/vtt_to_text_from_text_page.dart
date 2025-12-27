@@ -1,6 +1,4 @@
-import 'package:path/path.dart' as p;
-
-import '../conversion_imports.dart';
+import '../../../app_modules/imports_module.dart';
 
 class VttToTextFromTextPage extends StatefulWidget {
   const VttToTextFromTextPage({super.key});
@@ -101,7 +99,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
 
                     if (model.selectedFile != null) ...[
                       ConversionSelectedFileCardWidget(
-                        fileName: p.basename(model.selectedFile!.path),
+                        fileName: basename(model.selectedFile!.path),
                         fileSize: formatBytes(model.selectedFile!.lengthSync()),
                         fileIcon: Icons.insert_drive_file,
                       ),

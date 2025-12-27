@@ -1,6 +1,4 @@
-import 'package:path/path.dart' as p;
-
-import '../conversion_imports.dart';
+import '../../../app_modules/imports_module.dart';
 
 class SrtToTextFromTextPage extends StatefulWidget {
   const SrtToTextFromTextPage({super.key});
@@ -102,7 +100,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
 
                     if (model.selectedFile != null) ...[
                       ConversionSelectedFileCardWidget(
-                        fileName: p.basename(model.selectedFile!.path),
+                        fileName: basename(model.selectedFile!.path),
                         fileSize: formatBytes(model.selectedFile!.lengthSync()),
                         fileIcon: Icons.insert_drive_file,
                       ),

@@ -1,6 +1,4 @@
-import 'package:path/path.dart' as p;
-
-import '../conversion_imports.dart';
+import '../../../app_modules/imports_module.dart';
 
 class PowerPointToTextPage extends StatefulWidget {
   const PowerPointToTextPage({super.key});
@@ -98,7 +96,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
 
                 if (model.selectedFile != null) ...[
                   ConversionSelectedFileCardWidget(
-                    fileName: p.basename(model.selectedFile!.path),
+                    fileName: basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
                     fileIcon: Icons.slideshow,
                   ),
