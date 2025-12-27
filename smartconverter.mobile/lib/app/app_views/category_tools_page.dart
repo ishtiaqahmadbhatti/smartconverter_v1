@@ -104,6 +104,7 @@ import 'conversions/subtitle/ai_translate_srt_page.dart';
 import 'conversions/subtitle/srt_to_csv_from_subtitle_page.dart';
 import 'conversions/subtitle/srt_to_text_page.dart';
 import 'conversions/subtitle/srt_to_vtt_page.dart';
+import 'conversions/subtitle/srt_to_excel_page.dart';
 import 'conversions/subtitle/vtt_to_text_page.dart';
 import 'conversions/subtitle/vtt_to_srt_page.dart';
 import 'conversions/subtitle/csv_to_srt_from_subtitle_page.dart';
@@ -555,7 +556,7 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert SRT to CSV':
           return const SrtToCsvFromSubtitlePage();
         case 'Convert SRT to Excel':
-          return const SrtToExcelOfficePage();
+          return const SrtToExcelPage();
         case 'Convert SRT to Text':
           return const SrtToTextPage();
         case 'Convert SRT to VTT':
