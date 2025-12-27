@@ -8,10 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:dio/dio.dart';
 
-import '../../../constants/app_colors.dart';
+import '../../../app_modules/imports_module.dart';
 import '../../../constants/api_config.dart';
-import '../../../utils/ad_helper.dart';
-import '../../../utils/file_manager.dart';
 
 class ImageToPdfPage extends StatefulWidget {
   const ImageToPdfPage({super.key});
@@ -33,7 +31,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   String _statusMessage = 'Select image files (JPG, PNG) to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-  String? _savedFilePath;
+
 
   @override
   void initState() {
@@ -109,6 +107,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
       return;
     }
 
+    setState(() {
       _statusMessage = 'Converting ${_selectedFiles.length} images to PDF...';
       _convertedFile = null;
       _downloadUrl = null;
@@ -315,6 +314,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   }
 
   void _resetForNewConversion() {
+    setState(() {
       _statusMessage = 'Select image files (JPG, PNG) to begin.';
       _fileNameController.clear();
       resetAdStatus(null);

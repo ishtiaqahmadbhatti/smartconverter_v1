@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../constants/api_config.dart';
 import 'file_validator_common_page.dart';
 
-class JsonValidationPage extends StatelessWidget {
-  const JsonValidationPage({super.key});
+class JsonValidationToolPage extends StatelessWidget {
+  const JsonValidationToolPage({super.key});
 
   @override
   Widget build(BuildContext context) {

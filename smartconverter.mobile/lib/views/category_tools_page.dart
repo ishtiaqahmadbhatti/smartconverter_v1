@@ -880,9 +880,9 @@ class CategoryToolsPage extends StatefulWidget {
     if (categoryId == 'file_formatter') {
       switch (toolName) {
         case 'Format JSON':
-          return const ff_json_format.JsonFormatterPage();
+          return const ff_json_format.JsonFormatterToolPage();
         case 'Validate JSON':
-          return const ff_json_validate.JsonValidationPage();
+          return const ff_json_validate.JsonValidationToolPage();
         case 'Validate XML':
           return const ff_xml_validate.XmlValidatorPage();
         case 'Validate XSD':

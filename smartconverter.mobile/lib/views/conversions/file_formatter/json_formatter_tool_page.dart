@@ -4,14 +4,14 @@ import '../../../constants/api_config.dart';
 import '../../../constants/app_colors.dart';
 import 'file_formatter_common_page.dart';
 
-class JsonFormatterPage extends StatefulWidget {
-  const JsonFormatterPage({super.key});
+class JsonFormatterToolPage extends StatefulWidget {
+  const JsonFormatterToolPage({super.key});
 
   @override
-  State<JsonFormatterPage> createState() => _JsonFormatterPageState();
+  State<JsonFormatterToolPage> createState() => _JsonFormatterToolPageState();
 }
 
-class _JsonFormatterPageState extends State<JsonFormatterPage> {
+class _JsonFormatterToolPageState extends State<JsonFormatterToolPage> {
   int _indent = 2;
   bool _sortKeys = false;
 
