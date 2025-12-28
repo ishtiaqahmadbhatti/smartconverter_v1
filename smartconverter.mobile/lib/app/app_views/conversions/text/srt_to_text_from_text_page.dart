@@ -8,7 +8,7 @@ class SrtToTextFromTextPage extends StatefulWidget {
 }
 
 class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
-    with AdHelper, TextConversionMixin {
+    with AdHelper, ConversionMixin {
 
   @override
   final ConversionService service = ConversionService();
@@ -136,7 +136,7 @@ class _SrtToTextFromTextPageState extends State<SrtToTextFromTextPage>
                       else
                         ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
-                            onShare: shareTextFile,
+                            onShare: shareFile,
                         ),
                     ],
                     const SizedBox(height: 80),

@@ -8,7 +8,7 @@ class PowerPointToTextPage extends StatefulWidget {
 }
 
 class _PowerPointToTextPageState extends State<PowerPointToTextPage> 
-    with AdHelper, TextConversionMixin {
+    with AdHelper, ConversionMixin {
 
   @override
   final ConversionService service = ConversionService();
@@ -132,7 +132,7 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
                   else
                     ConversionResultCardWidget(
                         savedFilePath: model.savedFilePath!,
-                        onShare: shareTextFile,
+                        onShare: shareFile,
                     ),
                 ],
               ],

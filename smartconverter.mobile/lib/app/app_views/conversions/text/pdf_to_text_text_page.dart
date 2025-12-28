@@ -8,7 +8,7 @@ class PdfToTextTextPage extends StatefulWidget {
 }
 
 class _PdfToTextTextPageState extends State<PdfToTextTextPage> 
-    with AdHelper, TextConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();
@@ -130,7 +130,7 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
                       else
                         ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
-                            onShare: shareTextFile,
+                            onShare: shareFile,
                         ),
                     ],
                     const SizedBox(height: 80),

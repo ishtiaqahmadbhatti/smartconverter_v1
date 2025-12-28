@@ -1,17 +1,32 @@
 import '../app_modules/imports_module.dart';
 
-/// Mixin to handle common logic for Text Conversion pages
-mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
+/// Mixin to handle common logic for File Conversion pages.
+/// Consolidates logic from TextConversionMixin and SubtitleConversionMixin.
+mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   // Abstract requirements
   ConversionModel get model;
   ConversionService get service;
   TextEditingController get fileNameController;
   
   // Configuration getters
-  String get fileTypeLabel; // e.g. "Word", "PDF"
-  List<String> get allowedExtensions; // e.g. ['doc', 'docx']
+  String get fileTypeLabel; // e.g. "Word", "SRT"
+  List<String> get allowedExtensions; // e.g. ['docx'], ['srt']
   String get conversionToolName; // e.g. "Word-to-Text"
   Future<Directory> get saveDirectory; // e.g. FileManager.getWordToTextDirectory()
+  
+  // Optional overrides
+  /// If set, forces the output filename to have this extension (e.g., '.txt').
+  /// If null, it respects the extension returned by the conversion result.
+  String? get targetExtension => null;
+
+  /// Custom success message. Defaults to "Conversion successful!".
+  String get successMessage => 'Conversion successful!';
+
+  /// Custom converting message. Defaults to "Converting $fileTypeLabel...".
+  String get convertingMessage => 'Converting $fileTypeLabel...';
+
+  /// Custom share subject. Defaults to "Converted File: {fileName}".
+  String get shareSubject => 'Converted File: ${model.conversionResult?.fileName}';
   
   // The actual conversion action to perform
   Future<ImageToPdfResult?> performConversion(File file, String? outputName);
@@ -71,7 +86,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
 
     setState(() {
       model.isConverting = true;
-      model.statusMessage = 'Converting $fileTypeLabel to Text...';
+      model.statusMessage = convertingMessage;
       model.conversionResult = null;
       model.savedFilePath = null;
     });
@@ -115,7 +130,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
 
       setState(() {
         model.conversionResult = result;
-        model.statusMessage = '$fileTypeLabel to Text converted successfully!';
+        model.statusMessage = successMessage;
         model.savedFilePath = null;
       });
 
@@ -147,7 +162,11 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
       String targetFileName;
       if (fileNameController.text.trim().isNotEmpty) {
         final customName = sanitizeBaseName(fileNameController.text.trim());
-        targetFileName = ensureTxtExtension(customName);
+        if (targetExtension != null) {
+          targetFileName = _ensureSpecificExtension(customName, targetExtension!);
+        } else {
+          targetFileName = _ensureResultExtension(customName, result.fileName);
+        }
       } else {
         targetFileName = result.fileName;
       }
@@ -155,9 +174,10 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
       File destinationFile = File(join(directory.path, targetFileName));
 
       if (await destinationFile.exists()) {
+        final ext = extension(targetFileName).replaceAll('.', '');
         final fallbackName = FileManager.generateTimestampFilename(
           basenameWithoutExtension(targetFileName),
-          'txt',
+          ext.isNotEmpty ? ext : 'txt', 
         );
         targetFileName = fallbackName;
         destinationFile = File(join(directory.path, targetFileName));
@@ -196,7 +216,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
     }
   }
 
-  Future<void> shareTextFile() async {
+  Future<void> shareFile() async {
     final result = model.conversionResult;
     if (result == null) return;
     final pathToShare = model.savedFilePath ?? result.file.path;
@@ -206,7 +226,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Text file is not available on disk.'),
+            content: Text('File is not available on disk.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -216,7 +236,7 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
 
     await Share.shareXFiles([
       XFile(fileToShare.path),
-    ], text: 'Converted Text: ${result.fileName}');
+    ], text: shareSubject);
   }
 
   void updateSuggestedFileName() {
@@ -243,9 +263,15 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
 
   String sanitizeBaseName(String input) {
     var base = input.trim();
-    if (base.toLowerCase().endsWith('.txt')) {
-      base = base.substring(0, base.length - 4);
+    
+    // If a target extension is enforced, remove it if user typed it
+    if (targetExtension != null && base.toLowerCase().endsWith(targetExtension!.toLowerCase())) {
+        base = base.substring(0, base.length - targetExtension!.length);
+    } else if (base.contains('.')) {
+        // General cleanup: remove extension if present (simple heuristic)
+        base = base.substring(0, base.lastIndexOf('.'));
     }
+    
     base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     base = base.replaceAll(RegExp(r'_+'), '_');
     base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
@@ -255,17 +281,26 @@ mixin TextConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
     return base.substring(0, min(base.length, 80));
   }
 
-  String ensureTxtExtension(String base) {
+  String _ensureSpecificExtension(String base, String ext) {
     final trimmed = base.trim();
-    return trimmed.toLowerCase().endsWith('.txt') ? trimmed : '$trimmed.txt';
+    final dotExt = ext.startsWith('.') ? ext : '.$ext';
+    return trimmed.toLowerCase().endsWith(dotExt.toLowerCase()) ? trimmed : '$trimmed$dotExt';
   }
 
+  String _ensureResultExtension(String base, String originalFileName) {
+    final originalExt = extension(originalFileName);
+    final trimmed = base.trim();
+    if (trimmed.toLowerCase().endsWith(originalExt.toLowerCase())) {
+      return trimmed;
+    }
+    return '$trimmed$originalExt';
+  }
+ 
   void resetForNewConversion({String? customStatus}) {
     setState(() {
       model.reset(defaultStatusMessage: customStatus ?? 'Select a $fileTypeLabel file to begin.');
       fileNameController.clear();
     });
-    // Ad loading handled by AdHelper automatically or on next demand
   }
 
   String formatBytes(int bytes) {

@@ -8,7 +8,7 @@ class WordToTextTextPage extends StatefulWidget {
 }
 
 class _WordToTextTextPageState extends State<WordToTextTextPage> 
-    with AdHelper, TextConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();
@@ -130,7 +130,7 @@ class _WordToTextTextPageState extends State<WordToTextTextPage>
                       else
                         ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
-                            onShare: shareTextFile,
+                            onShare: shareFile,
                         ),
                     ],
                     const SizedBox(height: 80),

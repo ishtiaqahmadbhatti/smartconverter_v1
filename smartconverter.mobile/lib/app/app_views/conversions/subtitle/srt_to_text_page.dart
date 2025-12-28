@@ -8,7 +8,7 @@ class SrtToTextPage extends StatefulWidget {
 }
 
 class _SrtToTextPageState extends State<SrtToTextPage> 
-    with AdHelper, SubtitleConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();

@@ -8,7 +8,7 @@ class VttToTextFromTextPage extends StatefulWidget {
 }
 
 class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
-    with AdHelper, TextConversionMixin {
+    with AdHelper, ConversionMixin {
 
   @override
   final ConversionService service = ConversionService();
@@ -135,7 +135,7 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
                       else
                         ConversionResultCardWidget(
                             savedFilePath: model.savedFilePath!,
-                            onShare: shareTextFile,
+                            onShare: shareFile,
                         ),
                     ],
                     const SizedBox(height: 80),

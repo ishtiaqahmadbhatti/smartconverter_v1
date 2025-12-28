@@ -8,7 +8,7 @@ class VttToTextPage extends StatefulWidget {
 }
 
 class _VttToTextPageState extends State<VttToTextPage> 
-    with AdHelper, SubtitleConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();

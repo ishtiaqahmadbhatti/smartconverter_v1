@@ -8,7 +8,7 @@ class AiTranslateSrtPage extends StatefulWidget {
 }
 
 class _AiTranslateSrtPageState extends State<AiTranslateSrtPage> 
-    with AdHelper, SubtitleConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();

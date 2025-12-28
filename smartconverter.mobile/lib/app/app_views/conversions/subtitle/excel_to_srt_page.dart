@@ -8,7 +8,7 @@ class ExcelToSrtPage extends StatefulWidget {
 }
 
 class _ExcelToSrtPageState extends State<ExcelToSrtPage> 
-    with AdHelper, SubtitleConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();

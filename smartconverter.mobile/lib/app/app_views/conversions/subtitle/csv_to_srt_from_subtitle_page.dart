@@ -8,7 +8,7 @@ class CsvToSrtFromSubtitlePage extends StatefulWidget {
 }
 
 class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage> 
-    with AdHelper, SubtitleConversionMixin {
+    with AdHelper, ConversionMixin {
   
   @override
   final ConversionService service = ConversionService();
