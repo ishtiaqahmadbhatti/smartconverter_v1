@@ -25,7 +25,7 @@ class _VttToSrtPageState extends State<VttToSrtPage>
   String get fileTypeLabel => 'VTT';
   
   @override
-  List<String> get allowedExtensions => ['vtt'];
+  List<String> get allowedExtensions => [];
   
   @override
   String get conversionToolName => 'VTT-to-SRT';

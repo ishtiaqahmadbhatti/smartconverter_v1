@@ -25,7 +25,7 @@ class _VttToTextPageState extends State<VttToTextPage>
   String get fileTypeLabel => 'VTT';
   
   @override
-  List<String> get allowedExtensions => ['vtt'];
+  List<String> get allowedExtensions => [];
   
   @override
   String get conversionToolName => 'VTT-to-Text';

@@ -387,7 +387,6 @@ class ConversionService {
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'SrtToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -442,7 +441,6 @@ class ConversionService {
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'SrtToExcel',
           fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4177,7 +4175,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'SrtTranslate',
           fileExtension: 'srt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4236,7 +4233,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'YamlConversion',
           fileExtension: 'yaml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4298,7 +4294,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'JsonToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4358,7 +4353,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'JsonToExcel',
           fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4418,7 +4412,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'YamlToJson',
           fileExtension: 'json',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4480,7 +4473,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'JsonFormatter',
           fileExtension: 'json',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4658,7 +4650,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'XmlToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4712,7 +4703,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'XmlToExcel',
           fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4770,7 +4760,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'CsvToXml',
           fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4828,7 +4817,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'ExcelToXml',
           fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4884,7 +4872,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'JsonToXml',
           fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -4938,7 +4925,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'XmlEscapingFix',
           fileExtension: 'xml',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5060,7 +5046,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'CsvToExcel',
           fileExtension: 'xlsx',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5120,7 +5105,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'ExcelToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5178,7 +5162,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OdsToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5236,7 +5219,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'BsonToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,

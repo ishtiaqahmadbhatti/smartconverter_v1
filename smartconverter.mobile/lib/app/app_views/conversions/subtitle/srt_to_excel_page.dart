@@ -112,7 +112,7 @@ class _SrtToExcelPageState extends State<SrtToExcelPage>
                           fileName: model.conversionResult!.fileName,
                           isSaving: model.isSaving,
                           onSave: saveResult,
-                          title: 'Available for Save',
+                          title: 'Excel File Ready',
                         )
                       else
                         ConversionResultCardWidget(

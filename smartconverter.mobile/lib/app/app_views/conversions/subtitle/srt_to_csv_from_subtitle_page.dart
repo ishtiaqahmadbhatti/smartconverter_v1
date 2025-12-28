@@ -112,7 +112,7 @@ class _SrtToCsvFromSubtitlePageState extends State<SrtToCsvFromSubtitlePage>
                           fileName: model.conversionResult!.fileName,
                           isSaving: model.isSaving,
                           onSave: saveResult,
-                          title: 'Available for Save',
+                          title: 'CSV File Ready',
                         )
                       else
                         ConversionResultCardWidget(

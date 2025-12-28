@@ -195,7 +195,7 @@ class _AiTranslateSrtPageState extends State<AiTranslateSrtPage>
                           fileName: model.conversionResult!.fileName,
                           isSaving: model.isSaving,
                           onSave: saveResult,
-                          title: 'Available for Save',
+                          title: 'Translated File Ready',
                         )
                       else
                         ConversionResultCardWidget(
