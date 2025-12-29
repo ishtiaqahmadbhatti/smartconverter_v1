@@ -156,11 +156,11 @@ import 'conversions/pdf/pdf_to_jpg_page.dart';
 import 'conversions/pdf/pdf_to_png_page.dart';
 import 'conversions/pdf/pdf_to_tiff_page.dart';
 import 'conversions/pdf/pdf_to_svg_page.dart';
-import 'conversions/pdf/pdf_to_text_page.dart';
+// import 'conversions/pdf/pdf_to_text_page.dart';
 import 'conversions/pdf/pdf_to_html_page.dart';
 import 'conversions/pdf/markdown_to_pdf_page.dart';
-import 'conversions/pdf/jpg_to_pdf_page.dart';
-import 'conversions/pdf/png_to_pdf_page.dart';
+// import 'conversions/pdf/jpg_to_pdf_page.dart';
+// import 'conversions/pdf/png_to_pdf_page.dart';
 import 'conversions/pdf/merge_pdf_page.dart';
 import 'conversions/pdf/oxps_to_pdf_page.dart';
 import 'conversions/pdf/pdf_split_page.dart';
@@ -730,17 +730,17 @@ class CategoryToolsPage extends StatefulWidget {
     if (categoryId == 'ocr_conversion') {
       switch (toolName) {
         case 'OCR: Convert PNG to Text':
-          return const OcrPngToTextPage();
+          return const PngToTextPage();
         case 'OCR: Convert JPG to Text':
-          return const OcrJpgToTextPage();
+          return const JpgToTextPage();
         case 'OCR: Convert PNG to PDF':
-          return const OcrPngToPdfPage();
+          return const PngToPdfPage();
         case 'OCR: Convert JPG to PDF':
-          return const OcrJpgToPdfPage();
+          return const JpgToPdfPage();
         case 'OCR: Convert PDF to Text':
-          return const OcrPdfToTextPage();
+          return const PdfToTextPage();
         case 'OCR: Convert PDF Image to PDF Text':
-          return const OcrPdfImageToPdfTextPage();
+          return const PdfImageToPdfTextPage();
       }
     }
 

@@ -1133,6 +1133,22 @@ class FileManager {
     return mergedPdfsDir;
   }
 
+  /// Get directory for ImageToText tool (OCR)
+  static Future<Directory> getImageToTextDirectory() async {
+    final textDir = await getTextConversionsDirectory();
+    final dir = Directory('${textDir.path}/image_to_text');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for PDF to PDF OCR tools
+  static Future<Directory> getPdfToPdfDirectory() async {
+    final pdfDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfDir.path}/ocr_pdf');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
   /// Get directory for markdown to PDF outputs
   static Future<Directory> getMarkdownToPdfDirectory() async {
     final pdfConversionsDir = await getPdfConversionsDirectory();

@@ -5230,6 +5230,304 @@ async def download_file(filename: str):
     }
   }
 
+  // ===========================================================================
+  // OCR Conversion Methods
+  // ===========================================================================
+
+  Future<ImageToPdfResult?> convertOcrPngToText(
+    File pngFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!pngFile.existsSync()) throw Exception('PNG file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        pngFile.path,
+        filename: basename(pngFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PNG for OCR Text conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrPngToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(pngFile.path)}.txt';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrPngToText',
+          fileExtension: 'txt',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PNG to Text (OCR): $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertOcrJpgToText(
+    File jpgFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!jpgFile.existsSync()) throw Exception('JPG file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        jpgFile.path,
+        filename: basename(jpgFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JPG for OCR Text conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrJpgToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(jpgFile.path)}.txt';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrJpgToText',
+          fileExtension: 'txt',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JPG to Text (OCR): $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertOcrPngToPdf(
+    File pngFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!pngFile.existsSync()) throw Exception('PNG file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        pngFile.path,
+        filename: basename(pngFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PNG for OCR PDF conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrPngToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(pngFile.path)}.pdf';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrPngToPdf',
+          fileExtension: 'pdf',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PNG to PDF (OCR): $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertOcrJpgToPdf(
+    File jpgFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!jpgFile.existsSync()) throw Exception('JPG file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        jpgFile.path,
+        filename: basename(jpgFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JPG for OCR PDF conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrJpgToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(jpgFile.path)}.pdf';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrJpgToPdf',
+          fileExtension: 'pdf',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JPG to PDF (OCR): $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertOcrPdfToText(
+    File pdfFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) throw Exception('PDF file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: basename(pdfFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF for OCR Text conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrPdfToTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(pdfFile.path)}.txt';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrPdfToText',
+          fileExtension: 'txt',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF to Text (OCR): $e');
+    }
+  }
+
+  Future<ImageToPdfResult?> convertOcrPdfImageToPdfText(
+    File pdfFile, {
+    String? outputFilename,
+    String language = 'eng',
+  }) async {
+    try {
+      if (!pdfFile.existsSync()) throw Exception('PDF file does not exist');
+      
+      final file = await MultipartFile.fromFile(
+        pdfFile.path,
+        filename: basename(pdfFile.path),
+      );
+
+      final formData = FormData.fromMap({
+        'file': file,
+        'language': language,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading PDF Image for OCR PDF Text conversion...');
+
+      final response = await _dio.post(
+        ApiConfig.ocrPdfImageToPdfTextEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ?? 
+            '${basenameWithoutExtension(pdfFile.path)}_ocr.pdf';
+
+        return await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OcrPdfImageToPdfText',
+          fileExtension: 'pdf',
+        ).then((file) => file != null ? ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        ) : null);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert PDF Image to PDF Text (OCR): $e');
+    }
+  }
+
 
 
 
