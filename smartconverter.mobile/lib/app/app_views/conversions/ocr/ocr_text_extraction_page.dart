@@ -30,7 +30,7 @@ class _OcrTextExtractionPageState extends State<OcrTextExtractionPage>
   String get conversionToolName => 'OcrTextExtraction';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getImageToTextDirectory(); // Using generic text directory
+  Future<Directory> get saveDirectory => FileManager.getOcrTextExtractionDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) async {

@@ -30,7 +30,7 @@ class _OcrPdfExtractionPageState extends State<OcrPdfExtractionPage>
   String get conversionToolName => 'OcrPdfExtraction';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfToTextDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrPdfToTextDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

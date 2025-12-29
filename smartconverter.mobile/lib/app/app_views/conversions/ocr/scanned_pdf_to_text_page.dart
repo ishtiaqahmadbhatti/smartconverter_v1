@@ -30,7 +30,7 @@ class _ScannedPdfToTextPageState extends State<ScannedPdfToTextPage>
   String get conversionToolName => 'ScannedPdfToText';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfToTextDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrScannedPdfToTextDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

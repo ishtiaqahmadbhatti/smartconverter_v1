@@ -30,7 +30,7 @@ class _PdfImageToPdfTextPageState extends State<PdfImageToPdfTextPage>
   String get conversionToolName => 'PdfImageToPdfText';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfToPdfDirectory(); // Assuming PDF out
+  Future<Directory> get saveDirectory => FileManager.getOcrPdfImageToPdfTextDirectory(); // Assuming PDF out
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

@@ -30,7 +30,7 @@ class _JpgToPdfPageState extends State<JpgToPdfPage>
   String get conversionToolName => 'JpgToPdf';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getJpgToPdfDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrJpgToPdfDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

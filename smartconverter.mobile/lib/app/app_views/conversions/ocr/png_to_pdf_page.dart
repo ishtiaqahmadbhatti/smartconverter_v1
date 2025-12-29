@@ -30,7 +30,7 @@ class _PngToPdfPageState extends State<PngToPdfPage>
   String get conversionToolName => 'PngToPdf';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPngToPdfDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrPngToPdfDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

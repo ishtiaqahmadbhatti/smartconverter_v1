@@ -5269,7 +5269,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrPngToText',
           fileExtension: 'txt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5318,7 +5317,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrJpgToText',
           fileExtension: 'txt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5367,7 +5365,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrPngToPdf',
           fileExtension: 'pdf',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5416,7 +5413,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrJpgToPdf',
           fileExtension: 'pdf',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5465,7 +5461,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrPdfToText',
           fileExtension: 'txt',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -5514,7 +5509,6 @@ async def download_file(filename: str):
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'OcrPdfImageToPdfText',
           fileExtension: 'pdf',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,

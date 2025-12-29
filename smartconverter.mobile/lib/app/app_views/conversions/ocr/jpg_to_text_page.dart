@@ -30,7 +30,7 @@ class _JpgToTextPageState extends State<JpgToTextPage>
   String get conversionToolName => 'JpgToText';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getImageToTextDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrJpgToTextDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

@@ -30,7 +30,7 @@ class _PngToTextPageState extends State<PngToTextPage>
   String get conversionToolName => 'PngToText';
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getImageToTextDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOcrPngToTextDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {

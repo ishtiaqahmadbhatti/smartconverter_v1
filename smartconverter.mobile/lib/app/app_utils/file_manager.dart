@@ -1133,21 +1133,107 @@ class FileManager {
     return mergedPdfsDir;
   }
 
-  /// Get directory for ImageToText tool (OCR)
-  static Future<Directory> getImageToTextDirectory() async {
-    final textDir = await getTextConversionsDirectory();
-    final dir = Directory('${textDir.path}/image_to_text');
+  static const String _ocrConversionsFolder = 'OCRConversion';
+
+  static const String _ocrPngToTextSubFolder = 'png-to-text';
+  static const String _ocrJpgToTextSubFolder = 'jpg-to-text';
+  static const String _ocrImageToTextSubFolder = 'image-to-text';
+  static const String _ocrPdfToTextSubFolder = 'pdf-to-text';
+  static const String _ocrPdfImageToPdfTextSubFolder = 'pdf-image-to-pdf-text';
+  static const String _ocrPngToPdfSubFolder = 'png-to-pdf';
+  static const String _ocrJpgToPdfSubFolder = 'jpg-to-pdf';
+  static const String _ocrScannedPdfToTextSubFolder = 'scanned-pdf-to-text';
+
+  /// Get or create the OCR Conversions directory
+  static Future<Directory> getOcrConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final ocrConversionsDir = Directory(
+      '${smartConverterDir.path}/$_ocrConversionsFolder',
+    );
+    if (!await ocrConversionsDir.exists()) {
+      await ocrConversionsDir.create(recursive: true);
+    }
+    return ocrConversionsDir;
+  }
+
+  /// Get directory for OCR PNG to Text
+  static Future<Directory> getOcrPngToTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrPngToTextSubFolder');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
 
-  /// Get directory for PDF to PDF OCR tools
-  static Future<Directory> getPdfToPdfDirectory() async {
-    final pdfDir = await getPdfConversionsDirectory();
-    final dir = Directory('${pdfDir.path}/ocr_pdf');
+  /// Get directory for OCR JPG to Text
+  static Future<Directory> getOcrJpgToTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrJpgToTextSubFolder');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
+
+  static const String _ocrTextExtractionSubFolder = 'ocr-text-extraction';
+
+  /// Get directory for OCR Text Extraction (Generic)
+  static Future<Directory> getOcrTextExtractionDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrTextExtractionSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OCR Image to Text (General)
+  static Future<Directory> getOcrImageToTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrImageToTextSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OCR PDF to Text
+  static Future<Directory> getOcrPdfToTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrPdfToTextSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OCR PDF Image to PDF Text
+  static Future<Directory> getOcrPdfImageToPdfTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrPdfImageToPdfTextSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OCR PNG to PDF
+  static Future<Directory> getOcrPngToPdfDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrPngToPdfSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OCR JPG to PDF
+  static Future<Directory> getOcrJpgToPdfDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrJpgToPdfSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+   /// Get directory for Scanned PDF to Text
+  static Future<Directory> getOcrScannedPdfToTextDirectory() async {
+    final ocrDir = await getOcrConversionsDirectory();
+    final dir = Directory('${ocrDir.path}/$_ocrScannedPdfToTextSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  // Deprecated usage mapping to new OCR structure
+  static Future<Directory> getImageToTextDirectory() => getOcrImageToTextDirectory();
+  static Future<Directory> getPdfToPdfDirectory() => getOcrPdfImageToPdfTextDirectory(); // Mapping to most likely candidate
+
 
   /// Get directory for markdown to PDF outputs
   static Future<Directory> getMarkdownToPdfDirectory() async {
