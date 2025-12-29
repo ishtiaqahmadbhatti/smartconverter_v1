@@ -1493,9 +1493,7 @@ class FileManager {
   static Future<Directory> getXmlToExcelDirectory() async {
     final xmlDir = await getXmlConversionsDirectory();
     final dir = Directory('${xmlDir.path}/$_xmlToExcelSubFolder');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
+    if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
 
@@ -1503,31 +1501,35 @@ class FileManager {
   static Future<Directory> getFixXmlEscapingDirectory() async {
     final xmlDir = await getXmlConversionsDirectory();
     final dir = Directory('${xmlDir.path}/$_fixXmlEscapingSubFolder');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
+    if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
 
-
-
-  /// Get directory for XML Validator outputs
-  static Future<Directory> getXmlValidatorDirectory() async {
+  /// Get directory for XML Validation outputs
+  static Future<Directory> getXmlXsdValidatorDirectory() async {
     final xmlDir = await getXmlConversionsDirectory();
     final dir = Directory('${xmlDir.path}/$_xmlXsdValidatorSubFolder');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
+    if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
 
-  /// Get directory for JSON to XML outputs
+  /// Get directory for JSON to XML outputs (XML Category)
   static Future<Directory> getJsonToXmlDirectory() async {
     final xmlDir = await getXmlConversionsDirectory();
     final dir = Directory('${xmlDir.path}/$_jsonToXmlSubFolder');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
+    if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
+  
+  static const String _csvToXml = 'csv-to-xml';
+
+  /// Get directory for CSV to XML outputs (XML Category)
+  static Future<Directory> getCsvToXmlFromXmlCategoryDirectory() async {
+    final xmlDir = await getXmlConversionsDirectory();
+    final dir = Directory('${xmlDir.path}/$_csvToXml');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+
 }

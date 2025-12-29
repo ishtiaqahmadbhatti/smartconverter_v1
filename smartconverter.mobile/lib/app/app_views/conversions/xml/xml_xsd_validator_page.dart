@@ -1,7 +1,3 @@
-
-import 'package:path/path.dart' as p;
-
-
 import '../../../app_modules/imports_module.dart';
 
 class XmlXsdValidatorPage extends StatefulWidget {
@@ -39,8 +35,8 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
 
       if (file == null) return;
 
-      final extension = p.extension(file.path).toLowerCase();
-      if (extension != '.xml') {
+      final ext = extension(file.path).toLowerCase();
+      if (ext != '.xml') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -55,7 +51,7 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
       setState(() {
         _selectedXmlFile = file;
         _validationResultText = null;
-        _statusMessage = 'XML selected: ${p.basename(file.path)}';
+        _statusMessage = 'XML selected: ${basename(file.path)}';
         resetAdStatus(file.path);
       });
     } catch (e) {
@@ -76,8 +72,8 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
 
       if (file == null) return;
 
-      final extension = p.extension(file.path).toLowerCase();
-      if (extension != '.xsd') {
+      final ext = extension(file.path).toLowerCase();
+      if (ext != '.xsd') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -229,42 +225,89 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
+        title: const Text('XML Validator', style: TextStyle(color: AppColors.textPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'XML Validator',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
+      extendBodyBehindAppBar: true,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderCard(),
-                const SizedBox(height: 20),
-                _buildFilePickers(),
-                const SizedBox(height: 20),
-                _buildValidateButton(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(),
-                if (_validationResultText != null) ...[
-                  const SizedBox(height: 20),
-                  _buildResultCard(),
-                ],
-                const SizedBox(height: 24),
-              ],
-            ),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      const ConversionHeaderCardWidget(
+                        title: 'XML / XSD Validator',
+                        description: 'Validate XML against XSD schema or check syntax.',
+                        sourceIcon: Icons.fact_check,
+                        destinationIcon: Icons.rule,
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // XML Picker (Using standard widget with tweaks or custom if needed)
+                      ConversionActionButtonWidget(
+                        isFileSelected: _selectedXmlFile != null,
+                        onPickFile: _pickXmlFile,
+                        onReset: _resetvalidator,
+                        isConverting: _isValidating,
+                        buttonText: _selectedXmlFile == null ? 'Select XML File' : 'Change XML',
+                      ),
+
+                      if (_selectedXmlFile != null) ...[
+                        const SizedBox(height: 16),
+                        ConversionSelectedFileCardWidget(
+                          fileName: basename(_selectedXmlFile!.path),
+                          fileSize: formatBytes(_selectedXmlFile!.lengthSync()),
+                          fileIcon: Icons.code,
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+
+                      // XSD Picker - Custom button reusing styles or simpler widget
+                      _buildXsdPicker(),
+
+                      const SizedBox(height: 20),
+
+                      ConversionConvertButtonWidget(
+                        isConverting: _isValidating,
+                        onConvert: _validateXml,
+                        buttonText: 'Validate',
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      ConversionStatusWidget(
+                        statusMessage: _statusMessage,
+                        isConverting: _isValidating,
+                        // We don't utilize conversionResult here directly for success state in the same way, 
+                        // but we can pass null and rely on status message style or pass a dummy if needed.
+                        // Actually, let's just use the status message part.
+                        conversionResult: _validationResultText != null 
+                          ? ImageToPdfResult(
+                              file: File(''), 
+                              fileName: _isValid ? 'Valid' : 'Invalid',
+                              downloadUrl: '',
+                            ) 
+                          : null, 
+                      ),
+
+                      if (_validationResultText != null) ...[
+                        const SizedBox(height: 20),
+                        _buildResultCard(),
+                      ],
+                      const SizedBox(height: 80),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -272,232 +315,40 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.fact_check,
-              size: 32,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'XML / XSD Validator',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Validate XML against XSD schema or check syntax.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilePickers() {
-    return Column(
-      children: [
-        // XML File Picker
-        _buildFilePickerButton(
-          label: _selectedXmlFile == null ? 'Select XML File *' : 'Change XML',
-          file: _selectedXmlFile,
-          onPressed: _pickXmlFile,
-          icon: Icons.code,
-          isPrimary: true,
-        ),
-        const SizedBox(height: 12),
-        // XSD File Picker
-        _buildFilePickerButton(
-          label: _selectedXsdFile == null ? 'Select XSD File (Optional)' : 'Change XSD',
-          file: _selectedXsdFile,
-          onPressed: _pickXsdFile,
-          icon: Icons.rule,
-          isPrimary: false,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilePickerButton({
-    required String label,
-    required File? file,
-    required VoidCallback onPressed,
-    required IconData icon,
-    required bool isPrimary,
-  }) {
+  Widget _buildXsdPicker() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isPrimary ? AppColors.primaryBlue : AppColors.textSecondary.withOpacity(0.3),
+          color: AppColors.textSecondary.withOpacity(0.3),
         ),
       ),
       child: ListTile(
-        onTap: _isValidating ? null : onPressed,
+        onTap: _isValidating ? null : _pickXsdFile,
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (isPrimary ? AppColors.primaryBlue : AppColors.textSecondary)
-                .withOpacity(0.2),
+            color: AppColors.textSecondary.withOpacity(0.2),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: isPrimary ? AppColors.primaryBlue : AppColors.textSecondary,
+          child: const Icon(
+            Icons.rule,
+            color: AppColors.textSecondary,
           ),
         ),
         title: Text(
-          file == null ? label : p.basename(file.path),
+          _selectedXsdFile == null ? 'Select XSD File (Optional)' : basename(_selectedXsdFile!.path),
           style: TextStyle(
-            color: file == null ? AppColors.textSecondary : AppColors.textPrimary,
-            fontWeight: file == null ? FontWeight.normal : FontWeight.w600,
+            color: _selectedXsdFile == null ? AppColors.textSecondary : AppColors.textPrimary,
+            fontWeight: _selectedXsdFile == null ? FontWeight.normal : FontWeight.w600,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: file != null
+        trailing: _selectedXsdFile != null
             ? const Icon(Icons.check_circle, color: AppColors.success, size: 20)
             : const Icon(Icons.add, color: AppColors.textSecondary),
-      ),
-    );
-  }
-
-  Widget _buildValidateButton() {
-    final canValidate = _selectedXmlFile != null && !_isValidating;
-
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: canValidate ? _validateXml : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-            ),
-            child: _isValidating
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.textPrimary,
-                      ),
-                    ),
-                  )
-                : const Text(
-                    'Validate',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-          ),
-        ),
-        if (_validationResultText != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isValidating ? null : _resetvalidator,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isValidating
-                ? Icons.hourglass_empty
-                : _validationResultText != null
-                ? (_isValid ? Icons.check_circle : Icons.error)
-                : Icons.info_outline,
-            color: _isValidating
-                ? AppColors.warning
-                : _validationResultText != null
-                ? (_isValid ? AppColors.success : AppColors.error)
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _isValidating
-                    ? AppColors.warning
-                    : _validationResultText != null
-                    ? (_isValid ? AppColors.success : AppColors.error)
-                    : AppColors.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -599,5 +450,14 @@ class _XmlXsdValidatorPageState extends State<XmlXsdValidatorPage> with AdHelper
     } catch (e) {
       return jsonResult;
     }
+  }
+
+  String formatBytes(int bytes) { 
+        if (bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        final digitGroups = (log(bytes) / log(1024)).floor();
+        final clampedGroups = digitGroups.clamp(0, units.length - 1);
+        final value = bytes / pow(1024, clampedGroups);
+        return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
 }
