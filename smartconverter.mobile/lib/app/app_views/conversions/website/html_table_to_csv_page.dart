@@ -154,19 +154,21 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage>
                 
                 const SizedBox(height: 16),
                 
-                ConversionFileNameFieldWidget(
-                  controller: fileNameController,
-                  suggestedName: model.suggestedBaseName,
-                  extensionLabel: '.csv will be added automatically',
-                ),
-                
-                const SizedBox(height: 20),
-                
-                ConversionConvertButtonWidget(label: 'Convert to CSV',
-                  icon: Icons.transform,
-                  onPressed: convert,
-                  isLoading: model.isConverting,
-                ),
+                if (_tabController.index == 1 || (_tabController.index == 0 && model.selectedFile != null)) ...[
+                  ConversionFileNameFieldWidget(
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
+                    extensionLabel: '.csv will be added automatically',
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  ConversionConvertButtonWidget(label: 'Convert to CSV',
+                    icon: Icons.transform,
+                    onPressed: convert,
+                    isLoading: model.isConverting,
+                  ),
+                ],
                 
                 const SizedBox(height: 16),
                 
@@ -178,12 +180,18 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage>
                 
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  ConversionFileSaveCardWidget(
-                    fileName: model.conversionResult!.fileName,
-                    isSaving: model.isSaving,
-                    onSave: saveResult, // Handled by Mixin
-                    title: 'CSV File Ready',
-                  ),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'CSV File Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
               ],
             ),
@@ -197,35 +205,25 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage>
   Widget _buildFileInput() {
     return Column(
       children: [
-        if (model.selectedFile == null)
-          _buildPickFileButton()
-        else
-          ConversionFileCardWidget(
+        ConversionActionButtonWidget(
+          isFileSelected: model.selectedFile != null,
+          onPickFile: pickFile,
+          onReset: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
+          isConverting: model.isConverting,
+          buttonText: 'Select HTML File',
+        ),
+        
+        if (model.selectedFile != null) ...[
+          const SizedBox(height: 16),
+          ConversionSelectedFileCardWidget(
             fileTypeLabel: fileTypeLabel,
             fileName: basename(model.selectedFile!.path),
             fileSize: formatBytes(model.selectedFile!.lengthSync()),
+            fileIcon: Icons.description,
             onRemove: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
           ),
+        ],
       ],
-    );
-  }
-
-  Widget _buildPickFileButton() {
-    return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: model.isConverting ? null : pickFile,
-          icon: const Icon(Icons.file_open_outlined),
-          label: const Text('Select HTML File'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryBlue,
-            foregroundColor: AppColors.textPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
     );
   }
 

@@ -187,12 +187,7 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage>
                 
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  ConversionFileSaveCardWidget(
-                    fileName: model.conversionResult!.fileName,
-                    isSaving: model.isSaving,
-                    onSave: saveResult,
-                    title: 'JPG Image Ready',
-                  ),
+                  if (model.savedFilePath == null) ConversionFileSaveCardWidget(fileName: model.conversionResult!.fileName, isSaving: model.isSaving, onSave: saveResult, title: 'JPG Image Ready',) else ConversionResultCardWidget(savedFilePath: model.savedFilePath!, onShare: shareFile,)
                 ],
               ],
             ),
@@ -203,4 +198,5 @@ class _WebsiteToJpgPageState extends State<WebsiteToJpgPage>
     );
   }
 }
+
 

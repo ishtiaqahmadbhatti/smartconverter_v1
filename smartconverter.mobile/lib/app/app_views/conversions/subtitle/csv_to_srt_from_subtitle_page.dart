@@ -48,8 +48,8 @@ class _CsvToSrtFromSubtitlePageState extends State<CsvToSrtFromSubtitlePage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertCsvToSrt(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertCsvToSrt(file!, outputFilename: outputName);
   }
 
   @override

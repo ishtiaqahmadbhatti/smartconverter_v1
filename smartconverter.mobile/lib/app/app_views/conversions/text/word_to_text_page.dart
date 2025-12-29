@@ -48,8 +48,8 @@ class _WordToTextTextPageState extends State<WordToTextTextPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertWordToText(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertWordToText(file!, outputFilename: outputName);
   }
 
   @override

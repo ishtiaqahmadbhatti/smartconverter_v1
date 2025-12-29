@@ -48,8 +48,8 @@ class _VttToTextFromTextPageState extends State<VttToTextFromTextPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertVttToText(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertVttToText(file!, outputFilename: outputName);
   }
 
   @override

@@ -48,8 +48,8 @@ class _SrtToVttPageState extends State<SrtToVttPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertSrtToVtt(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertSrtToVtt(file!, outputFilename: outputName);
   }
 
   @override

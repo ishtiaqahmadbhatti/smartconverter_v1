@@ -33,7 +33,7 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   String get shareSubject => 'Converted File: ${model.conversionResult?.fileName}';
   
   // The actual conversion action to perform
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName);
 
   void handleFileNameChange() {
     final trimmed = fileNameController.text.trim();
@@ -111,7 +111,7 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
           : null;
 
       final result = await performConversion(
-        model.selectedFile!,
+        model.selectedFile,
         customFilename,
       );
 

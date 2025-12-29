@@ -34,8 +34,8 @@ class _SrtToCsvFromSubtitlePageState extends State<SrtToCsvFromSubtitlePage>
   Future<Directory> get saveDirectory => FileManager.getSrtToCsvSubtitleDirectory();
 
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertSrtToCsv(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertSrtToCsv(file!, outputFilename: outputName);
   }
 
   @override

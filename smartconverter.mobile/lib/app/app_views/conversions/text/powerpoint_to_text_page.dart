@@ -49,8 +49,8 @@ class _PowerPointToTextPageState extends State<PowerPointToTextPage>
   
   @override
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertPowerpointToText(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertPowerpointToText(file!, outputFilename: outputName);
   }
 
   @override

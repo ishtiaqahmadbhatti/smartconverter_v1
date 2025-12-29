@@ -48,8 +48,8 @@ class _ExcelToSrtPageState extends State<ExcelToSrtPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertExcelToSrt(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertExcelToSrt(file!, outputFilename: outputName);
   }
 
   @override

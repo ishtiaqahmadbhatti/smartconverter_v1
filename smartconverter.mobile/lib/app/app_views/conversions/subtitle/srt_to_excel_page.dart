@@ -34,8 +34,8 @@ class _SrtToExcelPageState extends State<SrtToExcelPage>
   Future<Directory> get saveDirectory => FileManager.getSrtToExcelSubtitleDirectory();
 
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertSrtToExcel(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertSrtToExcel(file!, outputFilename: outputName);
   }
 
   @override

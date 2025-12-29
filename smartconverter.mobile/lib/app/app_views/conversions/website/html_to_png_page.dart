@@ -98,47 +98,40 @@ class _HtmlToPngPageState extends State<HtmlToPngPage>
                 ),
                 const SizedBox(height: 20),
                 
-                if (model.selectedFile == null) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: model.isConverting ? null : pickFile,
-                      icon: const Icon(Icons.file_open_outlined),
-                      label: const Text('Select HTML File'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                        foregroundColor: AppColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  ConversionFileCardWidget(
+                ConversionActionButtonWidget(
+                  isFileSelected: model.selectedFile != null,
+                  onPickFile: pickFile,
+                  onReset: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
+                  isConverting: model.isConverting,
+                  buttonText: 'Select HTML File',
+                ),
+                
+                if (model.selectedFile != null) ...[
+                  const SizedBox(height: 16),
+                  ConversionSelectedFileCardWidget(
                     fileTypeLabel: fileTypeLabel,
                     fileName: basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
+                    fileIcon: Icons.description,
                     onRemove: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
                   ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  ConversionFileNameFieldWidget(
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
+                    extensionLabel: '.png will be added automatically',
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  ConversionConvertButtonWidget(label: 'Convert to PNG',
+                    icon: Icons.transform,
+                    onPressed: convert,
+                    isLoading: model.isConverting,
+                  ),
                 ],
-
-                const SizedBox(height: 16),
-                
-                ConversionFileNameFieldWidget(
-                  controller: fileNameController,
-                  suggestedName: model.suggestedBaseName,
-                  extensionLabel: '.png will be added automatically',
-                ),
-                
-                const SizedBox(height: 20),
-                
-                ConversionConvertButtonWidget(label: 'Convert to PNG',
-                  icon: Icons.transform,
-                  onPressed: convert,
-                  isLoading: model.isConverting,
-                ),
                 
                 const SizedBox(height: 16),
                 
@@ -150,12 +143,18 @@ class _HtmlToPngPageState extends State<HtmlToPngPage>
                 
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  ConversionFileSaveCardWidget(
-                    fileName: model.conversionResult!.fileName,
-                    isSaving: model.isSaving,
-                    onSave: saveResult,
-                    title: 'PNG Ready',
-                  ),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'PNG Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
               ],
             ),
@@ -166,4 +165,3 @@ class _HtmlToPngPageState extends State<HtmlToPngPage>
     );
   }
 }
-

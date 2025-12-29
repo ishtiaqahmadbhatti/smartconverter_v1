@@ -48,8 +48,8 @@ class _PdfToTextTextPageState extends State<PdfToTextTextPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertPdfToText(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertPdfToText(file!, outputFilename: outputName);
   }
 
   @override

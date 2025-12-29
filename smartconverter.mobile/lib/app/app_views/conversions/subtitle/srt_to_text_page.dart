@@ -48,8 +48,8 @@ class _SrtToTextPageState extends State<SrtToTextPage>
   }
   
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
-    return service.convertSrtToText(file, outputFilename: outputName);
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
+    return service.convertSrtToText(file!, outputFilename: outputName);
   }
 
   @override

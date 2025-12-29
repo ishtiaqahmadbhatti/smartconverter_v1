@@ -105,12 +105,12 @@ class _AiTranslateSrtPageState extends State<AiTranslateSrtPage>
   }
 
   @override
-  Future<ImageToPdfResult?> performConversion(File file, String? outputName) {
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (_selectedTargetLanguage == null) {
       throw Exception('Target language not selected');
     }
     return service.translateSrt(
-      file,
+      file!,
       targetLanguage: _selectedTargetLanguage!,
       outputFilename: outputName,
     );
@@ -260,3 +260,4 @@ class _AiTranslateSrtPageState extends State<AiTranslateSrtPage>
     );
   }
 }
+
