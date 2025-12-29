@@ -19,6 +19,10 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   /// If null, it respects the extension returned by the conversion result.
   String? get targetExtension => null;
 
+  /// Whether this conversion requires a file to be selected.
+  /// Defaults to true. Override to false for URL-based tools.
+  bool get requiresInputFile => true;
+
   /// Custom success message. Defaults to "Conversion successful!".
   String get successMessage => 'Conversion successful!';
 
@@ -74,7 +78,7 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   }
 
   Future<void> convert() async {
-    if (model.selectedFile == null) {
+    if (requiresInputFile && model.selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please select a $fileTypeLabel file first.'),
@@ -240,7 +244,7 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   }
 
   void updateSuggestedFileName() {
-    if (model.selectedFile == null) {
+    if (requiresInputFile && model.selectedFile == null) {
       setState(() {
         model.suggestedBaseName = null;
         if (!model.fileNameEdited) {
@@ -249,17 +253,21 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
       });
       return;
     }
-
-    final baseName = basenameWithoutExtension(model.selectedFile!.path);
-    final sanitized = sanitizeBaseName(baseName);
-
-    setState(() {
-      model.suggestedBaseName = sanitized;
-      if (!model.fileNameEdited) {
-        fileNameController.text = sanitized;
-      }
-    });
+    
+    if (requiresInputFile) {
+        final baseName = basenameWithoutExtension(model.selectedFile!.path);
+        final sanitized = sanitizeBaseName(baseName);
+    
+        setState(() {
+          model.suggestedBaseName = sanitized;
+          if (!model.fileNameEdited) {
+            fileNameController.text = sanitized;
+          }
+        });
+    }
   }
+
+
 
   String sanitizeBaseName(String input) {
     var base = input.trim();

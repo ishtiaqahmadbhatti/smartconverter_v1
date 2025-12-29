@@ -3,16 +3,21 @@ import '../app_modules/imports_module.dart';
 class ConversionHeaderCardWidget extends StatelessWidget {
   final String title;
   final String description;
-  final IconData iconSource;
-  final IconData iconTarget;
+  final IconData? iconSource;
+  final IconData? iconTarget;
+  final IconData? sourceIcon;
+  final IconData? destinationIcon;
 
   const ConversionHeaderCardWidget({
     super.key,
     required this.title,
     required this.description,
-    required this.iconSource,
-    required this.iconTarget,
-  });
+    this.iconSource,
+    this.iconTarget,
+    this.sourceIcon,
+    this.destinationIcon,
+  }) : assert(iconSource != null || sourceIcon != null, 'Must provide iconSource or sourceIcon'),
+       assert(iconTarget != null || destinationIcon != null, 'Must provide iconTarget or destinationIcon');
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +54,7 @@ class ConversionHeaderCardWidget extends StatelessWidget {
                   top: 4,
                   left: 4,
                   child: Icon(
-                    iconSource,
+                    iconSource ?? sourceIcon ?? Icons.error, // Fallback safely
                     color: AppColors.textPrimary,
                     size: 24,
                   ),
@@ -58,7 +63,7 @@ class ConversionHeaderCardWidget extends StatelessWidget {
                   bottom: 4,
                   right: 4,
                   child: Icon(
-                    iconTarget,
+                    iconTarget ?? destinationIcon ?? Icons.error, // Fallback safely
                     color: AppColors.textPrimary,
                     size: 24,
                   ),

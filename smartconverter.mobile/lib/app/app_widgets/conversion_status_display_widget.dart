@@ -55,3 +55,26 @@ class ConversionStatusDisplayWidget extends StatelessWidget {
     );
   }
 }
+
+/// Wrapper for ConversionStatusDisplayWidget to support refactored usage pattern
+class ConversionStatusWidget extends StatelessWidget {
+  final String statusMessage;
+  final bool isConverting;
+  final dynamic conversionResult;
+
+  const ConversionStatusWidget({
+    super.key,
+    required this.statusMessage,
+    required this.isConverting,
+    this.conversionResult,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConversionStatusDisplayWidget(
+      isConverting: isConverting,
+      message: statusMessage,
+      isSuccess: conversionResult != null,
+    );
+  }
+}

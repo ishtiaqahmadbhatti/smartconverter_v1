@@ -70,6 +70,9 @@ mixin AdHelper<T extends StatefulWidget> on State<T> {
     return null;
   }
 
+  /// Alias for buildBannerAd to support legacy/refactored calls
+  Widget? getBannerAdWidget() => buildBannerAd();
+
   /// Reset ad watch status for a new file
   void resetAdStatus(String? filePath) {
     if (_lastSelectedFilePath != filePath) {

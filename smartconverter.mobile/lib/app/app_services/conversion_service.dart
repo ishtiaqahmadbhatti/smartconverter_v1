@@ -511,7 +511,6 @@ class ConversionService {
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'HtmlToPdf',
           fileExtension: 'pdf',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,
@@ -579,7 +578,6 @@ class ConversionService {
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
-          toolName: 'HtmlTableToCsv',
           fileExtension: 'csv',
         ).then((file) => file != null ? ImageToPdfResult(
           file: file,

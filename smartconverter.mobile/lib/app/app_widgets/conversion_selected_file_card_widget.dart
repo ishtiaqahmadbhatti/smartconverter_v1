@@ -4,12 +4,16 @@ class ConversionSelectedFileCardWidget extends StatelessWidget {
   final String fileName;
   final String fileSize;
   final IconData fileIcon;
+  final String? fileTypeLabel;
+  final VoidCallback? onRemove;
 
   const ConversionSelectedFileCardWidget({
     super.key,
     required this.fileName,
     required this.fileSize,
     this.fileIcon = Icons.description,
+    this.fileTypeLabel,
+    this.onRemove,
   });
 
   @override
@@ -40,6 +44,15 @@ class ConversionSelectedFileCardWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (fileTypeLabel != null)
+                 Text(
+                   fileTypeLabel!,
+                   style: const TextStyle(
+                     color: AppColors.textSecondary,
+                     fontSize: 10,
+                     fontWeight: FontWeight.bold,
+                   ),
+                 ),
                 Text(
                   fileName,
                   style: const TextStyle(
@@ -61,8 +74,19 @@ class ConversionSelectedFileCardWidget extends StatelessWidget {
               ],
             ),
           ),
+          if (onRemove != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close, color: AppColors.textSecondary),
+              tooltip: 'Remove File',
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
+/// Alias for ConversionSelectedFileCardWidget to support refactored usage
+typedef ConversionFileCardWidget = ConversionSelectedFileCardWidget;
