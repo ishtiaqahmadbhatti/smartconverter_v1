@@ -312,10 +312,10 @@ class FileManager {
 
 
 
-  /// Get directory for JSON to CSV
+  /// Get directory for JSON to CSV (JSON Category)
   static Future<Directory> getJsonToCsvDirectory() async {
-    final csvDir = await getCsvConversionsDirectory();
-    final dir = Directory('${csvDir.path}/$_jsonToCsvSubFolder');
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_jsonToCsvSubFolder');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
@@ -1434,6 +1434,29 @@ class FileManager {
     return getImageCategoryDirectory(_imagePdfToSvgSubFolder);
   }
 
+
+
+  static const String _jsonFormattedSubFolder = 'json-formatted';
+
+  static Future<Directory> getJsonFormattedDirectory() async {
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_jsonFormattedSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static const String _aiJpgToJsonSubFolder = 'jpg-to-json';
+
+  static const String _jsonToExcelSubFolder = 'json-to-excel';
+
+  static Future<Directory> getJsonToExcelDirectory() async {
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_jsonToExcelSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+  static const String _aiPngToJsonSubFolder = 'png-to-json';
+
   static const String _xmlConversionsFolder = 'XMLConversion';
 
   static const String _excelToXmlSubFolder = 'excel-to-xml';
@@ -1456,8 +1479,6 @@ class FileManager {
     }
     return xmlConversionsDir;
   }
-
-
 
   /// Get directory for Excel to XML outputs
   static Future<Directory> getExcelToXmlDirectory() async {
@@ -1513,10 +1534,10 @@ class FileManager {
     return dir;
   }
 
-  /// Get directory for JSON to XML outputs (XML Category)
+  /// Get directory for JSON to XML outputs (JSON Category now)
   static Future<Directory> getJsonToXmlDirectory() async {
-    final xmlDir = await getXmlConversionsDirectory();
-    final dir = Directory('${xmlDir.path}/$_jsonToXmlSubFolder');
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_jsonToXmlSubFolder');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
@@ -1531,5 +1552,19 @@ class FileManager {
     return dir;
   }
 
+
+  static Future<Directory> getAiConvertJpgToJsonDirectory() async { // Fix analyzer
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_aiJpgToJsonSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static Future<Directory> getAiConvertPngToJsonDirectory() async {
+    final jsonDir = await getJsonConversionsDirectory();
+    final dir = Directory('${jsonDir.path}/$_aiPngToJsonSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
 
 }

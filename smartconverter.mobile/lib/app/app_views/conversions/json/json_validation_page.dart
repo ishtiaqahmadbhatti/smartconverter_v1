@@ -1,11 +1,8 @@
-import 'dart:io';
+// ignore_for_file: deprecated_member_use, unused_local_variable
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import '../../../app_modules/imports_module.dart';
 import 'package:path/path.dart' as p;
-import '../../../app_utils/ad_helper.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_constants/app_colors.dart';
+
 
 class JsonValidationPage extends StatefulWidget {
   const JsonValidationPage({super.key});
@@ -44,9 +41,9 @@ class _JsonValidationPageState extends State<JsonValidationPage> with AdHelper<J
       if (result == null) return;
 
       final file = File(result.files.single.path!);
-      final extension = p.extension(file.path).toLowerCase();
+      final ext = extension(file.path).toLowerCase();
 
-      if (extension != '.json') {
+      if (ext != '.json' && ext != '.txt') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -531,7 +528,7 @@ class _JsonValidationPageState extends State<JsonValidationPage> with AdHelper<J
       return const SizedBox.shrink();
     }
 
-    final fileName = p.basename(_selectedFile!.path);
+    final fileName = basename(_selectedFile!.path);
 
     return Container(
       padding: const EdgeInsets.all(16),
