@@ -63,16 +63,10 @@ class _JsonObjectsToExcelPageState extends State<JsonObjectsToExcelPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      drawer: const DrawerMenuWidget(),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        leading: const BackButton(color: AppColors.textPrimary),
         title: Text(
           conversionTitle,
           style: const TextStyle(
