@@ -45,7 +45,7 @@ class _JsonToExcelPageState extends State<JsonToExcelPage>
 
   @override
   Future<Directory> get saveDirectory =>
-      FileManager.getJsonToExcelDirectory();
+      FileManager.getJsonJsonToExcelDirectory();
 
   @override
   String get targetExtension => 'xlsx';

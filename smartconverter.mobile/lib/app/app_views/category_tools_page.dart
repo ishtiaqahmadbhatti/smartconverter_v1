@@ -16,6 +16,8 @@ import 'conversions/json/csv_to_json_page.dart';
 import 'conversions/json/json_to_yaml_page.dart';
 import 'conversions/json/json_objects_to_excel_page.dart';
 import 'conversions/json/yaml_to_json_page.dart';
+import 'conversions/json/json_to_excel_page.dart' as json_excel;
+import 'conversions/json/excel_to_json_page.dart' as excel_json;
 import 'conversions/json/xml_to_json_page.dart' as json_xml;
 // XML pages
 import 'conversions/xml/xml_to_json_page.dart';
@@ -273,9 +275,9 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert JSON to CSV':
           return const JsonToCsvPage();
         case 'Convert JSON to Excel':
-          return const JsonToExcelOfficePage();
+          return const json_excel.JsonToExcelPage();
         case 'Convert Excel to JSON':
-          return const ExcelToJsonOfficePage();
+          return const excel_json.ExcelToJsonPage();
         case 'Convert CSV to JSON':
           return const CsvToJsonPage();
         case 'Convert JSON to YAML':
