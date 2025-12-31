@@ -8,7 +8,7 @@ class BsonToCsvPage extends StatefulWidget {
 }
 
 class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select a BSON file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -31,7 +31,7 @@ class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, Conversion
   String get targetExtension => 'csv';
 
   @override
-  List<String> get allowedExtensions => ['bson'];
+  List<String> get allowedExtensions => [];
 
   @override
   Future<Directory> get saveDirectory => FileManager.getBsonToCsvDirectory();
@@ -48,7 +48,7 @@ class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, Conversion
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'BSON to CSV',
+          'Convert BSON to CSV',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, Conversion
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert BSON to CSV',
+                  title: 'BSON to CSV',
                   description: 'Transform BSON (Binary JSON) files into CSV format.',
                   iconTarget: Icons.table_chart,
                   iconSource: Icons.account_tree,
@@ -91,12 +91,13 @@ class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, Conversion
                   extensionLabel: '.csv extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to CSV',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to CSV',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _BsonToCsvPageState extends State<BsonToCsvPage> with AdHelper, Conversion
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV File Ready',
                     )
                   else
                     ConversionResultCardWidget(

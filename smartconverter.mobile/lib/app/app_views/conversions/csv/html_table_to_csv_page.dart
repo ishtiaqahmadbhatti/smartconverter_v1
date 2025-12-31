@@ -8,7 +8,7 @@ class HtmlTableToCsvPage extends StatefulWidget {
 }
 
 class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select an HTML file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -34,7 +34,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, 
   List<String> get allowedExtensions => ['html', 'htm'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getHtmlTableToCsvDirectory();
+  Future<Directory> get saveDirectory => FileManager.getHtmlTableToCsvDirectoryFromCsvCategory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
@@ -49,7 +49,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, 
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'HTML to CSV',
+          'Convert HTML to CSV',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -64,7 +64,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, 
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert HTML to CSV',
+                  title: 'HTML to CSV',
                   description: 'Extract tables from HTML files into CSV format.',
                   iconTarget: Icons.table_chart,
                   iconSource: Icons.html,
@@ -92,12 +92,13 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, 
                   extensionLabel: '.csv extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to CSV',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to CSV',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -111,6 +112,7 @@ class _HtmlTableToCsvPageState extends State<HtmlTableToCsvPage> with AdHelper, 
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV File Ready',
                     )
                   else
                     ConversionResultCardWidget(

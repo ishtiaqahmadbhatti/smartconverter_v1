@@ -83,6 +83,12 @@ class FileManager {
   static const String _odsToCsvSubFolder = 'ods-to-csv';
   static const String _csvToExcelSubFolder = 'csv-to-excel';
   static const String _csvToXmlSubFolder = 'csv-to-xml';
+  static const String _csvPdfToCsvSubFolder = 'pdf-to-csv';
+  static const String _csvHtmlTableToCsvSubFolder = 'html-table-to-csv';
+  static const String _csvXmlToCsvSubFolder = 'xml-to-csv';
+  static const String _csvJsonToCsvSubFolder = 'json-to-csv';
+  static const String _csvCsvToJsonSubFolder = 'csv-to-json';
+  static const String _csvJsonObjectsToCsvSubFolder = 'json-object-to-csv';
 
   static const String _officeDocumentsConversionsFolder = 'OfficeDocumentsConversion';
   static const String _officePdfToCsvSubFolder = 'pdf-to-csv';
@@ -309,6 +315,64 @@ class FileManager {
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
+
+  /// Get directory for PDF to CSV outputs (CSV Category)
+  static Future<Directory> getPdfToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvPdfToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for HTML Table to CSV (CSV Category)
+  static Future<Directory> getHtmlTableToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvHtmlTableToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for XML to CSV (CSV Category)
+  static Future<Directory> getXmlToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvXmlToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for JSON to CSV (CSV Category)
+  static Future<Directory> getJsonToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvJsonToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for CSV to JSON (CSV Category)
+  static Future<Directory> getCsvToJsonDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvCsvToJsonSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for JSON Objects to CSV (CSV Category)
+  static Future<Directory> getJsonObjectsToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_csvJsonObjectsToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for ODS to CSV (CSV Category)
+  static Future<Directory> getOdsToCsvDirectoryFromCsvCategory() async {
+    final csvDir = await getCsvConversionsDirectory();
+    final dir = Directory('${csvDir.path}/$_odsToCsvSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+
 
 
 

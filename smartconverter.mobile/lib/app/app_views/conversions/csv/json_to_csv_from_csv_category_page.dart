@@ -8,7 +8,7 @@ class JsonToCsvFromCsvCategoryPage extends StatefulWidget {
 }
 
 class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select a JSON file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -34,7 +34,7 @@ class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryP
   List<String> get allowedExtensions => ['json'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getJsonToCsvDirectory();
+  Future<Directory> get saveDirectory => FileManager.getJsonToCsvDirectoryFromCsvCategory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
@@ -48,7 +48,7 @@ class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryP
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'JSON to CSV',
+          'Convert JSON to CSV',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryP
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert JSON to CSV',
+                  title: 'JSON to CSV',
                   description: 'Transform JSON files into CSV format.',
                   iconTarget: Icons.table_chart,
                   iconSource: Icons.data_object,
@@ -91,12 +91,13 @@ class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryP
                   extensionLabel: '.csv extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to CSV',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to CSV',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _JsonToCsvFromCsvCategoryPageState extends State<JsonToCsvFromCsvCategoryP
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV File Ready',
                     )
                   else
                     ConversionResultCardWidget(

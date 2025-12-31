@@ -108,7 +108,7 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
           'Convert CSV to Excel',
           'Convert CSV to XML',
           'Convert XML to CSV',
-          'Convert PDF to CSV',
+
           'Convert JSON to CSV',
           'Convert CSV to JSON',
           'Convert JSON objects to CSV',

@@ -84,6 +84,10 @@ import 'conversions/website/excel_to_html_page.dart';
 import 'conversions/website/pdf_to_html_web_page.dart';
 // Reuse CSV tool for HTML Table to CSV
 import 'conversions/website/html_table_to_csv_page.dart';
+import 'conversions/csv/html_table_to_csv_page.dart' as csv_html;
+import 'conversions/csv/csv_to_excel_page.dart' as csv_excel;
+import 'conversions/csv/csv_to_json_page.dart' as csv_json;
+import 'conversions/csv/ods_to_csv_page.dart' as csv_ods;
 // Video pages
 import 'conversions/video/mov_to_mp4_page.dart';
 import 'conversions/video/mkv_to_mp4_page.dart';
@@ -319,23 +323,22 @@ class CategoryToolsPage extends StatefulWidget {
         case 'AI: Convert PDF to CSV':
           return const AiConvertPdfToCsvPage();
         case 'Convert HTML Table to CSV':
-          return const HtmlTableToCsvPage();
+          return const csv_html.HtmlTableToCsvPage();
         case 'Convert Excel to CSV':
           return const ExcelToCsvFromCsvCategoryPage();
         case 'Convert OpenOffice Calc ODS to CSV':
-          return const OdsToCsvOfficePage();
+          return const csv_ods.OdsToCsvPage();
         case 'Convert CSV to Excel':
-          return const CsvToExcelOfficePage();
+          return const csv_excel.CsvToExcelPage();
         case 'Convert CSV to XML':
           return const CsvToXmlPage();
         case 'Convert XML to CSV':
           return const XmlToCsvFromCsvCategoryPage();
-        case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
+
         case 'Convert JSON to CSV':
           return const JsonToCsvFromCsvCategoryPage();
         case 'Convert CSV to JSON':
-          return const CsvToJsonPage();
+          return const csv_json.CsvToJsonPage();
         case 'Convert JSON objects to CSV':
           return const JsonObjectsToCsvFromCsvCategoryPage();
         case 'Convert BSON to CSV':

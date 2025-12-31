@@ -8,7 +8,7 @@ class CsvToXmlPage extends StatefulWidget {
 }
 
 class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select a CSV file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -48,7 +48,7 @@ class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper, ConversionMi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'CSV to XML',
+          'Convert CSV to XML',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper, ConversionMi
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert CSV to XML',
+                  title: 'CSV to XML',
                   description: 'Transform CSV files into XML format.',
                   iconTarget: Icons.code,
                   iconSource: Icons.table_chart,
@@ -91,12 +91,13 @@ class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper, ConversionMi
                   extensionLabel: '.xml extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to XML',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to XML',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _CsvToXmlPageState extends State<CsvToXmlPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'XML File Ready',
                     )
                   else
                     ConversionResultCardWidget(

@@ -8,7 +8,7 @@ class CsvToExcelPage extends StatefulWidget {
 }
 
 class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select a CSV file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -48,7 +48,7 @@ class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper, Conversi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'CSV to Excel',
+          'Convert CSV to Excel',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper, Conversi
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert CSV to Excel',
+                  title: 'CSV to Excel',
                   description: 'Transform CSV files into Excel (XLSX) format.',
                   iconTarget: Icons.grid_on,
                   iconSource: Icons.table_chart,
@@ -91,12 +91,13 @@ class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper, Conversi
                   extensionLabel: '.xlsx extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to Excel',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to Excel',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _CsvToExcelPageState extends State<CsvToExcelPage> with AdHelper, Conversi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'Excel File Ready',
                     )
                   else
                     ConversionResultCardWidget(

@@ -8,7 +8,7 @@ class OdsToCsvPage extends StatefulWidget {
 }
 
 class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select an ODS file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -34,7 +34,7 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMi
   List<String> get allowedExtensions => ['ods'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getOdsToCsvDirectory();
+  Future<Directory> get saveDirectory => FileManager.getOdsToCsvDirectoryFromCsvCategory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
@@ -48,7 +48,7 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'ODS to CSV',
+          'Convert ODS to CSV',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMi
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert ODS to CSV',
+                  title: 'ODS to CSV',
                   description: 'Transform ODS spreadsheets into CSV format.',
                   iconTarget: Icons.table_chart,
                   iconSource: Icons.table_chart,
@@ -91,12 +91,13 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMi
                   extensionLabel: '.csv extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to CSV',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to CSV',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _OdsToCsvPageState extends State<OdsToCsvPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV File Ready',
                     )
                   else
                     ConversionResultCardWidget(

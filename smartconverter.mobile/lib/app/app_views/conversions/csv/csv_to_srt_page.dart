@@ -8,7 +8,7 @@ class CsvToSrtPage extends StatefulWidget {
 }
 
 class _CsvToSrtPageState extends State<CsvToSrtPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Ready to convert');
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select a CSV file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -48,7 +48,7 @@ class _CsvToSrtPageState extends State<CsvToSrtPage> with AdHelper, ConversionMi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'CSV to SRT',
+          'Convert CSV to SRT',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class _CsvToSrtPageState extends State<CsvToSrtPage> with AdHelper, ConversionMi
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert CSV to SRT',
+                  title: 'CSV to SRT',
                   description: 'Transform CSV files into Subtitle (SRT) format.',
                   iconTarget: Icons.subtitles,
                   iconSource: Icons.table_chart,
@@ -91,12 +91,13 @@ class _CsvToSrtPageState extends State<CsvToSrtPage> with AdHelper, ConversionMi
                   extensionLabel: '.srt extension is added automatically',
                 ),
                 const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to SRT',
-                ),
+                if (model.selectedFile != null)
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to SRT',
+                  ),
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,
@@ -110,6 +111,7 @@ class _CsvToSrtPageState extends State<CsvToSrtPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'SRT File Ready',
                     )
                   else
                     ConversionResultCardWidget(
