@@ -345,6 +345,13 @@ class ConversionService {
           fileExtension: 'xps',
         );
 
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
       }
 
       return null;
