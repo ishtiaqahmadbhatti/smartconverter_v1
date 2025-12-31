@@ -358,8 +358,7 @@ class CategoryToolsPage extends StatefulWidget {
       switch (toolName) {
         case 'AI: Convert PDF to CSV':
           return const AiConvertPdfToCsvPage();
-        case 'AI: Convert PDF to Excel':
-          return const AiPdfToExcelPage();
+
         case 'Convert Word to PDF':
           return const WordToPdfOfficePage();
         case 'Convert Word to HTML':
@@ -368,8 +367,6 @@ class CategoryToolsPage extends StatefulWidget {
           return const PowerPointToPdfOfficePage();
         case 'Convert PowerPoint to HTML':
           return const PowerPointToHtmlOfficePage();
-        case 'Convert OXPS to PDF':
-          return const OxpsToPdfPage();
         case 'Convert Word to Text':
           return const WordToTextOfficePage();
         case 'Convert PowerPoint to Text':

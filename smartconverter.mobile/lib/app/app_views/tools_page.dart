@@ -125,12 +125,11 @@ class _ToolsPageState extends State<ToolsPage> with TickerProviderStateMixin {
         'category': 'Document Conversion',
         'tools': [
           'AI: Convert PDF to CSV',
-          'AI: Convert PDF to Excel',
+
           'Convert Word to PDF',
           'Convert Word to HTML',
           'Convert PowerPoint to PDF',
           'Convert PowerPoint to HTML',
-          'Convert OXPS to PDF',
           'Convert Word to Text',
           'Convert PowerPoint to Text',
           'Convert Excel to PDF',
