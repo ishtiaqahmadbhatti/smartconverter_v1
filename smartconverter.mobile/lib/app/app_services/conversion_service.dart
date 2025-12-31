@@ -3444,23 +3444,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       result = await _createSuccessPlaceholderFile(fileName);
     }
 
-    // If toolName is provided, save to organized directory
-    if (toolName != null) {
-      try {
-        final finalExtension =
-            fileExtension ?? extension(fileName).replaceFirst('.', '');
-        final savedFile = await saveFileToOrganizedDirectory(
-          result,
-          toolName,
-          finalExtension,
-        );
-        return savedFile;
-      } catch (e) {
-        _debugLog('⚠️ Error saving to organized directory: $e');
-        // Return the temp file if saving fails
-        return result;
-      }
-    }
+
 
     return result;
   }
