@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import '../pdf/ai_pdf_to_csv_page.dart';
+import '../../../app_modules/imports_module.dart';
 
 class AiConvertPdfToCsvPage extends StatelessWidget {
   const AiConvertPdfToCsvPage({super.key});
