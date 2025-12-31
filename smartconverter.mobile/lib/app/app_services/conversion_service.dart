@@ -193,7 +193,7 @@ class ConversionService {
   }
 
   // Word to PDF conversion
-  Future<File?> convertWordToPdf(File wordFile) async {
+  Future<ImageToPdfResult?> convertWordToPdf(File wordFile) async {
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
@@ -203,7 +203,7 @@ class ConversionService {
       });
 
       Response response = await _dio.post(
-        ApiConfig.wordToPdfEndpoint,
+        ApiConfig.officeWordToPdfEndpoint,
         data: formData,
       );
 
@@ -211,11 +211,20 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_document.pdf';
-        return await _tryDownloadFile(
+        
+        final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
           toolName: 'WordToPdf',
           fileExtension: 'pdf',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
         );
       }
 
@@ -224,6 +233,171 @@ class ConversionService {
       throw Exception('Word to PDF conversion failed: $e');
     }
   }
+
+  // PowerPoint to PDF conversion
+  Future<ImageToPdfResult?> convertPowerPointToPdf(File pptFile) async {
+    try {
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          pptFile.path,
+          filename: pptFile.path.split('/').last,
+        ),
+      });
+
+      Response response = await _dio.post(
+        ApiConfig.officePowerPointToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_presentation.pdf';
+        
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'PowerPointToPdf',
+          fileExtension: 'pdf',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('PowerPoint to PDF conversion failed: $e');
+    }
+  }
+
+  // Excel to PDF conversion
+  Future<ImageToPdfResult?> convertExcelToPdf(File excelFile) async {
+    try {
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          excelFile.path,
+          filename: excelFile.path.split('/').last,
+        ),
+      });
+
+      Response response = await _dio.post(
+        ApiConfig.officeExcelToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_spreadsheet.pdf';
+        
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToPdf',
+          fileExtension: 'pdf',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Excel to PDF conversion failed: $e');
+    }
+  }
+
+  // Excel to XPS conversion
+  Future<ImageToPdfResult?> convertExcelToXps(File excelFile) async {
+    try {
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          excelFile.path,
+          filename: excelFile.path.split('/').last,
+        ),
+      });
+
+      Response response = await _dio.post(
+        ApiConfig.officeExcelToXpsEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_spreadsheet.xps';
+        
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToXps',
+          fileExtension: 'xps',
+        );
+
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Excel to XPS conversion failed: $e');
+    }
+  }
+
+  // Excel to ODS conversion
+  Future<ImageToPdfResult?> convertExcelToOds(File excelFile) async {
+    try {
+      FormData formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          excelFile.path,
+          filename: excelFile.path.split('/').last,
+        ),
+      });
+
+      Response response = await _dio.post(
+        ApiConfig.officeExcelToOdsEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ?? 'converted_spreadsheet.ods';
+        
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ExcelToOds',
+          fileExtension: 'ods',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Excel to ODS conversion failed: $e');
+    }
+  }
+
+
+
+
 
   // Image to PDF conversion
   Future<File?> convertImageToPdf(List<File> imageFiles) async {
@@ -400,59 +574,7 @@ class ConversionService {
     }
   }
 
-  // Convert SRT to Excel (Subtitle Conversion)
-  Future<ImageToPdfResult?> convertSrtToExcel(
-    File srtFile, {
-    String? outputFilename,
-  }) async {
-    try {
-      if (!srtFile.existsSync()) {
-        throw Exception('SRT file does not exist');
-      }
-      final ext = extension(srtFile.path).toLowerCase();
-      if (ext != '.srt') {
-        throw Exception('Only .srt files are supported');
-      }
 
-      final file = await MultipartFile.fromFile(
-        srtFile.path,
-        filename: basename(srtFile.path),
-      );
-
-      FormData formData = FormData.fromMap({
-        'file': file,
-        if (outputFilename != null && outputFilename.isNotEmpty)
-          'output_filename': outputFilename,
-      });
-
-      _debugLog('📤 Uploading SRT file for Excel conversion...');
-
-      Response response = await _dio.post(
-        ApiConfig.subtitlesSrtToExcelEndpoint,
-        data: formData,
-      );
-
-      if (response.statusCode == 200) {
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName =
-            response.data['output_filename'] ??
-            '${basenameWithoutExtension(srtFile.path)}.xlsx';
-
-        return await _tryDownloadFile(
-          fileName,
-          downloadUrl,
-          fileExtension: 'xlsx',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to convert SRT to Excel: $e');
-    }
-  }
 
   // Convert HTML/URL/File to PDF
   Future<ImageToPdfResult?> convertHtmlToPdf({
@@ -4306,64 +4428,7 @@ async def download_file(filename: str):
     }
   }
 
-  // Convert JSON Objects to Excel
-  Future<ImageToPdfResult?> convertJsonObjectsToExcel(
-    File jsonFile, {
-    String? outputFilename,
-  }) async {
-    try {
-      if (!jsonFile.existsSync()) {
-        throw Exception('JSON file does not exist');
-      }
 
-      final ext = extension(jsonFile.path).toLowerCase();
-      if (ext != '.json') {
-        throw Exception('Only .json files are supported');
-      }
-
-      final file = await MultipartFile.fromFile(
-        jsonFile.path,
-        filename: basename(jsonFile.path),
-      );
-
-      FormData formData = FormData.fromMap({
-        'file': file,
-        if (outputFilename != null && outputFilename.isNotEmpty)
-          'filename': outputFilename,
-      });
-
-      _debugLog('📤 Uploading JSON file for Objects to Excel conversion...');
-
-      Response response = await _dio.post(
-        ApiConfig.jsonObjectsToExcelEndpoint,
-        data: formData,
-      );
-
-      if (response.statusCode == 200) {
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName =
-            response.data['output_filename'] ??
-            '${basenameWithoutExtension(jsonFile.path)}.xlsx';
-
-        _debugLog('✅ JSON successfully converted to Excel!');
-        _debugLog('📥 Downloading Excel: $fileName');
-
-        return await _tryDownloadFile(
-          fileName,
-          downloadUrl,
-          fileExtension: 'xlsx',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
-      }
-
-      return null;
-    } catch (e) {
-      throw Exception('Failed to convert JSON objects to Excel: $e');
-    }
-  }
 
   // Convert YAML to JSON
   Future<ImageToPdfResult?> convertYamlToJson(
@@ -5173,6 +5238,128 @@ async def download_file(filename: str):
     }
   }
 
+  // Convert ODS to Excel
+  Future<ImageToPdfResult?> convertOdsToExcel(
+    File odsFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!odsFile.existsSync()) {
+        throw Exception('ODS file does not exist');
+      }
+      final ext = extension(odsFile.path).toLowerCase();
+      if (ext != '.ods') {
+        throw Exception('Only .ods files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        odsFile.path,
+        filename: basename(odsFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading ODS file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeOdsToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(odsFile.path)}.xlsx';
+
+        _debugLog('✅ ODS successfully converted to Excel!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OdsToExcel',
+          fileExtension: 'xlsx',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert ODS to Excel: $e');
+    }
+  }
+
+  // Convert ODS to PDF
+  Future<ImageToPdfResult?> convertOdsToPdf(
+    File odsFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!odsFile.existsSync()) {
+        throw Exception('ODS file does not exist');
+      }
+      final ext = extension(odsFile.path).toLowerCase();
+      if (ext != '.ods') {
+        throw Exception('Only .ods files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        odsFile.path,
+        filename: basename(odsFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading ODS file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeOdsToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(odsFile.path)}.pdf';
+
+        _debugLog('✅ ODS successfully converted to PDF!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'OdsToPdf',
+          fileExtension: 'pdf',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert ODS to PDF: $e');
+    }
+  }
+
+
+
 
 
   // Convert BSON to CSV
@@ -5227,6 +5414,429 @@ async def download_file(filename: str):
       return null;
     } catch (e) {
       throw Exception('Failed to convert BSON to CSV: $e');
+    }
+  }
+
+  // Convert BSON to Excel
+  Future<ImageToPdfResult?> convertBsonToExcel(
+    File bsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!bsonFile.existsSync()) {
+        throw Exception('BSON file does not exist');
+      }
+      final ext = extension(bsonFile.path).toLowerCase();
+      if (ext != '.bson') {
+        throw Exception('Only .bson files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        bsonFile.path,
+        filename: basename(bsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading BSON file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeBsonToExcelEndpoint,
+        data: formData,
+      );
+
+      // Office endpoints usually strictly match statusCode 200 and return download_url directly
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(bsonFile.path)}.xlsx';
+
+        _debugLog('✅ BSON successfully converted to Excel!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'BsonToExcel',
+          fileExtension: 'xlsx',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert BSON to Excel: $e');
+    }
+  }
+
+
+  // Convert Json Objects to Excel
+  Future<ImageToPdfResult?> convertJsonObjectsToExcel(
+    File jsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
+        throw Exception('Only .json files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JSON objects file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeJsonObjectsToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(jsonFile.path)}.xlsx';
+
+        _debugLog('✅ JSON objects successfully converted to Excel!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JsonObjectsToExcel',
+          fileExtension: 'xlsx',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON objects to Excel: $e');
+    }
+  }
+
+  // Convert SRT to Excel
+  Future<ImageToPdfResult?> convertSrtToExcel(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for Excel conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeSrtToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(srtFile.path)}.xlsx';
+
+        _debugLog('✅ SRT successfully converted to Excel!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtToExcel',
+          fileExtension: 'xlsx',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to Excel: $e');
+    }
+  }
+
+
+  // Convert SRT to XLS
+  Future<ImageToPdfResult?> convertSrtToXls(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for XLS conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeSrtToXlsEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(srtFile.path)}.xls';
+
+        _debugLog('✅ SRT successfully converted to XLS!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtToXls',
+          fileExtension: 'xls',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to XLS: $e');
+    }
+  }
+
+  // Convert SRT to XLSX
+  Future<ImageToPdfResult?> convertSrtToXlsx(
+    File srtFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!srtFile.existsSync()) {
+        throw Exception('SRT file does not exist');
+      }
+      final ext = extension(srtFile.path).toLowerCase();
+      if (ext != '.srt') {
+        throw Exception('Only .srt files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        srtFile.path,
+        filename: basename(srtFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading SRT file for XLSX conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeSrtToXlsxEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(srtFile.path)}.xlsx';
+
+        _debugLog('✅ SRT successfully converted to XLSX!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'SrtToXlsx',
+          fileExtension: 'xlsx',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert SRT to XLSX: $e');
+    }
+  }
+
+  // Convert XLS to SRT
+  Future<ImageToPdfResult?> convertXlsToSrt(
+    File xlsFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xlsFile.existsSync()) {
+        throw Exception('XLS file does not exist');
+      }
+      final ext = extension(xlsFile.path).toLowerCase();
+      if (ext != '.xls') {
+        throw Exception('Only .xls files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xlsFile.path,
+        filename: basename(xlsFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XLS file for SRT conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeXlsToSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(xlsFile.path)}.srt';
+
+        _debugLog('✅ XLS successfully converted to SRT!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'XlsToSrt',
+          fileExtension: 'srt',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert XLS to SRT: $e');
+    }
+  }
+
+  // Convert XLSX to SRT
+  Future<ImageToPdfResult?> convertXlsxToSrt(
+    File xlsxFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xlsxFile.existsSync()) {
+        throw Exception('XLSX file does not exist');
+      }
+      final ext = extension(xlsxFile.path).toLowerCase();
+      if (ext != '.xlsx') {
+        throw Exception('Only .xlsx files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xlsxFile.path,
+        filename: basename(xlsxFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XLSX file for SRT conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.officeXlsxToSrtEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(xlsxFile.path)}.srt';
+
+        _debugLog('✅ XLSX successfully converted to SRT!');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'XlsxToSrt',
+          fileExtension: 'srt',
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert XLSX to SRT: $e');
     }
   }
 
