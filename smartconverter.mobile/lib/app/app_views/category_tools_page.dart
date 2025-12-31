@@ -70,6 +70,10 @@ import 'conversions/office_documents/excel_to_json_page.dart';
 import 'conversions/office_documents/json_objects_to_excel_page.dart';
 import 'conversions/office_documents/srt_to_excel_page.dart';
 import 'conversions/office_documents/excel_to_srt_page.dart';
+import 'conversions/office_documents/srt_to_xlsx_page.dart';
+import 'conversions/office_documents/srt_to_xls_page.dart';
+import 'conversions/office_documents/xlsx_to_srt_page.dart';
+import 'conversions/office_documents/xls_to_srt_page.dart';
 // Website pages
 import 'conversions/website/website_to_pdf_page.dart';
 import 'conversions/website/html_to_pdf_page.dart';
@@ -413,6 +417,14 @@ class CategoryToolsPage extends StatefulWidget {
           return const SrtToExcelOfficePage();
         case 'Convert Excel to SRT':
           return const ExcelToSrtOfficePage();
+        case 'Convert SRT to XLSX':
+          return const SrtToXlsxOfficePage();
+        case 'Convert SRT to XLS':
+          return const SrtToXlsOfficePage();
+        case 'Convert XLSX to SRT':
+          return const XlsxToSrtOfficePage();
+        case 'Convert XLS to SRT':
+          return const XlsToSrtOfficePage();
       }
     }
 
