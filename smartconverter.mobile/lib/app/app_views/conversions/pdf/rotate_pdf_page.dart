@@ -1,13 +1,4 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import '../../../app_constants/app_colors.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/ad_helper.dart';
+import '../../../app_modules/imports_module.dart';
 
 class RotatePdfPage extends StatefulWidget {
   const RotatePdfPage({super.key});
@@ -29,7 +20,6 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
   bool _isSaving = false;
   int _rotation = 90;
 
-  @override
   @override
   void initState() {
     super.initState();
@@ -61,7 +51,7 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
       _selectedFile = file;
       _resultFile = null;
       _savedFilePath = null;
-      _statusMessage = 'PDF selected: ${p.basename(file.path)}';
+      _statusMessage = 'PDF selected: ${basename(file.path)}';
       resetAdStatus(file.path);
     });
   }
@@ -112,11 +102,11 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getRotatePdfDirectory();
-      String targetFileName = p.basename(res.path);
+      String targetFileName = basename(res.path);
       File destinationFile = File('${dir.path}/$targetFileName');
       if (await destinationFile.exists()) {
         final fallback = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
+          basenameWithoutExtension(targetFileName),
           'pdf',
         );
         targetFileName = fallback;
@@ -149,6 +139,26 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
     await Share.shareXFiles([XFile(f.path)], text: 'Rotated PDF');
   }
 
+  void _reset() {
+    setState(() {
+      _selectedFile = null;
+      _resultFile = null;
+      _savedFilePath = null;
+      _statusMessage = 'Select a PDF file to begin.';
+      _fileNameController.clear();
+      resetAdStatus(null);
+    });
+  }
+
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,10 +167,7 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Rotate PDF', style: TextStyle(color: AppColors.textPrimary)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -168,22 +175,48 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                const ConversionHeaderCardWidget(
+                  title: 'Rotate PDF',
+                  description: 'Rotate your PDF pages to the desired orientation.',
+                  iconTarget: Icons.rotate_right,
+                  iconSource: Icons.picture_as_pdf,
+                ),
                 const SizedBox(height: 20),
-                _buildActionButtons(),
+                ConversionActionButtonWidget(
+                  onPickFile: _pickPdfFile,
+                  isFileSelected: _selectedFile != null,
+                  isConverting: _isProcessing,
+                  onReset: _reset,
+                  buttonText: 'Select PDF File',
+                ),
                 const SizedBox(height: 16),
-                _buildSelectedFileCard(),
+                if (_selectedFile != null) ...[
+                  ConversionSelectedFileCardWidget(
+                    fileName: basename(_selectedFile!.path),
+                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileIcon: Icons.picture_as_pdf,
+                    onRemove: _reset,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildOptionsCard(),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: _rotatePdf,
+                    isConverting: _isProcessing,
+                    isEnabled: true,
+                    buttonText: 'Rotate PDF',
+                  ),
+                ],
                 const SizedBox(height: 16),
-                _buildOptionsCard(),
-                const SizedBox(height: 20),
-                _buildConvertButton(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(),
+                ConversionStatusWidget(
+                  statusMessage: _statusMessage,
+                  isConverting: _isProcessing,
+                  conversionResult: null,
+                ),
                 if (_resultFile != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
+                   _savedFilePath != null 
                     ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareResult,
@@ -199,118 +232,7 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.rotate_right_outlined,
-              color: AppColors.textPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Rotate PDF',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Rotate your PDF pages to the desired orientation.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isProcessing ? null : _pickPdfFile,
-            icon: const Icon(Icons.file_open_outlined),
-            label: Text(
-              _selectedFile == null ? 'Select PDF File' : 'Change File',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFile != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : () {
-                setState(() {
-                  _selectedFile = null;
-                  _resultFile = null;
-                  _savedFilePath = null;
-                  _statusMessage = 'Select a PDF file to begin.';
-                  _fileNameController.clear();
-                  resetAdStatus(null);
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-
+  Widget _buildOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -318,179 +240,62 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.picture_as_pdf,
-              color: AppColors.primaryBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.basename(_selectedFile!.path),
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Rotation:',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatBytes(_selectedFile!.lengthSync()),
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+                  SizedBox(
+                    width: constraints.maxWidth * 0.6,
+                    child: DropdownButtonFormField<int>(
+                      value: _rotation,
+                      decoration: InputDecoration(
+                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                         filled: true,
+                         fillColor: AppColors.backgroundSurface,
+                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      dropdownColor: AppColors.backgroundCard,
+                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textPrimary),
+                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                      items: const [
+                        DropdownMenuItem(value: 90, child: Text('90° CW')),
+                        DropdownMenuItem(value: 180, child: Text('180°')),
+                        DropdownMenuItem(value: 270, child: Text('270° CW (90° CCW)')),
+                      ],
+                      onChanged: _isProcessing
+                          ? null
+                          : (val) {
+                              if (val != null) setState(() => _rotation = val);
+                            },
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOptionsCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Rotation Angle:',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              DropdownButton<int>(
-                value: _rotation,
-                dropdownColor: AppColors.backgroundSurface,
-                underline: const SizedBox(),
-                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textPrimary),
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-                items: const [
-                  DropdownMenuItem(value: 90, child: Text('90° CW')),
-                  DropdownMenuItem(value: 180, child: Text('180°')),
-                  DropdownMenuItem(value: 270, child: Text('270° CW (90° CCW)')),
                 ],
-                onChanged: _isProcessing
-                    ? null
-                    : (val) {
-                        if (val != null) setState(() => _rotation = val);
-                      },
-              ),
-            ],
+              );
+            }
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _fileNameController,
-          decoration: InputDecoration(
-            labelText: 'Output file name (Optional)',
-            hintText: 'Enter custom name',
-            prefixIcon: const Icon(Icons.edit_outlined),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            filled: true,
-            fillColor: AppColors.backgroundSurface,
-          ),
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConvertButton() {
-     final bool canProceed = _selectedFile != null && !_isProcessing;
-    
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canProceed ? _rotatePdf : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 4,
-        ),
-        child: _isProcessing
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
-                ),
-              )
-            : const Text(
-                'Rotate PDF',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-      ),
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isProcessing
-                ? Icons.hourglass_empty
-                : _resultFile != null
-                ? Icons.check_circle
-                : Icons.info_outline,
-            color: _isProcessing
-                ? AppColors.warning
-                : _resultFile != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _isProcessing
-                    ? AppColors.warning
-                    : _resultFile != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontSize: 13,
-              ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _fileNameController,
+            decoration: InputDecoration(
+              labelText: 'Output file name (Optional)',
+              hintText: 'Enter custom name',
+              prefixIcon: const Icon(Icons.edit_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.backgroundSurface,
             ),
+            style: const TextStyle(color: AppColors.textPrimary),
           ),
         ],
       ),
@@ -544,7 +349,7 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      p.basename(res.path),
+                      basename(res.path),
                       style: TextStyle(
                         color: AppColors.textPrimary.withOpacity(0.8),
                         fontSize: 12,
@@ -574,14 +379,11 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
                           ),
                         )
                       : const Icon(Icons.save_outlined, size: 18),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Save File', style: TextStyle(fontSize: 14)),
-                  ),
+                  label: const Text('Save File'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.backgroundSurface,
                     foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -595,11 +397,11 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
                 child: ElevatedButton.icon(
                   onPressed: _shareResult,
                   icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share', style: TextStyle(fontSize: 14)),
+                  label: const Text('Share'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.backgroundSurface,
                     foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -612,12 +414,5 @@ class _RotatePdfPageState extends State<RotatePdfPage> with AdHelper {
         ],
       ),
     );
-  }
-  
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int i = (bytes.bitLength - 1) ~/ 10;
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 }

@@ -2,7 +2,7 @@ import '../app_modules/imports_module.dart';
 
 class ConversionModel {
   File? selectedFile;
-  ImageToPdfResult? conversionResult;
+  dynamic conversionResult;
   bool isConverting = false;
   bool isSaving = false;
   bool fileNameEdited = false;

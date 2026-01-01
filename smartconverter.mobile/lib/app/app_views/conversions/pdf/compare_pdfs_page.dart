@@ -1,15 +1,4 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-
-import '../../../app_utils/ad_helper.dart';
-import '../../../app_constants/app_colors.dart';
-import '../../../app_services/admob_service.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
+import '../../../app_modules/imports_module.dart';
 
 class ComparePdfsPage extends StatefulWidget {
   const ComparePdfsPage({super.key});
@@ -19,7 +8,6 @@ class ComparePdfsPage extends StatefulWidget {
 
 class _ComparePdfsPageState extends State<ComparePdfsPage> with AdHelper {
   final ConversionService _service = ConversionService();
-  final AdMobService _admobService = AdMobService();
   final TextEditingController _fileNameController = TextEditingController();
   File? _file1;
   File? _file2;
@@ -119,11 +107,11 @@ class _ComparePdfsPageState extends State<ComparePdfsPage> with AdHelper {
     setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getComparePdfDirectory();
-      String targetFileName = p.basename(res.path);
+      String targetFileName = basename(res.path);
       File destinationFile = File('${dir.path}/$targetFileName');
       if (await destinationFile.exists()) {
         final fallback = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
+          basenameWithoutExtension(targetFileName),
           'txt',
         );
         targetFileName = fallback;
@@ -183,23 +171,36 @@ class _ComparePdfsPageState extends State<ComparePdfsPage> with AdHelper {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                const ConversionHeaderCardWidget(
+                  title: 'Compare PDFs',
+                  description: 'Upload two PDF files to compare their differences and generate a detailed report.',
+                  iconTarget: Icons.compare_arrows,
+                  iconSource: Icons.compare_arrows,
+                ),
                 const SizedBox(height: 20),
                 _buildPickerCard(),
                 const SizedBox(height: 16),
-                _buildOptionsCard(),
-                const SizedBox(height: 16),
-                _buildCompareButton(),
+                if (_file1 != null && _file2 != null) ...[
+                  _buildOptionsCard(),
+                  const SizedBox(height: 16),
+                  _buildCompareButton(),
+                ],
                 const SizedBox(height: 16),
                 _buildStatusMessage(),
                 if (_resultFile != null) ...[
                    const SizedBox(height: 20),
-                   _savedFilePath != null
-                     ? ConversionResultCardWidget(
+                   if (_savedFilePath == null)
+                     ConversionFileSaveCardWidget(
+                       title: 'Comparison Ready',
+                       fileName: basename(_resultFile!.path),
+                       isSaving: _isSaving,
+                       onSave: _saveResult,
+                     )
+                   else
+                     ConversionResultCardWidget(
                          savedFilePath: _savedFilePath!,
                          onShare: _shareResult,
-                       )
-                     : _buildResultCard(),
+                       ),
                 ],
               ],
             ),
@@ -210,67 +211,9 @@ class _ComparePdfsPageState extends State<ComparePdfsPage> with AdHelper {
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.compare_arrows,
-              color: AppColors.textPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Compare PDFs',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Upload two PDF files to compare their differences and generate a detailed report.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPickerCard() {
-    final name1 = _file1 != null ? p.basename(_file1!.path) : 'No file chosen';
-    final name2 = _file2 != null ? p.basename(_file2!.path) : 'No file chosen';
+    final name1 = _file1 != null ? basename(_file1!.path) : 'No file chosen';
+    final name2 = _file2 != null ? basename(_file2!.path) : 'No file chosen';
     
     return Column(
       children: [
@@ -457,103 +400,4 @@ class _ComparePdfsPageState extends State<ComparePdfsPage> with AdHelper {
       ),
     );
   }
-
-  Widget _buildResultCard() {
-    final res = _resultFile;
-    if (res == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ready to Save',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      p.basename(res.path),
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : _saveResult,
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.textPrimary,
-                        ),
-                      ),
-                    )
-                  : const Icon(Icons.save_outlined, size: 18),
-              label: const Text(
-                'Save Report',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.backgroundSurface,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
-

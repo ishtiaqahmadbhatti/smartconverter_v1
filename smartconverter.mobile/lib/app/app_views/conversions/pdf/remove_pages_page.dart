@@ -1,13 +1,4 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import '../../../app_constants/app_colors.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/ad_helper.dart';
+import '../../../app_modules/imports_module.dart';
 
 class RemovePagesPage extends StatefulWidget {
   const RemovePagesPage({super.key});
@@ -61,12 +52,13 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
       _selectedFile = file;
       _resultFile = null;
       _savedFilePath = null;
-      _statusMessage = 'PDF selected: ${p.basename(file.path)}';
+      _statusMessage = 'PDF selected: ${basename(file.path)}';
       resetAdStatus(file.path);
     });
   }
 
   List<int> _parseRanges(String input) {
+    // Basic logic to parse '1, 3-5' etc.
     final tokens = input.split(RegExp(r'[\,\s]+')).where((t) => t.trim().isNotEmpty).toList();
     final pages = <int>[];
     for (final token in tokens) {
@@ -96,19 +88,22 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
     if (file == null) return;
     final rangesText = _rangesController.text.trim();
     if (rangesText.isEmpty) {
-      setState(() => _statusMessage = 'Enter pages to remove.');
+      if (mounted) setState(() => _statusMessage = 'Enter pages to remove.');
       return;
     }
 
     final adWatched = await showRewardedAdGate(toolName: 'Remove Pages');
     if (!adWatched) return;
 
-    setState(() {
-      _isProcessing = true;
-      _statusMessage = 'Removing pages…';
-      _resultFile = null;
-      _savedFilePath = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isProcessing = true;
+        _statusMessage = 'Removing pages…';
+        _resultFile = null;
+        _savedFilePath = null;
+      });
+    }
+
     try {
       final pages = _parseRanges(rangesText);
       final name = _fileNameController.text.trim();
@@ -136,14 +131,14 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
     
     await showInterstitialAd();
 
-    setState(() => _isSaving = true);
+    if (mounted) setState(() => _isSaving = true);
     try {
       final dir = await FileManager.getRemovePagesDirectory();
-      String targetFileName = p.basename(res.path);
+      String targetFileName = basename(res.path);
       File destinationFile = File('${dir.path}/$targetFileName');
       if (await destinationFile.exists()) {
         final fallback = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
+          basenameWithoutExtension(targetFileName),
           'pdf',
         );
         targetFileName = fallback;
@@ -176,6 +171,27 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
     await Share.shareXFiles([XFile(f.path)], text: 'Modified PDF');
   }
 
+  void _reset() {
+    setState(() {
+      _selectedFile = null;
+      _resultFile = null;
+      _savedFilePath = null;
+      _statusMessage = 'Select a PDF file to begin.';
+      _rangesController.clear();
+      _fileNameController.clear();
+      resetAdStatus(null);
+    });
+  }
+
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -184,10 +200,7 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Remove Pages', style: TextStyle(color: AppColors.textPrimary)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -195,22 +208,48 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                const ConversionHeaderCardWidget(
+                  title: 'Remove PDF Pages',
+                  description: 'Delete specific pages from your PDF file easily.',
+                  iconTarget: Icons.delete_sweep,
+                  iconSource: Icons.picture_as_pdf,
+                ),
                 const SizedBox(height: 20),
-                _buildActionButtons(),
+                ConversionActionButtonWidget(
+                  onPickFile: _pickPdfFile,
+                  isFileSelected: _selectedFile != null,
+                  isConverting: _isProcessing,
+                  onReset: _reset,
+                  buttonText: 'Select PDF File',
+                ),
                 const SizedBox(height: 16),
-                _buildSelectedFileCard(),
+                if (_selectedFile != null) ...[
+                  ConversionSelectedFileCardWidget(
+                    fileName: basename(_selectedFile!.path),
+                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileIcon: Icons.picture_as_pdf,
+                    onRemove: _reset,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildOptionsCard(),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: _removePages,
+                    isConverting: _isProcessing,
+                    isEnabled: true,
+                    buttonText: 'Remove Pages',
+                  ),
+                ],
                 const SizedBox(height: 16),
-                _buildOptionsCard(),
-                const SizedBox(height: 20),
-                _buildConvertButton(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(),
+                ConversionStatusWidget(
+                  statusMessage: _statusMessage,
+                  isConverting: _isProcessing,
+                  conversionResult: null,
+                ),
                 if (_resultFile != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
+                   _savedFilePath != null 
                     ? ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareResult,
@@ -226,119 +265,7 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.delete_sweep_outlined,
-              color: AppColors.textPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Remove PDF Pages',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Delete specific pages from your PDF file easily.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isProcessing ? null : _pickPdfFile,
-            icon: const Icon(Icons.file_open_outlined),
-            label: Text(
-              _selectedFile == null ? 'Select PDF File' : 'Change File',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFile != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : () {
-                setState(() {
-                  _selectedFile = null;
-                  _resultFile = null;
-                  _savedFilePath = null;
-                  _statusMessage = 'Select a PDF file to begin.';
-                  _rangesController.clear();
-                  _fileNameController.clear();
-                  resetAdStatus(null);
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-
+  Widget _buildOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -346,154 +273,33 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+          TextField(
+            controller: _rangesController,
+            decoration: InputDecoration(
+              labelText: 'Pages to remove',
+              hintText: 'e.g. 1, 3-5',
+              prefixIcon: const Icon(Icons.layers_clear),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.backgroundSurface,
             ),
-            child: const Icon(
-              Icons.picture_as_pdf,
-              color: AppColors.primaryBlue,
-              size: 24,
+            style: const TextStyle(color: AppColors.textPrimary),
+            keyboardType: TextInputType.datetime,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _fileNameController,
+            decoration: InputDecoration(
+              labelText: 'Output file name (Optional)',
+              hintText: 'Enter custom name',
+              prefixIcon: const Icon(Icons.edit_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.backgroundSurface,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.basename(_selectedFile!.path),
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatBytes(_selectedFile!.lengthSync()),
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOptionsCard() {
-    if (_selectedFile == null) return const SizedBox.shrink();
-
-    return Column(
-      children: [
-        TextField(
-          controller: _rangesController,
-          decoration: InputDecoration(
-            labelText: 'Pages to remove (e.g. 1, 3-5)',
-            hintText: 'e.g., 1-5,7,9-12',
-            prefixIcon: const Icon(Icons.layers_clear_outlined),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            filled: true,
-            fillColor: AppColors.backgroundSurface,
-          ),
-          style: const TextStyle(color: AppColors.textPrimary),
-          keyboardType: TextInputType.datetime, // Numeric + symbols
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _fileNameController,
-          decoration: InputDecoration(
-            labelText: 'Output file name (Optional)',
-            hintText: 'Enter custom name',
-            prefixIcon: const Icon(Icons.edit_outlined),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            filled: true,
-            fillColor: AppColors.backgroundSurface,
-          ),
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConvertButton() {
-     final bool canProceed = _selectedFile != null && !_isProcessing;
-    
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canProceed ? _removePages : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 4,
-        ),
-        child: _isProcessing
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
-                ),
-              )
-            : const Text(
-                'Remove Pages',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-      ),
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isProcessing
-                ? Icons.hourglass_empty
-                : _resultFile != null
-                ? Icons.check_circle
-                : Icons.info_outline,
-            color: _isProcessing
-                ? AppColors.warning
-                : _resultFile != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _isProcessing
-                    ? AppColors.warning
-                    : _resultFile != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontSize: 13,
-              ),
-            ),
+            style: const TextStyle(color: AppColors.textPrimary),
           ),
         ],
       ),
@@ -504,7 +310,8 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
     final res = _resultFile!;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      // Standard result styling used in previous method
+       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -547,7 +354,7 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      p.basename(res.path),
+                      basename(res.path),
                       style: TextStyle(
                         color: AppColors.textPrimary.withOpacity(0.8),
                         fontSize: 12,
@@ -577,14 +384,11 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
                           ),
                         )
                       : const Icon(Icons.save_outlined, size: 18),
-                  label: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Save File', style: TextStyle(fontSize: 14)),
-                  ),
+                  label: const Text('Save File'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.backgroundSurface,
                     foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -598,11 +402,11 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
                 child: ElevatedButton.icon(
                   onPressed: _shareResult,
                   icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share', style: TextStyle(fontSize: 14)),
+                  label: const Text('Share'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.backgroundSurface,
                     foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -615,15 +419,5 @@ class _RemovePagesPageState extends State<RemovePagesPage> with AdHelper {
         ],
       ),
     );
-  }
-  
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int i = (bytes.bitLength - 1) ~/ 10; // approximate log2
-    // more precise
-    if (bytes < 1024) return '$bytes B';
-    // ... basic implementation for now
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 }

@@ -5,5 +5,5 @@ class AiConvertPdfToJsonPage extends StatelessWidget {
   const AiConvertPdfToJsonPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const AiPdfToJsonPage(categoryId: 'json_conversion');
+  Widget build(BuildContext context) => const AiPdfToJsonPage();
 }

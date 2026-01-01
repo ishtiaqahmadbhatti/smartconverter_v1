@@ -5,42 +5,46 @@ class FileManager {
   static const String _smartConverterFolder = 'SmartConverter';
 
   // Tool-specific folder names
-  static const String _addPageNumbersFolder = 'AddPageNumbers';
-  static const String _splitPdfFolder = 'SplitPDF';
-  static const String _compressPdfFolder = 'CompressPDF';
-  static const String _pdfToWordFolder = 'PdfToWord';
-  static const String _wordToPdfFolder = 'WordToPdf';
-  static const String _imageToPdfFolder = 'ImageToPdf';
-  static const String _pdfToImageFolder = 'PdfToImage';
-  static const String _rotatePdfFolder = 'RotatePDF';
-  static const String _protectPdfFolder = 'ProtectPDF';
-  static const String _unlockPdfFolder = 'UnlockPDF';
-  static const String _watermarkPdfFolder = 'WatermarkPDF';
-  static const String _pageNumberPdfFolder = 'PageNumberPDF';
-  static const String _removePagesFolder = 'RemovePages';
-  static const String _extractPagesFolder = 'ExtractPages';
-  static const String _pdfConversionsFolder = 'PDFConversions';
-  static const String _cropPdfFolder = 'CropPDF';
-  static const String _repairPdfFolder = 'RepairPDF';
-  static const String _comparePdfFolder = 'ComparePDF';
-  static const String _metadataPdfFolder = 'MetadataPDF';
-  static const String _mergedPdfsSubFolder = 'merged_pdfs';
-  static const String _markdownToPdfSubFolder = 'markdown_to_pdf';
-  static const String _htmlToPdfSubFolder = 'html_to_pdf';
-  static const String _jpgToPdfSubFolder = 'jpg_to_pdf';
-  static const String _pngToPdfSubFolder = 'png_to_pdf';
-  static const String _pdfToHtmlSubFolder = 'pdf_to_html';
-  static const String _pdfToMarkdownSubFolder = 'pdf_to_markdown';
-  static const String _pdfToJsonSubFolder = 'pdf_to_json';
-  static const String _pdfToCsvSubFolder = 'pdf_to_csv';
-  static const String _pdfToExcelSubFolder = 'pdf_to_excel';
-  static const String _pdfToTextSubFolder = 'pdf_to_text';
-  static const String _pdfToJpgImagesSubFolder = 'pdf_to_jpg';
-  static const String _pdfToPngImagesSubFolder = 'pdf_to_png';
-  static const String _pdfToTiffImagesSubFolder = 'pdf_to_tiff';
-  static const String _pdfToSvgImagesSubFolder = 'pdf_to_svg';
-  static const String _splitPdfsSubFolder = 'split_pdfs';
-  static const String _compressedPdfsSubFolder = 'compressed_pdfs';
+  static const String _addPageNumbersFolder = 'add-page-numbers';
+  static const String _splitPdfFolder = 'split-pdf';
+  static const String _compressPdfFolder = 'compress-pdf';
+  static const String _pdfToWordFolder = 'pdf-to-word';
+  static const String _wordToPdfFolder = 'word-to-pdf';
+  static const String _imageToPdfFolder = 'image-to-pdf';
+  static const String _pdfToImageFolder = 'pdf-to-image';
+  static const String _rotatePdfFolder = 'rotate-pdf';
+  static const String _protectPdfFolder = 'protect-pdf';
+  static const String _unlockPdfFolder = 'unlock-pdf';
+  static const String _watermarkPdfFolder = 'watermark-pdf';
+  static const String _pageNumberPdfFolder = 'page-number-pdf';
+  static const String _removePagesFolder = 'remove-pages';
+  static const String _extractPagesFolder = 'extract-pages';
+  static const String _pdfConversionsFolder = 'PDFConversion';
+  static const String _cropPdfFolder = 'crop-pdf';
+  static const String _repairPdfFolder = 'repair-pdf';
+  static const String _comparePdfFolder = 'compare-pdfs';
+  static const String _metadataPdfFolder = 'metadata-pdf';
+  static const String _mergedPdfsSubFolder = 'merged-pdfs';
+  static const String _markdownToPdfSubFolder = 'markdown-to-pdf';
+  static const String _htmlToPdfSubFolder = 'html-to-pdf';
+  static const String _jpgToPdfSubFolder = 'jpg-to-pdf';
+  static const String _pngToPdfSubFolder = 'png-to-pdf';
+  static const String _pdfToHtmlSubFolder = 'pdf-to-html';
+  static const String _pdfToMarkdownSubFolder = 'pdf-to-markdown';
+  static const String _pdfToJsonSubFolder = 'pdf-to-json';
+  static const String _pdfToCsvSubFolder = 'pdf-to-csv';
+  static const String _pdfToWordSubFolder = 'pdf-to-word';
+  static const String _pdfToExcelSubFolder = 'pdf-to-excel';
+  static const String _pdfToTextSubFolder = 'pdf-to-text';
+  static const String _pdfToJpgImagesSubFolder = 'pdf-to-jpg';
+  static const String _pdfToPngImagesSubFolder = 'pdf-to-png';
+  static const String _pdfToTiffImagesSubFolder = 'pdf-to-tiff';
+  static const String _pdfToSvgImagesSubFolder = 'pdf-to-svg';
+  static const String _splitPdfsSubFolder = 'split-pdfs';
+  static const String _compressedPdfsSubFolder = 'compressed-pdfs';
+  static const String _pdfExcelToXpsSubFolder = 'excel-to-xps';
+  static const String _pdfOdsToPdfSubFolder = 'ods-to-pdf';
+  static const String _pdfOxpsToPdfSubFolder = 'oxps-to-pdf';
   static const String _videoConversionsFolder = 'VideoConversions';
   static const String _audioConversionsFolder = 'AudioConversions';
   static const String _videoToAudioFolder = 'video-to-audio';
@@ -620,32 +624,66 @@ class FileManager {
 
   /// Get directory for Split PDF tool
   static Future<Directory> getSplitPdfDirectory() async {
-    return await getToolDirectory(_splitPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_splitPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for Compress PDF tool
   static Future<Directory> getCompressPdfDirectory() async {
-    return await getToolDirectory(_compressPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_compressPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for PDF to Word tool
   static Future<Directory> getPdfToWordDirectory() async {
-    return await getToolDirectory(_pdfToWordFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfToWordFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for Word to PDF tool
   static Future<Directory> getWordToPdfDirectory() async {
-    return await getToolDirectory(_wordToPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_wordToPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for Image to PDF tool
   static Future<Directory> getImageToPdfDirectory() async {
-    return await getToolDirectory(_imageToPdfFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_imageToPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for PDF to Image tool
   static Future<Directory> getPdfToImageDirectory() async {
-    return await getToolDirectory(_pdfToImageFolder);
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfToImageFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static const String _powerPointToPdfFolder = 'powerpoint-to-pdf';
+  static Future<Directory> getPowerPointToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_powerPointToPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static const String _excelToPdfFolder = 'excel-to-pdf';
+  static Future<Directory> getExcelToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_excelToPdfFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for Rotate PDF tool
@@ -1347,6 +1385,30 @@ class FileManager {
     return htmlToPdfDir;
   }
 
+  /// Get directory for Excel to XPS (PDF Category)
+  static Future<Directory> getPdfExcelToXpsDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfExcelToXpsSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for ODS to PDF (PDF Category)
+  static Future<Directory> getPdfOdsToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfOdsToPdfSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// Get directory for OXPS to PDF (PDF Category)
+  static Future<Directory> getOxpsToPdfDirectory() async {
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfOxpsToPdfSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
   /// Get directory for PDF to HTML outputs
   static Future<Directory> getPdfToHtmlDirectory() async {
     final pdfConversionsDir = await getPdfConversionsDirectory();
@@ -1373,7 +1435,10 @@ class FileManager {
 
   /// Get directory for PDF to JSON outputs (consolidated to JSONConversion)
   static Future<Directory> getPdfToJsonDirectory() async {
-    return await getJsonPdfToJsonDirectory();
+    final pdfConversionsDir = await getPdfConversionsDirectory();
+    final dir = Directory('${pdfConversionsDir.path}/$_pdfToJsonSubFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
   /// Get directory for PDF to CSV outputs
@@ -1387,6 +1452,9 @@ class FileManager {
     }
     return pdfToCsvDir;
   }
+
+  /// Get directory for PDF to Word outputs
+
 
   /// Get directory for PDF to Excel outputs
   static Future<Directory> getPdfToExcelDirectory() async {
@@ -1462,14 +1530,7 @@ class FileManager {
 
   /// Get directory for Image Conversions folder
   static Future<Directory> getImageConversionsDirectory() async {
-    final smartConverterDir = await getSmartConverterDirectory();
-    final imageConversionsDir = Directory(
-      '${smartConverterDir.path}/$_imageConversionsFolder',
-    );
-    if (!await imageConversionsDir.exists()) {
-      await imageConversionsDir.create(recursive: true);
-    }
-    return imageConversionsDir;
+    return getToolDirectory(_imageConversionsFolder);
   }
 
   /// Get directory for Image category subfolders

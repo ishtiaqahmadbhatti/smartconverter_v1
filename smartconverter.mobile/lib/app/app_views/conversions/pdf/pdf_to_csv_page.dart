@@ -1,13 +1,13 @@
 import '../../../app_modules/imports_module.dart';
 
-class PdfToSvgPage extends StatefulWidget {
-  const PdfToSvgPage({super.key});
+class PdfToCsvPage extends StatefulWidget {
+  const PdfToCsvPage({super.key});
 
   @override
-  State<PdfToSvgPage> createState() => _PdfToSvgPageState();
+  State<PdfToCsvPage> createState() => _PdfToCsvPageState();
 }
 
-class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMixin {
+class _PdfToCsvPageState extends State<PdfToCsvPage> with AdHelper, ConversionMixin {
   final ConversionModel _model = ConversionModel(statusMessage: 'Select a PDF file to begin.');
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
@@ -22,24 +22,24 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
   ConversionService get service => _service;
 
   @override
-  String get conversionToolName => 'PDF to SVG';
+  String get conversionToolName => 'PDF to CSV';
 
   @override
   String get fileTypeLabel => 'PDF';
 
   @override
-  String get targetExtension => 'svg';
+  String get targetExtension => 'csv';
 
   @override
   List<String> get allowedExtensions => ['pdf'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfToSvgImagesDirectory();
+  Future<Directory> get saveDirectory => FileManager.getPdfToCsvDirectory();
 
   @override
-  Future<dynamic> performConversion(File? file, String? outputName) {
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (file == null) throw Exception('File is null');
-    return service.convertPdfToSvg(file, outputFilename: outputName);
+    return service.convertPdfToCsv(file, outputFilename: outputName);
   }
 
   @override
@@ -48,7 +48,7 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         title: const Text(
-          'PDF to SVG',
+          'Convert PDF to CSV',
           style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -63,9 +63,9 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
             child: Column(
               children: [
                 const ConversionHeaderCardWidget(
-                  title: 'Convert PDF to SVG',
-                  description: 'Convert PDF pages into Scalable Vector Graphics (SVG).',
-                  iconTarget: Icons.photo_size_select_large,
+                  title: 'PDF to CSV',
+                  description: 'Convert PDF tables to CSV format.',
+                  iconTarget: Icons.table_chart,
                   iconSource: Icons.picture_as_pdf,
                 ),
                 const SizedBox(height: 20),
@@ -89,14 +89,14 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
                   ConversionFileNameFieldWidget(
                     controller: fileNameController,
                     suggestedName: model.suggestedBaseName,
-                    extensionLabel: '.svg extension is added automatically',
+                    extensionLabel: '.csv extension is added automatically',
                   ),
                   const SizedBox(height: 20),
                   ConversionConvertButtonWidget(
                     onConvert: convert,
                     isConverting: model.isConverting,
                     isEnabled: true,
-                    buttonText: 'Convert to SVG',
+                    buttonText: 'Convert to CSV',
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -112,6 +112,7 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV Ready',
                     )
                   else
                     ConversionResultCardWidget(

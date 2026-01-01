@@ -33,7 +33,7 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   String get shareSubject => 'Converted File: ${model.conversionResult?.fileName}';
   
   // The actual conversion action to perform
-  Future<ImageToPdfResult?> performConversion(File? file, String? outputName);
+  Future<dynamic> performConversion(File? file, String? outputName);
 
   void handleFileNameChange() {
     final trimmed = fileNameController.text.trim();
@@ -163,46 +163,90 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
     try {
       final directory = await saveDirectory;
 
-      String targetFileName;
-      if (fileNameController.text.trim().isNotEmpty) {
-        final customName = sanitizeBaseName(fileNameController.text.trim());
-        if (targetExtension != null) {
-          targetFileName = _ensureSpecificExtension(customName, targetExtension!);
-        } else {
-          targetFileName = _ensureResultExtension(customName, result.fileName);
-        }
+      if (result is PdfToImagesResult) {
+          // Handle PdfToImagesResult
+          // Save all files to the directory
+          final savedPaths = <String>[];
+          for (int i = 0; i < result.files.length; i++) {
+             final file = result.files[i];
+             final originalName = result.fileNames.length > i ? result.fileNames[i] : basename(file.path);
+             
+             // Fallback naming if unique needed or custom name logic
+             String targetName = originalName;
+             
+             // Check if file exists logic (simplified for batch)
+             File dest = File(join(directory.path, targetName));
+             if (await dest.exists()) {
+                 targetName = '${basenameWithoutExtension(targetName)}_${DateTime.now().millisecondsSinceEpoch}${extension(targetName)}';
+                 dest = File(join(directory.path, targetName));
+             }
+             
+             await file.copy(dest.path);
+             savedPaths.add(dest.path);
+          }
+          
+          if (!mounted) return;
+          setState(() => model.savedFilePath = savedPaths.isNotEmpty ? directory.path : null);
+          
+          await NotificationService.showFileSavedNotification(
+             fileName: '${savedPaths.length} images',
+             filePath: directory.path,
+          );
+          
+          if (mounted) {
+            setState(() {
+              model.statusMessage = 'Saved ${savedPaths.length} files successfully!';
+            });
+          }
+          
       } else {
-        targetFileName = result.fileName;
-      }
+        // Handle ImageToPdfResult or standard object with .file and .fileName
+          // Assume dynamic has .fileName and .file
+          // But dynamic access won't check existence. We assume standard structure.
+          final fileName = (result as dynamic).fileName;
+          final file = (result as dynamic).file as File;
 
-      File destinationFile = File(join(directory.path, targetFileName));
+          String targetFileName;
+          if (fileNameController.text.trim().isNotEmpty) {
+            final customName = sanitizeBaseName(fileNameController.text.trim());
+            if (targetExtension != null) {
+              targetFileName = _ensureSpecificExtension(customName, targetExtension!);
+            } else {
+              targetFileName = _ensureResultExtension(customName, fileName);
+            }
+          } else {
+            targetFileName = fileName;
+          }
 
-      if (await destinationFile.exists()) {
-        final ext = extension(targetFileName).replaceAll('.', '');
-        final fallbackName = FileManager.generateTimestampFilename(
-          basenameWithoutExtension(targetFileName),
-          ext.isNotEmpty ? ext : 'txt', 
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(join(directory.path, targetFileName));
-      }
+          File destinationFile = File(join(directory.path, targetFileName));
 
-      final savedFile = await result.file.copy(destinationFile.path);
+          if (await destinationFile.exists()) {
+            final ext = extension(targetFileName).replaceAll('.', '');
+            final fallbackName = FileManager.generateTimestampFilename(
+              basenameWithoutExtension(targetFileName),
+              ext.isNotEmpty ? ext : 'txt', 
+            );
+            targetFileName = fallbackName;
+            destinationFile = File(join(directory.path, targetFileName));
+          }
 
-      if (!mounted) return;
+          final savedFile = await file.copy(destinationFile.path);
 
-      setState(() => model.savedFilePath = savedFile.path);
+          if (!mounted) return;
 
-      // Trigger System Notification
-      await NotificationService.showFileSavedNotification(
-        fileName: targetFileName,
-        filePath: savedFile.path,
-      );
+          setState(() => model.savedFilePath = savedFile.path);
 
-      if (mounted) {
-        setState(() {
-          model.statusMessage = 'File saved successfully!';
-        });
+          // Trigger System Notification
+          await NotificationService.showFileSavedNotification(
+            fileName: targetFileName,
+            filePath: savedFile.path,
+          );
+
+          if (mounted) {
+            setState(() {
+              model.statusMessage = 'File saved successfully!';
+            });
+          }
       }
 
     } catch (e) {

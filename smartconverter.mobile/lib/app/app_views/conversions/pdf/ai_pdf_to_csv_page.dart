@@ -1,5 +1,4 @@
 import '../../../app_modules/imports_module.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
 
 class AiPdfToCsvPage extends StatefulWidget {
   const AiPdfToCsvPage({super.key});
@@ -86,18 +85,20 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper, Conversi
                     onRemove: resetForNewConversion,
                   ),
                 const SizedBox(height: 16),
-                ConversionFileNameFieldWidget(
-                  controller: fileNameController,
-                  suggestedName: model.suggestedBaseName,
-                  extensionLabel: '.csv extension is added automatically',
-                ),
-                const SizedBox(height: 20),
-                ConversionConvertButtonWidget(
-                  onConvert: convert,
-                  isConverting: model.isConverting,
-                  isEnabled: model.selectedFile != null,
-                  buttonText: 'Convert to CSV',
-                ),
+                if (model.selectedFile != null) ...[
+                  ConversionFileNameFieldWidget(
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
+                    extensionLabel: '.csv extension is added automatically',
+                  ),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to CSV',
+                  ),
+                ],
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
                   statusMessage: model.statusMessage,

@@ -44,7 +44,7 @@ import 'conversions/csv/srt_to_csv_page.dart';
 import 'conversions/csv/csv_to_srt_page.dart';
 // Office pages
 import 'conversions/office_documents/word_to_pdf_page.dart';
-import 'conversions/office_documents/pdf_to_word_page.dart';
+// import 'conversions/office_documents/pdf_to_word_page.dart'; // Deprecated
 import 'conversions/office_documents/excel_to_pdf_page.dart';
 import 'conversions/office_documents/powerpoint_to_pdf_page.dart';
 import 'conversions/office_documents/word_to_text_page.dart';
@@ -52,15 +52,15 @@ import 'conversions/office_documents/excel_to_csv_page.dart';
 import 'conversions/office_documents/excel_to_ods_page.dart';
 import 'conversions/office_documents/ods_to_excel_page.dart';
 import 'conversions/office_documents/bson_to_excel_page.dart';
-import 'conversions/office_documents/pdf_to_csv_page.dart';
-import 'conversions/office_documents/pdf_to_excel_page.dart';
+// import 'conversions/office_documents/pdf_to_csv_page.dart'; // Deprecated
+// import 'conversions/office_documents/pdf_to_excel_page.dart'; // Deprecated
 import 'conversions/office_documents/word_to_html_page.dart';
 import 'conversions/office_documents/powerpoint_to_html_page.dart';
 import 'conversions/office_documents/powerpoint_to_text_page.dart';
 import 'conversions/office_documents/excel_to_xps_page.dart';
 import 'conversions/office_documents/excel_to_html_page.dart';
 import 'conversions/office_documents/ods_to_csv_page.dart';
-import 'conversions/office_documents/ods_to_pdf_page.dart';
+// import 'conversions/office_documents/ods_to_pdf_page.dart'; // Deprecated
 import 'conversions/office_documents/csv_to_excel_page.dart';
 import 'conversions/office_documents/excel_to_xml_page.dart';
 import 'conversions/office_documents/xml_to_csv_page.dart';
@@ -77,7 +77,18 @@ import 'conversions/office_documents/xls_to_srt_page.dart';
 // Website pages
 import 'conversions/website/website_to_pdf_page.dart';
 import 'conversions/website/html_to_pdf_page.dart';
-import 'conversions/website/word_to_html_page.dart';
+import 'conversions/website/url_to_pdf_page.dart'; // Was not found previously but I will just append after last known import
+import 'conversions/pdf/pdf_to_word_page.dart';
+import 'conversions/pdf/pdf_to_csv_page.dart';
+import 'conversions/pdf/pdf_to_excel_page.dart';
+import 'conversions/pdf/pdf_to_excel_page.dart';
+import 'conversions/pdf/ods_to_pdf_page.dart';
+import 'conversions/pdf/excel_to_xps_page.dart';
+import 'conversions/pdf/word_to_pdf_page.dart';
+import 'conversions/pdf/powerpoint_to_pdf_page.dart';
+import 'conversions/pdf/excel_to_pdf_page.dart';
+import 'conversions/pdf/html_to_pdf_page.dart' as pdf_html_page;
+
 import 'conversions/website/powerpoint_to_html_page.dart';
 import 'conversions/website/markdown_to_html_page.dart';
 import 'conversions/website/website_to_jpg_page.dart';
@@ -166,11 +177,11 @@ import 'conversions/pdf/pdf_to_jpg_page.dart';
 import 'conversions/pdf/pdf_to_png_page.dart';
 import 'conversions/pdf/pdf_to_tiff_page.dart';
 import 'conversions/pdf/pdf_to_svg_page.dart';
-// import 'conversions/pdf/pdf_to_text_page.dart';
+import 'conversions/pdf/pdf_to_text_page.dart' as pdf_text_page;
 import 'conversions/pdf/pdf_to_html_page.dart';
 import 'conversions/pdf/markdown_to_pdf_page.dart';
-// import 'conversions/pdf/jpg_to_pdf_page.dart';
-// import 'conversions/pdf/png_to_pdf_page.dart';
+import 'conversions/pdf/jpg_to_pdf_page.dart' as pdf_jpg;
+import 'conversions/pdf/png_to_pdf_page.dart' as pdf_png;
 import 'conversions/pdf/merge_pdf_page.dart';
 import 'conversions/pdf/oxps_to_pdf_page.dart';
 import 'conversions/pdf/pdf_split_page.dart';
@@ -384,7 +395,7 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert OpenOffice Calc ODS to CSV':
           return const OdsToCsvOfficePage();
         case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfOfficePage();
+          return const OdsToPdfPage();
         case 'Convert OpenOffice Calc ODS to Excel':
           return const OdsToExcelOfficePage();
         case 'Convert CSV to Excel':
@@ -397,11 +408,11 @@ class CategoryToolsPage extends StatefulWidget {
           return const XmlToExcelOfficePage();
 
         case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
+          return const PdfToCsvPage();
         case 'Convert PDF to Excel':
-          return const PdfToExcelOfficePage();
+          return const PdfToExcelPage();
         case 'Convert PDF to Word':
-          return const PdfToWordOfficePage();
+          return const PdfToWordPage();
         case 'Convert JSON to Excel':
           return const JsonToExcelOfficePage();
         case 'Convert Excel to JSON':
@@ -456,7 +467,7 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Add Watermark':
           return const WatermarkPdfPage();
         case 'AI: Convert PDF to JSON':
-          return AiPdfToJsonPage(categoryId: categoryId);
+          return const AiPdfToJsonPage();
         case 'AI: Convert PDF to Markdown':
           return const AiPdfToMarkdownPage();
         case 'AI: Convert PDF to CSV':
@@ -464,31 +475,31 @@ class CategoryToolsPage extends StatefulWidget {
         case 'AI: Convert PDF to Excel':
           return const AiPdfToExcelPage();
         case 'Convert HTML to PDF':
-          return const HtmlToPdfPage();
+          return const pdf_html_page.HtmlToPdfPage();
         case 'Convert Word to PDF':
-          return const WordToPdfOfficePage();
+          return const WordToPdfPage();
         case 'Convert PowerPoint to PDF':
-          return const PowerPointToPdfOfficePage();
+          return const PowerPointToPdfPage();
         case 'Convert OXPS to PDF':
           return const OxpsToPdfPage();
         case 'Convert JPG to PDF':
-          return const JpgToPdfPage();
+          return const pdf_jpg.JpgToPdfPage();
         case 'Convert PNG to PDF':
-          return const PngToPdfPage();
+          return const pdf_png.PngToPdfPage();
         case 'Convert Markdown to PDF':
           return const MarkdownToPdfPage();
         case 'Convert Excel to PDF':
-          return const ExcelToPdfOfficePage();
+          return const ExcelToPdfPage();
         case 'Convert Excel to XPS':
-          return const ExcelToXpsOfficePage();
+          return const ExcelToXpsPage();
         case 'Convert OpenOffice Calc ODS to PDF':
-          return const OdsToPdfOfficePage();
+          return const OdsToPdfPage();
         case 'Convert PDF to CSV':
-          return const PdfToCsvOfficePage();
+          return const PdfToCsvPage();
         case 'Convert PDF to Excel':
-          return const PdfToExcelOfficePage();
+          return const PdfToExcelPage();
         case 'Convert PDF to Word':
-          return const PdfToWordOfficePage();
+          return const PdfToWordPage();
         case 'Convert PDF to JPG':
           return const PdfToJpgPage();
         case 'Convert PDF to PNG':
@@ -500,7 +511,7 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert PDF to HTML':
           return const PdfToHtmlPage();
         case 'Convert PDF to Text':
-          return const PdfToTextPage();
+          return const pdf_text_page.PdfToTextPage();
       }
     }
 
@@ -511,7 +522,7 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert HTML to PDF':
           return HtmlToPdfPage(categoryId: categoryId);
         case 'Convert Word to HTML':
-          return const WordToHtmlPage();
+          return const WordToHtmlOfficePage();
         case 'Convert PowerPoint to HTML':
           return const PowerPointToHtmlPage();
         case 'Convert Markdown to HTML':

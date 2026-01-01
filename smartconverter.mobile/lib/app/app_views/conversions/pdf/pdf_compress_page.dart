@@ -1,13 +1,4 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import '../../../app_constants/app_colors.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/ad_helper.dart';
+import '../../../app_modules/imports_module.dart';
 
 class PdfCompressPage extends StatefulWidget {
   const PdfCompressPage({super.key});
@@ -21,7 +12,6 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
   final TextEditingController _fileNameController = TextEditingController();
   final TextEditingController _targetPctController = TextEditingController();
   final TextEditingController _dpiController = TextEditingController();
-  // final AdMobService _admobService = AdMobService(); // Removed as AdHelper handles it
 
   File? _selectedFile;
   CompressPdfResult? _result;
@@ -54,13 +44,13 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
     final trimmed = _fileNameController.text.trim();
     final edited = trimmed.isNotEmpty;
     if (_fileNameEdited != edited) {
-      setState(() => _fileNameEdited = edited);
+      if (mounted) setState(() => _fileNameEdited = edited);
     }
   }
 
   Future<void> _loadTargetDirectoryPath() async {
     final dir = await FileManager.getCompressedPdfsDirectory();
-    setState(() => _targetDirectoryPath = dir.path);
+    if (mounted) setState(() => _targetDirectoryPath = dir.path);
   }
 
   Future<void> _pickPdfFile() async {
@@ -70,7 +60,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
         type: 'pdf',
       );
       if (file == null) {
-        setState(() => _statusMessage = 'No file selected.');
+        if (mounted) setState(() => _statusMessage = 'No file selected.');
         return;
       }
       setState(() {
@@ -103,7 +93,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
       });
       return;
     }
-    final base = p.basenameWithoutExtension(file.path);
+    final base = basenameWithoutExtension(file.path);
     final sanitized = _sanitizeBaseName(base.isNotEmpty ? base : 'document');
     setState(() {
       if (!_fileNameEdited) {
@@ -191,14 +181,14 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
     try {
       final directory = await FileManager.getCompressedPdfsDirectory();
       String targetFileName = res.fileName;
-      File destinationFile = File(p.join(directory.path, targetFileName));
+      File destinationFile = File(join(directory.path, targetFileName));
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
-          _sanitizeBaseName(p.basenameWithoutExtension(targetFileName)),
+          _sanitizeBaseName(basenameWithoutExtension(targetFileName)),
           'pdf',
         );
         targetFileName = fallbackName;
-        destinationFile = File(p.join(directory.path, targetFileName));
+        destinationFile = File(join(directory.path, targetFileName));
       }
       final savedFile = await res.file.copy(destinationFile.path);
       if (!mounted) return;
@@ -252,13 +242,31 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
     ], text: 'Compressed PDF: ${res.fileName}');
   }
 
+  void _reset() {
+    setState(() {
+      _selectedFile = null;
+      _result = null;
+      _savedFilePath = null;
+      _statusMessage = 'Select a PDF file to begin.';
+      _fileNameController.clear();
+      resetAdStatus(null);
+    });
+  }
+
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Compress PDF',
           style: TextStyle(
@@ -267,10 +275,9 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -278,15 +285,45 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPickerCard(),
-                const SizedBox(height: 12),
-                _buildOptionsCard(),
-                const SizedBox(height: 12),
-                _buildCompressButton(),
-                const SizedBox(height: 12),
-                _buildStatusMessage(),
+                const ConversionHeaderCardWidget(
+                  title: 'Compress PDF',
+                  description: 'Reduce PDF file size while maintaining quality.',
+                  iconTarget: Icons.compress,
+                  iconSource: Icons.picture_as_pdf,
+                ),
+                const SizedBox(height: 20),
+                ConversionActionButtonWidget(
+                  onPickFile: _pickPdfFile,
+                  isFileSelected: _selectedFile != null,
+                  isConverting: _isProcessing,
+                  onReset: _reset,
+                  buttonText: 'Select PDF File',
+                ),
+                const SizedBox(height: 16),
+                if (_selectedFile != null) ...[
+                  ConversionSelectedFileCardWidget(
+                    fileName: basename(_selectedFile!.path),
+                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileIcon: Icons.picture_as_pdf,
+                    onRemove: _reset,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildOptionsCard(),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: _compress,
+                    isConverting: _isProcessing,
+                    isEnabled: true,
+                    buttonText: 'Compress PDF',
+                  ),
+                ],
+                const SizedBox(height: 16),
+                ConversionStatusWidget(
+                  statusMessage: _statusMessage,
+                  isConverting: _isProcessing,
+                  conversionResult: null,
+                ),
                 if (_result != null) ...[
                   const SizedBox(height: 20),
                   _savedFilePath != null 
@@ -305,91 +342,14 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
     );
   }
 
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        _statusMessage,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-      ),
-    );
-  }
-
-  Widget _buildPickerCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.25),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Select PDF',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _selectedFile != null
-                      ? p.basename(_selectedFile!.path)
-                      : 'No file selected',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isProcessing ? null : _pickPdfFile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                ),
-                child: const Text(
-                  'Choose',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _targetDirectoryPath != null
-                ? 'Will save under: $_targetDirectoryPath'
-                : 'Will save under: Documents/SmartConverter/PDFConversions/compressed_pdfs',
-            style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
+        color: AppColors.backgroundSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primaryBlue.withOpacity(0.25),
-          width: 1,
+          color: AppColors.primaryBlue.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -403,49 +363,41 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _compressionLevel,
-                  items: const [
-                    DropdownMenuItem(value: 'low', child: Text('Low')),
-                    DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                    DropdownMenuItem(value: 'high', child: Text('High')),
-                  ],
-                  onChanged: _isProcessing
-                      ? null
-                      : (v) =>
-                            setState(() => _compressionLevel = v ?? 'medium'),
-                  decoration: const InputDecoration(
-                    labelText: 'Compression Level',
-                    labelStyle: TextStyle(color: AppColors.textSecondary),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.textTertiary),
-                    ),
-                  ),
-                  dropdownColor: AppColors.backgroundCard,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                ),
-              ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _compressionLevel,
+            items: const [
+              DropdownMenuItem(value: 'low', child: Text('Low')),
+              DropdownMenuItem(value: 'medium', child: Text('Medium')),
+              DropdownMenuItem(value: 'high', child: Text('High')),
             ],
+            onChanged: _isProcessing
+                ? null
+                : (v) =>
+                      setState(() => _compressionLevel = v ?? 'medium'),
+            decoration: InputDecoration(
+              labelText: 'Compression Level',
+              prefixIcon: const Icon(Icons.bar_chart),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.backgroundSurface,
+            ),
+            dropdownColor: AppColors.backgroundCard,
+            style: const TextStyle(color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _targetPctController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Target reduction %',
-                    hintText: 'e.g., 30',
-                    labelStyle: TextStyle(color: AppColors.textSecondary),
-                    hintStyle: TextStyle(color: AppColors.textTertiary),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.textTertiary),
-                    ),
+                  decoration: InputDecoration(
+                    labelText: 'Target %',
+                    hintText: 'e.g. 30',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: AppColors.backgroundSurface,
                   ),
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
@@ -455,54 +407,32 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
                 child: TextField(
                   controller: _dpiController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Max image DPI',
-                    hintText: 'e.g., 96 or 150',
-                    labelStyle: TextStyle(color: AppColors.textSecondary),
-                    hintStyle: TextStyle(color: AppColors.textTertiary),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.textTertiary),
-                    ),
+                  decoration: InputDecoration(
+                    labelText: 'Max DPI',
+                    hintText: 'e.g. 96',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: AppColors.backgroundSurface,
                   ),
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TextField(
             controller: _fileNameController,
-            decoration: const InputDecoration(
-              labelText: 'Suggested base name',
+            decoration: InputDecoration(
+              labelText: 'Output Name (Optional)',
               hintText: 'Auto from file name',
-              labelStyle: TextStyle(color: AppColors.textSecondary),
-              hintStyle: TextStyle(color: AppColors.textTertiary),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppColors.textTertiary),
-              ),
+              prefixIcon: const Icon(Icons.edit_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppColors.backgroundSurface,
             ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCompressButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: (_selectedFile == null || _isProcessing)
-            ? null
-            : _compress,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: Text(
-          _isProcessing ? 'Compressing…' : 'Compress PDF',
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-        ),
       ),
     );
   }
@@ -535,7 +465,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.picture_as_pdf,
+                  Icons.check_circle_outline,
                   color: AppColors.textPrimary,
                   size: 24,
                 ),
@@ -555,7 +485,7 @@ class _PdfCompressPageState extends State<PdfCompressPage> with AdHelper {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${(res.sizeBefore ?? 0)} -> ${(res.sizeAfter ?? 0)} bytes',
+                      '${formatBytes(res.sizeBefore ?? 0)} -> ${formatBytes(res.sizeAfter ?? 0)}',
                       style: TextStyle(
                         color: AppColors.textPrimary.withOpacity(0.8),
                         fontSize: 12,

@@ -1,16 +1,4 @@
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-
-import '../../../app_constants/app_colors.dart';
-import '../../../app_services/conversion_service.dart';
-import '../../../app_services/notification_service.dart';
-import '../../../app_widgets/conversion_result_card_widget.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_utils/ad_helper.dart';
+import '../../../app_modules/imports_module.dart';
 
 class MergePdfPage extends StatefulWidget {
   const MergePdfPage({super.key});
@@ -32,9 +20,6 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
   String? _suggestedBaseName;
   String? _targetDirectoryPath;
   String? _savedFilePath;
-
-  static const String _relativeDestinationPath =
-      'Documents/SmartConverter/PDFConversions/merged_pdfs';
 
   @override
   void initState() {
@@ -66,10 +51,9 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
         setState(() => _targetDirectoryPath = dir.path);
       }
     } catch (_) {
-      // Silently ignore; path hint will fall back to relative path.
+      // Silently ignore
     }
   }
-
 
   Future<void> _pickPdfFiles({required bool append}) async {
     try {
@@ -125,7 +109,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     }
 
     final baseNames = _selectedFiles
-        .map((file) => p.basenameWithoutExtension(file.path))
+        .map((file) => basenameWithoutExtension(file.path))
         .where((name) => name.isNotEmpty)
         .toList();
 
@@ -151,15 +135,6 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
         _fileNameController.text = sanitized;
       }
     });
-  }
-
-
-  
-  String _computeSelectionSignature(List<File> files) {
-    if (files.isEmpty) {
-      return '';
-    }
-    return files.map((file) => file.path).join('|');
   }
 
   void _reorderFiles(int oldIndex, int newIndex) {
@@ -281,15 +256,15 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     try {
       final directory = await FileManager.getMergedPdfsDirectory();
       String targetFileName = result.fileName;
-      File destinationFile = File(p.join(directory.path, targetFileName));
+      File destinationFile = File(join(directory.path, targetFileName));
 
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
-          _sanitizeBaseName(p.basenameWithoutExtension(targetFileName)),
+          _sanitizeBaseName(basenameWithoutExtension(targetFileName)),
           'pdf',
         );
         targetFileName = fallbackName;
-        destinationFile = File(p.join(directory.path, targetFileName));
+        destinationFile = File(join(directory.path, targetFileName));
       }
 
       final savedFile = await result.file.copy(destinationFile.path);
@@ -349,6 +324,13 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
 
   void _resetForNewMerge() {
     setState(() {
+      _selectedFiles = [];
+      _mergeResult = null;
+      _savedFilePath = null;
+      _isMerging = false;
+      _isSaving = false;
+      _fileNameEdited = false;
+      _suggestedBaseName = null;
       _statusMessage = 'Select at least 2 PDF files to begin.';
       _fileNameController.clear();
       resetAdStatus(null);
@@ -366,15 +348,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     }
     return total;
   }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final value = bytes / pow(1024, digitGroups);
-    return '${value.toStringAsFixed(value >= 10 || digitGroups == 0 ? 0 : 1)} ${units[digitGroups]}';
-  }
-
+  
   String _sanitizeBaseName(String input) {
     var base = input.trim();
     if (base.toLowerCase().endsWith('.pdf')) {
@@ -394,13 +368,20 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     return trimmed.toLowerCase().endsWith('.pdf') ? trimmed : '$trimmed.pdf';
   }
 
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Merge PDF',
           style: TextStyle(
@@ -408,10 +389,9 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -419,95 +399,56 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                const ConversionHeaderCardWidget(
+                  title: 'Merge PDF Files',
+                  description: 'Combine multiple PDFs into a single document. Reorder files, choose a custom output name, save, or share instantly.',
+                  iconTarget: Icons.picture_as_pdf_outlined,
+                  iconSource: Icons.picture_as_pdf,
+                ),
                 const SizedBox(height: 20),
                 _buildActionButtons(),
                 const SizedBox(height: 16),
-                _buildFileNameField(),
-                const SizedBox(height: 16),
+                if (_selectedFiles.length >= 2) ...[
+                  ConversionFileNameFieldWidget(
+                    controller: _fileNameController,
+                    suggestedName: _suggestedBaseName,
+                    extensionLabel: '.pdf extension is added automatically',
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _buildSelectionSummary(),
                 const SizedBox(height: 16),
                 _buildSelectedFilesList(),
                 const SizedBox(height: 20),
-                _buildMergeButton(),
+                if (_selectedFiles.length >= 2)
+                  _buildMergeButton(),
                 const SizedBox(height: 16),
-                _buildStatusMessage(),
+                ConversionStatusWidget(
+                  isConverting: _isMerging,
+                  statusMessage: _statusMessage,
+                ),
                 if (_mergeResult != null) ...[
                   const SizedBox(height: 20),
-                  _savedFilePath != null 
-                    ? ConversionResultCardWidget(
-                        savedFilePath: _savedFilePath!,
-                        onShare: _shareMergedFile,
-                      )
-                    : _buildResultCard(),
+                  if (_savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: _mergeResult!.fileName,
+                      isSaving: _isSaving,
+                      onSave: _saveMergedFile,
+                      title: 'Merged PDF Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: _savedFilePath!,
+                      onShare: _shareMergedFile,
+                    ),
                 ],
-
               ],
             ),
           ),
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.picture_as_pdf_outlined,
-              color: AppColors.textPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Merge PDF Files',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Combine multiple PDFs into a single document. Reorder files, choose a custom output name, save, or share instantly.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -524,46 +465,34 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
               _selectedFiles.isEmpty ? 'Select PDF Files' : 'Add More PDFs',
             ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.textPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
         if (_selectedFiles.isNotEmpty) ...[
           const SizedBox(width: 12),
-          Tooltip(
-            message: 'Clear all selected files',
-            child: OutlinedButton.icon(
+          SizedBox(
+            width: 56,
+            child: ElevatedButton(
               onPressed: _isMerging ? null : _resetForNewMerge,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reset'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(140, 48),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+              child: const Icon(Icons.refresh),
             ),
           ),
         ],
       ],
-    );
-  }
-
-  Widget _buildFileNameField() {
-    final hintText = _suggestedBaseName ?? 'merged_document';
-
-    return TextField(
-      controller: _fileNameController,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(
-        labelText: 'Output file name',
-        hintText: hintText,
-        prefixIcon: const Icon(Icons.edit_outlined),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppColors.backgroundSurface,
-        helperText: '.pdf extension is added automatically',
-        helperStyle: const TextStyle(color: AppColors.textSecondary),
-      ),
-      style: const TextStyle(color: AppColors.textPrimary),
     );
   }
 
@@ -573,7 +502,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
     }
 
     final totalBytes = _totalBytesSelected();
-    final totalSize = _formatBytes(totalBytes);
+    final totalSize = formatBytes(totalBytes);
 
     return Wrap(
       spacing: 8,
@@ -596,6 +525,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
       avatar: Icon(icon, size: 18, color: AppColors.primaryBlue),
       backgroundColor: AppColors.backgroundSurface,
       label: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+      side: BorderSide.none,
     );
   }
 
@@ -649,8 +579,8 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
         buildDefaultDragHandles: false,
         itemBuilder: (context, index) {
           final file = _selectedFiles[index];
-          final fileName = p.basename(file.path);
-          final fileSize = _formatBytes(file.lengthSync());
+          final fileName = basename(file.path);
+          final fileSize = formatBytes(file.lengthSync());
 
           return ListTile(
             key: ValueKey(file.path),
@@ -709,181 +639,20 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary),
               )
             : const Icon(Icons.merge_type_outlined),
         label: Text(_isMerging ? 'Merging...' : 'Merge PDFs'),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: const TextStyle(fontSize: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.15)),
-      ),
-      child: Text(
-        _statusMessage,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-      ),
-    );
-  }
-
-  Widget _buildResultCard() {
-    final result = _mergeResult!;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.1),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.check_circle_outline, color: AppColors.success),
-              SizedBox(width: 8),
-              Text(
-                'Merged PDF Ready',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildResultRow(
-            label: 'File name',
-            value: result.fileName,
-            icon: Icons.description_outlined,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                flex: 5,
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveMergedFile,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.download_outlined),
-                  label: Text(_isSaving ? 'Saving...' : 'Save Document'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    minimumSize: const Size(0, 50),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: OutlinedButton.icon(
-                  onPressed: _savedFilePath == null ? null : _shareMergedFile,
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('Share'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    minimumSize: const Size(0, 50),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _savedFilePath != null
-                ? 'Saved file: $_savedFilePath'
-                : 'Save location: $_relativeDestinationPath',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
-          if (_savedFilePath == null && _targetDirectoryPath != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Full path: $_targetDirectoryPath',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: _resetForNewMerge,
-            icon: const Icon(Icons.refresh_outlined),
-            label: const Text('Merge more PDFs'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultRow({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: AppColors.primaryBlue),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          backgroundColor: AppColors.primaryBlue,
+          foregroundColor: AppColors.textPrimary,
+          shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ],
+      ),
     );
   }
-
-
 }
-
-
