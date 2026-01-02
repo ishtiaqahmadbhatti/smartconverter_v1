@@ -1871,7 +1871,7 @@ class ConversionService {
       FormData formData = FormData.fromMap({
         'file': file,
         if (outputFilename != null && outputFilename.isNotEmpty)
-          'output_filename': outputFilename,
+          'filename': outputFilename,
       });
 
       _debugLog('📤 Uploading markdown file for PDF conversion...');

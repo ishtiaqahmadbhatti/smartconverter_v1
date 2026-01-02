@@ -113,6 +113,7 @@ class _AiPdfToExcelPageState extends State<AiPdfToExcelPage> with AdHelper, Conv
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'Excel File Ready',
                     )
                   else
                     ConversionResultCardWidget(

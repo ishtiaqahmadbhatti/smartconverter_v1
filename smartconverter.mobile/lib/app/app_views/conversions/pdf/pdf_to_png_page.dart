@@ -112,6 +112,7 @@ class _PdfToPngPageState extends State<PdfToPngPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: "PNG File Ready",
                     )
                   else
                     ConversionResultCardWidget(

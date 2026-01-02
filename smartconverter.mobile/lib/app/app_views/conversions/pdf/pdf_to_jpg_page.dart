@@ -112,6 +112,7 @@ class _PdfToJpgPageState extends State<PdfToJpgPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: "JPG File Ready",
                     )
                   else
                     ConversionResultCardWidget(

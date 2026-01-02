@@ -110,6 +110,7 @@ class _MarkdownToPdfPageState extends State<MarkdownToPdfPage> with AdHelper, Co
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'PDF File Ready',
                     )
                   else
                     ConversionResultCardWidget(

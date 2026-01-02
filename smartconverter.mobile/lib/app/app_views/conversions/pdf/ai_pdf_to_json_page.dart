@@ -112,7 +112,7 @@ class _AiPdfToJsonPageState extends State<AiPdfToJsonPage> with AdHelper, Conver
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
-                      title: 'JSON Ready',
+                      title: 'JSON File Ready',
                     )
                   else
                     ConversionResultCardWidget(

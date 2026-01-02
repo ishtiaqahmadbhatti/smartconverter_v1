@@ -112,6 +112,7 @@ class _PdfToSvgPageState extends State<PdfToSvgPage> with AdHelper, ConversionMi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: "SVG File Ready",
                     )
                   else
                     ConversionResultCardWidget(

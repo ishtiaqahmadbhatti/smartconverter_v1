@@ -178,12 +178,18 @@ class _HtmlToPdfPageState extends State<HtmlToPdfPage>
                 
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  ConversionFileSaveCardWidget(
-                    fileName: model.conversionResult!.fileName,
-                    isSaving: model.isSaving,
-                    onSave: saveResult,
-                    title: 'PDF File Ready',
-                  ),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'PDF File Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
               ],
             ),

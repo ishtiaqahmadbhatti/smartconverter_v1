@@ -112,6 +112,7 @@ class _PdfToHtmlPageState extends State<PdfToHtmlPage> with AdHelper, Conversion
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'HTML File Ready',
                     )
                   else
                     ConversionResultCardWidget(

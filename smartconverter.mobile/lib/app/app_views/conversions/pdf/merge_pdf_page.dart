@@ -616,7 +616,7 @@ class _MergePdfPageState extends State<MergePdfPage> with AdHelper {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.error),
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   tooltip: 'Remove file',
                   onPressed: _isMerging ? null : () => _removeFile(index),
                 ),

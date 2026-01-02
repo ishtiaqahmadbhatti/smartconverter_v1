@@ -112,6 +112,7 @@ class _PdfToTiffPageState extends State<PdfToTiffPage> with AdHelper, Conversion
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: "TIFF File Ready",
                     )
                   else
                     ConversionResultCardWidget(

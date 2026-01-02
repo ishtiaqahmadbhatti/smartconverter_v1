@@ -112,6 +112,7 @@ class _PdfToTextPageState extends State<PdfToTextPage> with AdHelper, Conversion
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'Text File Ready',
                     )
                   else
                     ConversionResultCardWidget(

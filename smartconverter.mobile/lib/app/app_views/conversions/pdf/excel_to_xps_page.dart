@@ -112,7 +112,7 @@ class _ExcelToXpsPageState extends State<ExcelToXpsPage> with AdHelper, Conversi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
-                      title: 'XPS Ready',
+                      title: 'XPS File Ready',
                     )
                   else
                     ConversionResultCardWidget(

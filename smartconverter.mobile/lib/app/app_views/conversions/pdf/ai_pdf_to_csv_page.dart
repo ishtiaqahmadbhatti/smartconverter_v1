@@ -112,6 +112,7 @@ class _AiPdfToCsvPageState extends State<AiPdfToCsvPage> with AdHelper, Conversi
                       fileName: model.conversionResult!.fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
+                      title: 'CSV File Ready',
                     )
                   else
                     ConversionResultCardWidget(
