@@ -48,11 +48,11 @@ class FileManager {
   static const String _videoConversionsFolder = 'VideoConversions';
   static const String _audioConversionsFolder = 'AudioConversions';
   static const String _videoToAudioFolder = 'video-to-audio';
-  static const String _imageConversionsFolder = 'ImageConversions';
-  static const String _imagePdfToJpgSubFolder = 'pdf_to_jpg';
-  static const String _imagePdfToPngSubFolder = 'pdf_to_png';
-  static const String _imagePdfToTiffSubFolder = 'pdf_to_tiff';
-  static const String _imagePdfToSvgSubFolder = 'pdf_to_svg';
+  static const String _imageConversionsFolder = 'ImageConversion';
+  static const String _imagePdfToJpgSubFolder = 'pdf-to-jpg';
+  static const String _imagePdfToPngSubFolder = 'pdf-to-png';
+  static const String _imagePdfToTiffSubFolder = 'pdf-to-tiff';
+  static const String _imagePdfToSvgSubFolder = 'pdf-to-svg';
   static const String _textConversionsFolder = 'TextConversion';
   static const String _wordToTextSubFolder = 'word-to-text';
   static const String _powerpointToTextSubFolder = 'powerpoint-to-text';

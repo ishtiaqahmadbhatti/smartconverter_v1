@@ -315,6 +315,9 @@ class ApiConfig {
   static const String imageSvgToPngEndpoint = '/api/v1/imageconversiontools/svg-to-png';
   static const String imageSvgToJpgEndpoint = '/api/v1/imageconversiontools/svg-to-jpg';
   static const String imageRemoveExifEndpoint = '/api/v1/imageconversiontools/remove-exif';
+  static const String imageCompressEndpoint = '/api/v1/imageconversiontools/compress';
+  static const String imageResizeEndpoint = '/api/v1/imageconversiontools/resize';
+  static const String imageQualityEndpoint = '/api/v1/imageconversiontools/quality';
 
   // OCR Conversion Endpoints
   static const String ocrPngToTextEndpoint = '/api/v1/ocrconversiontools/png-to-text';

@@ -39,7 +39,7 @@ class _PngToPdfPageState extends State<PngToPdfPage> with AdHelper, ConversionMi
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (file == null) throw Exception('File is null');
-    return service.convertPngToPdf(file, outputFilename: outputName);
+    return service.convertPngToPdf(file, outputFileName: outputName);
   }
 
   @override

@@ -70,6 +70,30 @@ class PdfToImagesResult {
   });
 }
 
+class AiImageToJsonResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+
+  const AiImageToJsonResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+  });
+}
+
+class ImageFormatConversionResult {
+  final File file;
+  final String fileName;
+  final String downloadUrl;
+
+  const ImageFormatConversionResult({
+    required this.file,
+    required this.fileName,
+    required this.downloadUrl,
+  });
+}
+
 class ConversionService {
   static final ConversionService _instance = ConversionService._internal();
   factory ConversionService() => _instance;
@@ -444,6 +468,98 @@ class ConversionService {
     }
   }
 
+  // PNG to PDF Conversion
+  Future<ImageToPdfResult?> convertPngToPdf(
+    File pngFile, {
+    String? outputFileName,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          pngFile.path,
+          filename: basename(pngFile.path),
+        ),
+        if (outputFileName != null && outputFileName.isNotEmpty)
+          'filename': outputFileName,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imagePngToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(pngFile.path)}.pdf';
+
+        final file = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'PngToPdf',
+          fileExtension: 'pdf',
+        );
+
+        if (file == null) return null;
+
+        return ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('PNG to PDF conversion failed: $e');
+    }
+  }
+
+  // JPG to PDF Conversion
+  Future<ImageToPdfResult?> convertJpgToPdf(
+    File jpgFile, {
+    String? outputFileName,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          jpgFile.path,
+          filename: basename(jpgFile.path),
+        ),
+        if (outputFileName != null && outputFileName.isNotEmpty)
+          'filename': outputFileName,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imageJpgToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(jpgFile.path)}.pdf';
+
+        final file = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'JpgToPdf',
+          fileExtension: 'pdf',
+        );
+
+        if (file == null) return null;
+
+        return ImageToPdfResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('JPG to PDF conversion failed: $e');
+    }
+  }
+
   // Generic helper for legacy callers who just need JPG images list
   Future<List<File>> convertPdfToImages(File pdfFile) async {
     final result = await _convertPdfToImages(
@@ -524,6 +640,371 @@ class ConversionService {
       return null;
     } catch (e) {
       throw Exception('Failed to convert Word to Text: $e');
+    }
+  }
+
+  // AI PNG to JSON Conversion
+  Future<AiImageToJsonResult?> convertAiPngToJson(
+    File pngFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          pngFile.path,
+          filename: basename(pngFile.path),
+        ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.aiPngToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final downloadUrl = response.data['download_url'];
+        final fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(pngFile.path)}.json';
+
+        final file = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'AiPngToJson',
+          fileExtension: 'json',
+        );
+
+        if (file == null) return null;
+
+        return AiImageToJsonResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('AI PNG to JSON conversion failed: $e');
+    }
+  }
+
+  // AI JPG to JSON Conversion
+  Future<AiImageToJsonResult?> convertAiJpgToJson(
+    File jpgFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          jpgFile.path,
+          filename: basename(jpgFile.path),
+        ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.aiJpgToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final downloadUrl = response.data['download_url'];
+        final fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(jpgFile.path)}.json';
+
+        final file = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'AiJpgToJson',
+          fileExtension: 'json',
+        );
+
+        if (file == null) return null;
+
+        return AiImageToJsonResult(
+          file: file,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('AI JPG to JSON conversion failed: $e');
+    }
+  }
+
+  // Generic Image Format Conversion
+  Future<ImageFormatConversionResult?> convertImageFormat({
+    required File file,
+    required String apiEndpoint,
+    required String targetExtension,
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: basename(file.path),
+        ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        apiEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        String fileName = '';
+        String downloadUrl = '';
+
+        if (data is Map<String, dynamic>) {
+          fileName = data['output_filename'] ?? 'converted_file.$targetExtension';
+          downloadUrl = data['download_url'] ?? '';
+        } else {
+          throw Exception('Invalid server response format');
+        }
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ImageFormatConversion',
+          fileExtension: targetExtension,
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageFormatConversionResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Format conversion failed: $e');
+    }
+  }
+
+  // Remove EXIF Data
+  Future<ImageFormatConversionResult?> removeExif(
+    File imageFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: basename(imageFile.path),
+        ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imageRemoveExifEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        String fileName = '';
+        String downloadUrl = '';
+
+        if (data is Map<String, dynamic>) {
+          fileName = data['output_filename'] ?? 'cleaned_image.jpg';
+          downloadUrl = data['download_url'] ?? '';
+        } else {
+          throw Exception('Invalid server response format');
+        }
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'RemoveExif',
+          fileExtension: extension(fileName).replaceAll('.', ''),
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageFormatConversionResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Remove EXIF failed: $e');
+    }
+  }
+
+  // Image Compression
+  Future<ImageFormatConversionResult?> compressImage(
+    File imageFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: basename(imageFile.path),
+        ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imageCompressEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        String fileName = '';
+        String downloadUrl = '';
+
+        if (data is Map<String, dynamic>) {
+          fileName = data['output_filename'] ?? 'compressed_${basename(imageFile.path)}';
+          downloadUrl = data['download_url'] ?? '';
+        } else {
+          throw Exception('Invalid server response format');
+        }
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ImageCompress',
+          fileExtension: extension(fileName).replaceAll('.', ''),
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageFormatConversionResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Compression failed: $e');
+    }
+  }
+
+  // Image Resize
+  Future<ImageFormatConversionResult?> resizeImage(
+    File imageFile, {
+    int? width,
+    int? height,
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: basename(imageFile.path),
+        ),
+        if (width != null) 'width': width,
+        if (height != null) 'height': height,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imageResizeEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        String fileName = '';
+        String downloadUrl = '';
+
+        if (data is Map<String, dynamic>) {
+          fileName = data['output_filename'] ?? 'resized_${basename(imageFile.path)}';
+          downloadUrl = data['download_url'] ?? '';
+        } else {
+          throw Exception('Invalid server response format');
+        }
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ImageResize',
+          fileExtension: extension(fileName).replaceAll('.', ''),
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageFormatConversionResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Resize failed: $e');
+    }
+  }
+
+  // Image Quality
+  Future<ImageFormatConversionResult?> changeImageQuality(
+    File imageFile, {
+    required int quality,
+    String? outputFilename,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: basename(imageFile.path),
+        ),
+        'quality': quality,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.imageQualityEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        String fileName = '';
+        String downloadUrl = '';
+
+        if (data is Map<String, dynamic>) {
+          fileName = data['output_filename'] ?? 'quality_${basename(imageFile.path)}';
+          downloadUrl = data['download_url'] ?? '';
+        } else {
+          throw Exception('Invalid server response format');
+        }
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName,
+          downloadUrl,
+          toolName: 'ImageQuality',
+          fileExtension: extension(fileName).replaceAll('.', ''),
+        );
+
+        if (downloadedFile == null) return null;
+
+        return ImageFormatConversionResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Quality adjustment failed: $e');
     }
   }
 
@@ -1428,129 +1909,7 @@ class ConversionService {
     }
   }
 
-  // Convert JPG to PDF
-  Future<ImageToPdfResult?> convertJpgToPdf(
-    File jpgFile, {
-    String? outputFilename,
-  }) async {
-    try {
-      if (!jpgFile.existsSync()) {
-        throw Exception('JPG file does not exist');
-      }
 
-      // Validate file extension
-      final ext = extension(jpgFile.path).toLowerCase();
-      if (ext != '.jpg' && ext != '.jpeg') {
-        throw Exception('Only .jpg and .jpeg files are supported');
-      }
-
-      final file = await MultipartFile.fromFile(
-        jpgFile.path,
-        filename: basename(jpgFile.path),
-      );
-
-      FormData formData = FormData.fromMap({
-        'file': file,
-        if (outputFilename != null && outputFilename.isNotEmpty)
-          'output_filename': outputFilename,
-      });
-
-      _debugLog('📤 Uploading JPG file for PDF conversion...');
-
-      Response response = await _dio.post(
-        ApiConfig.jpgToPdfEndpoint,
-        data: formData,
-      );
-
-      if (response.statusCode == 200) {
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName =
-            response.data['output_filename'] ??
-            '${basenameWithoutExtension(jpgFile.path)}.pdf';
-
-        _debugLog('✅ JPG converted to PDF successfully!');
-        _debugLog('📥 Downloading PDF: $fileName');
-
-        // Try multiple download endpoints
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        );
-      }
-
-      return null;
-    } catch (e) {
-      throw Exception('Failed to convert JPG to PDF: $e');
-    }
-  }
-
-  // Convert PNG to PDF
-  Future<ImageToPdfResult?> convertPngToPdf(
-    File pngFile, {
-    String? outputFilename,
-  }) async {
-    try {
-      if (!pngFile.existsSync()) {
-        throw Exception('PNG file does not exist');
-      }
-
-      // Validate file extension
-      final ext = extension(pngFile.path).toLowerCase();
-      if (ext != '.png') {
-        throw Exception('Only .png files are supported');
-      }
-
-      final file = await MultipartFile.fromFile(
-        pngFile.path,
-        filename: basename(pngFile.path),
-      );
-
-      FormData formData = FormData.fromMap({
-        'file': file,
-        if (outputFilename != null && outputFilename.isNotEmpty)
-          'output_filename': outputFilename,
-      });
-
-      _debugLog('📤 Uploading PNG file for PDF conversion...');
-
-      Response response = await _dio.post(
-        ApiConfig.pngToPdfEndpoint,
-        data: formData,
-      );
-
-      if (response.statusCode == 200) {
-        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName =
-            response.data['output_filename'] ??
-            '${basenameWithoutExtension(pngFile.path)}.pdf';
-
-        _debugLog('✅ PNG converted to PDF successfully!');
-        _debugLog('📥 Downloading PDF: $fileName');
-
-        // Try multiple download endpoints
-        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-        if (downloadedFile == null) {
-          return null;
-        }
-
-        return ImageToPdfResult(
-          file: downloadedFile,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        );
-      }
-
-      return null;
-    } catch (e) {
-      throw Exception('Failed to convert PNG to PDF: $e');
-    }
-  }
 
   // Convert PDF to JPG (multiple images)
   Future<PdfToImagesResult?> convertPdfToJpg(

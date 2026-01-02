@@ -1,7 +1,6 @@
 
-import 'package:path/path.dart' as p;
-
 import '../../../app_modules/imports_module.dart';
+import 'package:path/path.dart' as p;
 
 class ImageToPdfPage extends StatefulWidget {
   const ImageToPdfPage({super.key});
@@ -14,7 +13,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
 
-  final List<File> _selectedFiles = [];
+  List<File> _selectedFiles = [];
   File? _convertedFile;
   String? _downloadUrl;
   bool _isConverting = false;
@@ -23,7 +22,6 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   String _statusMessage = 'Select image files (JPG, PNG) to begin.';
   String? _suggestedBaseName;
   String? _savedFilePath;
-
 
   @override
   void initState() {
@@ -34,9 +32,8 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
   @override
   void dispose() {
-    _fileNameController
-      ..removeListener(_handleFileNameChange)
-      ..dispose();
+    _fileNameController.removeListener(_handleFileNameChange);
+    _fileNameController.dispose();
     super.dispose();
   }
 
@@ -47,7 +44,6 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
       setState(() => _fileNameEdited = edited);
     }
   }
-
 
   Future<void> _pickFiles() async {
     try {
@@ -70,10 +66,12 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
           .toList();
 
       setState(() {
+        _selectedFiles = files;
+        _convertedFile = null;
         _downloadUrl = null;
         _savedFilePath = null;
         _statusMessage = '${files.length} images selected';
-        resetAdStatus(null); // Passing null because it's multiple files
+        resetAdStatus(null);
       });
 
       _updateSuggestedFileName();
@@ -100,13 +98,13 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     }
 
     setState(() {
+      _isConverting = true;
       _statusMessage = 'Converting ${_selectedFiles.length} images to PDF...';
       _convertedFile = null;
       _downloadUrl = null;
       _savedFilePath = null;
     });
 
-    // Check for rewarded ad first
     final adWatched = await showRewardedAdGate(toolName: 'Images-to-PDF');
     if (!adWatched) {
       setState(() {
@@ -117,68 +115,24 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     }
 
     try {
-      final apiBaseUrl = await ApiConfig.baseUrl;
-      final dio = Dio(BaseOptions(
-        baseUrl: apiBaseUrl,
-        connectTimeout: ApiConfig.connectTimeout,
-        receiveTimeout: ApiConfig.receiveTimeout,
-      ));
-
-      List<MultipartFile> files = [];
-      for (var file in _selectedFiles) {
-        files.add(await MultipartFile.fromFile(
-          file.path,
-          filename: p.basename(file.path),
-        ));
-      }
-
-      final formData = FormData.fromMap({
-        'files': files,
-        if (_fileNameController.text.trim().isNotEmpty)
-          'output_filename': _fileNameController.text.trim(),
-      });
-
-      final response = await dio.post(
-        ApiConfig.imagesToPdfEndpoint,
-        data: formData,
-      );
+      final result = await _service.convertImageToPdf(_selectedFiles);
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final outputFilename = response.data['output_filename'] as String;
-        final downloadUrl = response.data['download_url'] as String;
-
-        // Download the file immediately to temp
-        final tempDir = await FileManager.getTempDirectory();
-        final savePath = p.join(tempDir.path, outputFilename);
-        
-        // Construct full download URL
-        String fullDownloadUrl = downloadUrl;
-        if (!downloadUrl.startsWith('http')) {
-             if (downloadUrl.startsWith('/')) {
-                  fullDownloadUrl = '$apiBaseUrl$downloadUrl';
-             } else {
-                  fullDownloadUrl = '$apiBaseUrl/$downloadUrl';
-             }
-        }
-        
-        await dio.download(fullDownloadUrl, savePath);
-
+      if (result != null) {
         setState(() {
-          _convertedFile = File(savePath);
-          _downloadUrl = fullDownloadUrl;
+          _convertedFile = result;
           _statusMessage = 'Converted to PDF successfully!';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF file ready: $outputFilename'),
+           SnackBar(
+            content: Text('PDF file ready: ${basename(result.path)}'),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
-        throw Exception(response.data['message'] ?? 'Conversion failed');
+        throw Exception('Conversion returned null');
       }
     } catch (e) {
       if (!mounted) return;
@@ -196,29 +150,32 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
   Future<void> _savePdfFile() async {
     if (_convertedFile == null) return;
 
-    // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
 
     setState(() => _isSaving = true);
 
     try {
-      // Use structured path
       final root = await FileManager.getSmartConverterDirectory();
-      final imageRoot = Directory('${root.path}/ImageConversions');
-      if (!await imageRoot.exists()) {
-        await imageRoot.create(recursive: true);
-      }
+      final imageRoot = Directory('${root.path}/ImageConversion');
+      if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
+      
       final targetDir = Directory('${imageRoot.path}/image-to-pdf');
-      if (!await targetDir.exists()) {
-        await targetDir.create(recursive: true);
+      if (!await targetDir.exists()) await targetDir.create(recursive: true);
+
+      String targetFileName = _fileNameController.text.trim();
+      if (targetFileName.isEmpty) {
+         targetFileName = basename(_convertedFile!.path);
+      } else {
+         if (!targetFileName.toLowerCase().endsWith('.pdf')) {
+            targetFileName += '.pdf';
+         }
       }
 
-      String targetFileName = p.basename(_convertedFile!.path);
       File destinationFile = File(p.join(targetDir.path, targetFileName));
 
       if (await destinationFile.exists()) {
         final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
+          basenameWithoutExtension(targetFileName),
           'pdf',
         );
         targetFileName = fallbackName;
@@ -272,7 +229,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     }
 
     if (_selectedFiles.length == 1) {
-        final baseName = p.basenameWithoutExtension(_selectedFiles.first.path);
+        final baseName = basenameWithoutExtension(_selectedFiles.first.path);
         final sanitized = _sanitizeBaseName(baseName);
          setState(() {
             _suggestedBaseName = sanitized;
@@ -292,7 +249,6 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
   String _sanitizeBaseName(String input) {
     var base = input.trim();
-    // Remove extension if present
     if (base.toLowerCase().contains('.')) {
         base = base.substring(0, base.lastIndexOf('.'));
     }
@@ -307,13 +263,21 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
   void _resetForNewConversion() {
     setState(() {
+      _selectedFiles = [];
+      _convertedFile = null;
+      _downloadUrl = null;
+      _isConverting = false;
+      _isSaving = false;
+      _fileNameEdited = false;
+      _suggestedBaseName = null;
+      _savedFilePath = null;
       _statusMessage = 'Select image files (JPG, PNG) to begin.';
       _fileNameController.clear();
       resetAdStatus(null);
     });
   }
 
-  String _formatBytes(int bytes) {
+  String formatBytes(int bytes) {
     if (bytes <= 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     final digitGroups = (log(bytes) / log(1024)).floor();
@@ -336,10 +300,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -349,20 +310,108 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                const ConversionHeaderCardWidget(
+                  title: 'Images to PDF',
+                  description: 'Combine multiple images into a single PDF document.',
+                  iconTarget: Icons.picture_as_pdf,
+                  iconSource: Icons.collections_bookmark,
+                ),
                 const SizedBox(height: 20),
-                _buildActionButtons(),
+                ConversionActionButtonWidget(
+                  onPickFile: _pickFiles,
+                  isFileSelected: _selectedFiles.isNotEmpty,
+                  isConverting: _isConverting,
+                  onReset: _resetForNewConversion,
+                  buttonText: _selectedFiles.isEmpty ? 'Select Images' : 'Change Images',
+                  icon: Icons.collections,
+                ),
                 const SizedBox(height: 16),
-                if (_selectedFiles.isNotEmpty) _buildSelectedFilesList(), // List instead of single card
+                if (_selectedFiles.isNotEmpty) 
+                   Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+                          child: Text(
+                            'Selected Files (${_selectedFiles.length})',
+                             style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: _selectedFiles.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final file = _selectedFiles[index];
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.image, size: 20, color: AppColors.primaryBlue),
+                                title: Text(
+                                  basename(file.path),
+                                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: Text(
+                                  formatBytes(file.lengthSync()),
+                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 16),
-                _buildFileNameField(),
-                const SizedBox(height: 20),
-                _buildConvertButton(),
+                if (_selectedFiles.isNotEmpty) ...[
+                   ConversionFileNameFieldWidget(
+                    controller: _fileNameController,
+                    suggestedName: _suggestedBaseName,
+                    extensionLabel: '.pdf extension is added automatically',
+                  ),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: _convertImagesToPdf,
+                    isConverting: _isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to PDF',
+                  ),
+                ],
                 const SizedBox(height: 16),
-                _buildStatusMessage(),
+                ConversionStatusWidget(
+                  statusMessage: _statusMessage,
+                  isConverting: _isConverting,
+                  conversionResult: _convertedFile != null ? ImageToPdfResult(file: _convertedFile!, fileName: basename(_convertedFile!.path), downloadUrl: '') : null,
+                ),
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  if (_savedFilePath == null)
+                     ConversionFileSaveCardWidget(
+                      fileName: basename(_convertedFile!.path),
+                      isSaving: _isSaving,
+                      onSave: _savePdfFile,
+                      title: 'PDF File Ready',
+                    )
+                  else
+                     ConversionResultCardWidget(
+                      savedFilePath: _savedFilePath!,
+                      onShare: _sharePdfFile,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -371,365 +420,6 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.collections_bookmark,
-              size: 32,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Images to PDF',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Combine multiple images into a single PDF document.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickFiles,
-            icon: const Icon(Icons.collections),
-            label: Text(
-              _selectedFiles.isEmpty ? 'Select Images' : 'Change Images',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFiles.isNotEmpty) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isConverting ? null : _resetForNewConversion,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSelectedFilesList() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0, left: 4),
-            child: Text(
-              'Selected Files (${_selectedFiles.length})',
-               style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 200),
-            child: ListView.separated(
-              itemCount: _selectedFiles.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final file = _selectedFiles[index];
-                return ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.image, size: 20, color: AppColors.primaryBlue),
-                  title: Text(
-                    p.basename(file.path),
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    _formatBytes(file.lengthSync()),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFileNameField() {
-    if (_selectedFiles.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final hintText = _suggestedBaseName ?? 'converted_pdf';
-
-    return TextField(
-      controller: _fileNameController,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(
-        labelText: 'Output file name',
-        hintText: hintText,
-        prefixIcon: const Icon(Icons.edit_outlined),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppColors.backgroundSurface,
-        helperText: '.pdf extension is added automatically',
-        helperStyle: const TextStyle(color: AppColors.textSecondary),
-      ),
-      style: const TextStyle(color: AppColors.textPrimary),
-    );
-  }
-
-  Widget _buildConvertButton() {
-    final canConvert = _selectedFiles.isNotEmpty && !_isConverting;
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canConvert ? _convertImagesToPdf : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 4,
-        ),
-        child: _isConverting
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.textPrimary,
-                  ),
-                ),
-              )
-            : const Text(
-                'Convert to PDF',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-      ),
-    );
-  }
-
-  // Reuse StatusMessage and ResultCard
-  
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isConverting
-                ? Icons.hourglass_empty
-                : _convertedFile != null
-                ? Icons.check_circle
-                : _selectedFiles.isNotEmpty ? Icons.check : Icons.info_outline,
-            color: _isConverting
-                ? AppColors.warning
-                : _convertedFile != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _isConverting
-                    ? AppColors.warning
-                    : _convertedFile != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.picture_as_pdf,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PDF Ready',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _convertedFile != null ? p.basename(_convertedFile!.path) : '',
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _savePdfFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _sharePdfFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

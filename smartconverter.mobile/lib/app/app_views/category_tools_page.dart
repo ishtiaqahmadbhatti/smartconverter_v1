@@ -231,7 +231,13 @@ import 'conversions/image/heic_to_png_page.dart';
 import 'conversions/image/heic_to_jpg_page.dart';
 import 'conversions/image/svg_to_png_page.dart';
 import 'conversions/image/svg_to_jpg_page.dart';
-// Reuse website converters for site/html to images (already imported above)
+// Image-specific duplicated tools to ensure folder isolation
+import 'conversions/image/jpg_to_pdf_page.dart' as img_jpg_pdf;
+import 'conversions/image/png_to_pdf_page.dart' as img_png_pdf;
+import 'conversions/image/website_to_jpg_page.dart' as img_web_jpg;
+import 'conversions/image/html_to_jpg_page.dart' as img_html_jpg;
+import 'conversions/image/website_to_png_page.dart' as img_web_png;
+import 'conversions/image/html_to_png_page.dart' as img_html_png;
 // OCR pages
 import 'conversions/ocr/png_to_text_page.dart';
 import 'conversions/ocr/jpg_to_text_page.dart';
@@ -662,17 +668,17 @@ class CategoryToolsPage extends StatefulWidget {
         case 'AI: Convert JPG to JSON':
           return const AiJpgToJsonPage();
         case 'Convert JPG to PDF':
-          return const JpgToPdfPage();
+          return const img_jpg_pdf.JpgToPdfPage();
         case 'Convert PNG to PDF':
-          return const PngToPdfPage();
+          return const img_png_pdf.PngToPdfPage();
         case 'Convert Website to JPG':
-          return const WebsiteToJpgPage();
+          return const img_web_jpg.WebsiteToJpgPage();
         case 'Convert HTML to JPG':
-          return const HtmlToJpgPage();
+          return const img_html_jpg.HtmlToJpgPage();
         case 'Convert Website to PNG':
-          return const WebsiteToPngPage();
+          return const img_web_png.WebsiteToPngPage();
         case 'Convert HTML to PNG':
-          return const HtmlToPngPage();
+          return const img_html_png.HtmlToPngPage();
         case 'Convert PDF to JPG':
           return const PdfToJpgImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to PNG':

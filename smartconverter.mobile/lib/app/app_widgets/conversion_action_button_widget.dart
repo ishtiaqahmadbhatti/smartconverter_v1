@@ -6,6 +6,7 @@ class ConversionActionButtonWidget extends StatelessWidget {
   final bool isFileSelected;
   final bool isConverting;
   final String buttonText;
+  final IconData? icon;
 
   const ConversionActionButtonWidget({
     super.key,
@@ -14,6 +15,7 @@ class ConversionActionButtonWidget extends StatelessWidget {
     this.isFileSelected = false,
     this.isConverting = false,
     this.buttonText = 'Select File',
+    this.icon,
   });
 
   @override
@@ -23,7 +25,7 @@ class ConversionActionButtonWidget extends StatelessWidget {
         Expanded(
           child: ElevatedButton.icon(
             onPressed: isConverting ? null : onPickFile,
-            icon: const Icon(Icons.file_open_outlined),
+            icon: Icon(icon ?? Icons.file_open_outlined),
             label: Text(
               isFileSelected ? 'Change File' : buttonText,
             ),

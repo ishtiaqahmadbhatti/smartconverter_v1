@@ -1,0 +1,167 @@
+import '../../../app_modules/imports_module.dart';
+
+class HtmlToPngPage extends StatefulWidget {
+  const HtmlToPngPage({super.key});
+
+  @override
+  State<HtmlToPngPage> createState() => _HtmlToPngPageState();
+}
+
+class _HtmlToPngPageState extends State<HtmlToPngPage>
+    with AdHelper, ConversionMixin {
+  
+  @override
+  final ConversionService service = ConversionService();
+
+  @override
+  final ConversionModel model = ConversionModel(statusMessage: 'Select an HTML file to begin.');
+
+  @override
+  final TextEditingController fileNameController = TextEditingController();
+
+  @override
+  String get fileTypeLabel => 'HTML';
+
+  @override
+  List<String> get allowedExtensions => ['html', 'htm'];
+
+  @override
+  String get conversionToolName => 'HtmlToPng';
+
+  @override
+  String get convertingMessage => 'Converting HTML to PNG...';
+
+  @override
+  String get successMessage => 'PNG generated successfully!';
+
+  @override
+  String get targetExtension => '.png';
+
+  @override
+  Future<Directory> get saveDirectory => FileManager.getHtmlToPngDirectory();
+
+  @override
+  void initState() {
+    super.initState();
+    fileNameController.addListener(handleFileNameChange);
+  }
+
+  @override
+  void dispose() {
+    fileNameController.removeListener(handleFileNameChange);
+    fileNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) async {
+    if (file == null) throw Exception('Please select an HTML file');
+    
+    return await service.convertHtmlToPng(
+      file,
+      outputFilename: outputName,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundDark,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'HTML to PNG',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ConversionHeaderCardWidget(
+                  title: 'Convert HTML to PNG',
+                  description: 'Convert HTML files (.html, .htm) to PNG images',
+                  sourceIcon: Icons.image_outlined,
+                  destinationIcon: Icons.image,
+                ),
+                const SizedBox(height: 20),
+                
+                ConversionActionButtonWidget(
+                  isFileSelected: model.selectedFile != null,
+                  onPickFile: pickFile,
+                  onReset: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
+                  isConverting: model.isConverting,
+                  buttonText: 'Select HTML File',
+                ),
+                
+                if (model.selectedFile != null) ...[
+                  const SizedBox(height: 16),
+                  ConversionSelectedFileCardWidget(
+                    fileTypeLabel: fileTypeLabel,
+                    fileName: basename(model.selectedFile!.path),
+                    fileSize: formatBytes(model.selectedFile!.lengthSync()),
+                    fileIcon: Icons.description,
+                    onRemove: () => resetForNewConversion(customStatus: 'Select an HTML file to begin.'),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  ConversionFileNameFieldWidget(
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
+                    extensionLabel: '.png will be added automatically',
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  ConversionConvertButtonWidget(label: 'Convert to PNG',
+                    icon: Icons.transform,
+                    onPressed: convert,
+                    isLoading: model.isConverting,
+                  ),
+                ],
+                
+                const SizedBox(height: 16),
+                
+                ConversionStatusWidget(
+                  statusMessage: model.statusMessage,
+                  isConverting: model.isConverting,
+                  conversionResult: model.conversionResult,
+                ),
+                
+                if (model.conversionResult != null) ...[
+                  const SizedBox(height: 20),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'PNG Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: getBannerAdWidget(),
+    );
+  }
+}

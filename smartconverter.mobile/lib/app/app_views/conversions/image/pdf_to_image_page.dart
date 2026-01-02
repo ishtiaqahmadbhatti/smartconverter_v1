@@ -1,17 +1,7 @@
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
+import '../../../app_modules/imports_module.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import 'package:dio/dio.dart';
-import 'package:archive/archive.dart';
 
-import '../../../app_constants/app_colors.dart';
-import '../../../app_constants/api_config.dart';
-import '../../../app_utils/ad_helper.dart';
-import '../../../app_utils/file_manager.dart';
-import '../../../app_services/conversion_service.dart';
+import 'package:archive/archive.dart'; // Keep for extraction logic
 
 class PdfToImagePage extends StatefulWidget {
   final String? initialFormat;
@@ -25,12 +15,11 @@ class PdfToImagePage extends StatefulWidget {
 class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImagePage> {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
-
-  File? _selectedFile;
-  // We might get a single ZIP file or a single image file depending on pages
-  File? _convertedFile;
-  List<File>? _extractedImages; // If extracted from ZIP
   
+  // Custom state because this page logic is slightly more complex than standard 1:1 conversion
+  File? _selectedFile;
+  File? _convertedFile;
+  List<File>? _extractedImages;
   String? _downloadUrl;
   bool _isConverting = false;
   bool _isSaving = false;
@@ -40,7 +29,6 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
   String? _savedFilePath;
   late String _selectedFormat;
   final List<String> _formats = ['JPG', 'PNG', 'TIFF', 'SVG'];
-
 
   @override
   void initState() {
@@ -52,9 +40,8 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
 
   @override
   void dispose() {
-    _fileNameController
-      ..removeListener(_handleFileNameChange)
-      ..dispose();
+    _fileNameController.removeListener(_handleFileNameChange);
+    _fileNameController.dispose();
     super.dispose();
   }
 
@@ -66,8 +53,8 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
     }
   }
 
-
   Future<void> _pickPdfFile() async {
+    // Shared pickFile logic is usually cleaner, but we need PDF specific error handling
     try {
       final file = await _service.pickFile(
         allowedExtensions: const ['pdf'],
@@ -75,41 +62,39 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
       );
 
       if (file == null) {
-        if (mounted) {
-          setState(() => _statusMessage = 'No file selected.');
-        }
+        if (mounted) setState(() => _statusMessage = 'No file selected.');
         return;
       }
 
+       // Strict PDF check
       final extension = p.extension(file.path).toLowerCase();
       if (extension != '.pdf') {
         if (mounted) {
-          setState(
-            () => _statusMessage = 'Please select a PDF file.',
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Only PDF files are supported.'),
-              backgroundColor: AppColors.warning,
-            ),
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Only PDF files are supported.'), backgroundColor: AppColors.warning),
           );
         }
         return;
       }
 
       setState(() {
+        _selectedFile = file;
+         // Reset outputs
+        _convertedFile = null;
+        _extractedImages = null;
+        _downloadUrl = null;
         _savedFilePath = null;
         _statusMessage = 'PDF file selected: ${p.basename(file.path)}';
         resetAdStatus(file.path);
       });
-
       _updateSuggestedFileName();
+
     } catch (e) {
-      final message = 'Failed to select PDF file: $e';
+      // Error handling
       if (mounted) {
-        setState(() => _statusMessage = message);
+        setState(() => _statusMessage = 'Failed to select PDF: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
+          SnackBar(content: Text('Failed to select file: $e'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -117,48 +102,31 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
 
   String _getEndpointForFormat(String format) {
     switch (format) {
-      case 'JPG':
-        return ApiConfig.pdfToJpgEndpoint;
-      case 'PNG':
-        return ApiConfig.pdfToPngEndpoint;
-      case 'TIFF':
-        return ApiConfig.pdfToTiffEndpoint;
-      case 'SVG':
-        return ApiConfig.pdfToSvgEndpoint;
-      default:
-        return ApiConfig.pdfToJpgEndpoint;
+      case 'JPG': return ApiConfig.pdfToJpgEndpoint;
+      case 'PNG': return ApiConfig.pdfToPngEndpoint;
+      case 'TIFF': return ApiConfig.pdfToTiffEndpoint;
+      case 'SVG': return ApiConfig.pdfToSvgEndpoint;
+      default: return ApiConfig.pdfToJpgEndpoint;
     }
   }
 
   Future<void> _convertPdfToImage() async {
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a PDF file first.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
+    if (_selectedFile == null) return;
+    
+    // Ad Gate
+    final adWatched = await showRewardedAdGate(toolName: 'PDF-to-Image');
+    if (!adWatched) {
+       setState(() => _statusMessage = 'Conversion cancelled (Ad required).');
+       return;
     }
 
     setState(() {
       _isConverting = true;
-      _statusMessage = 'Converting PDF to $_selectedFormat...';
+      _statusMessage = 'Converting to $_selectedFormat...';
       _convertedFile = null;
       _extractedImages = null;
-      _downloadUrl = null;
       _savedFilePath = null;
     });
-
-    // Check for rewarded ad first
-    final adWatched = await showRewardedAdGate(toolName: 'PDF-to-Image');
-    if (!adWatched) {
-      setState(() {
-        _isConverting = false;
-        _statusMessage = 'Conversion cancelled (Ad required).';
-      });
-      return;
-    }
 
     try {
       final apiBaseUrl = await ApiConfig.baseUrl;
@@ -188,24 +156,18 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
         final outputFilename = response.data['output_filename'] as String;
         final downloadUrl = response.data['download_url'] as String;
 
-        // Download to temp
+        // Download
         final tempDir = await FileManager.getTempDirectory();
         final savePath = p.join(tempDir.path, outputFilename);
         
-        String fullDownloadUrl = downloadUrl;
-        if (!downloadUrl.startsWith('http')) {
-             if (downloadUrl.startsWith('/')) {
-                  fullDownloadUrl = '$apiBaseUrl$downloadUrl';
-             } else {
-                  fullDownloadUrl = '$apiBaseUrl/$downloadUrl';
-             }
-        }
-        
+        String fullDownloadUrl = downloadUrl.startsWith('http') 
+            ? downloadUrl 
+            : '$apiBaseUrl${downloadUrl.startsWith('/') ? '' : '/'}$downloadUrl';
+            
         await dio.download(fullDownloadUrl, savePath);
-
         final resultFile = File(savePath);
-        
-        // Check if it is a ZIP file
+
+        // ZIP Extract logic
         List<File>? images;
         if (outputFilename.toLowerCase().endsWith('.zip')) {
            images = await _extractZip(resultFile);
@@ -218,25 +180,18 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
           _statusMessage = 'Converted to $_selectedFormat successfully!';
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Conversion complete: $outputFilename'),
-            backgroundColor: AppColors.success,
-          ),
-        );
       } else {
         throw Exception(response.data['message'] ?? 'Conversion failed');
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
       if (mounted) {
-        setState(() => _isConverting = false);
+        setState(() => _statusMessage = 'Conversion failed: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        );
       }
+    } finally {
+      if (mounted) setState(() => _isConverting = false);
     }
   }
 
@@ -246,18 +201,14 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
     final tempDir = await FileManager.getTempDirectory();
     final extractName = p.basenameWithoutExtension(zipFile.path);
     final extractDir = Directory('${tempDir.path}/$extractName');
-    
-    if (!await extractDir.exists()) {
-      await extractDir.create(recursive: true);
-    }
+    if (!await extractDir.exists()) await extractDir.create(recursive: true);
 
     List<File> extractedFiles = [];
     for (final file in archive) {
       if (file.isFile) {
-        final data = file.content as List<int>;
         final f = File('${extractDir.path}/${file.name}');
-        await f.create(recursive: true);
-        await f.writeAsBytes(data);
+        await f.parent.create(recursive: true); // safer
+        await f.writeAsBytes(file.content as List<int>);
         extractedFiles.add(f);
       }
     }
@@ -266,101 +217,78 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
 
   Future<void> _saveConvertedFile() async {
     if (_convertedFile == null) return;
-
-    // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
-
     setState(() => _isSaving = true);
 
     try {
       final root = await FileManager.getSmartConverterDirectory();
-      final imageRoot = Directory('${root.path}/ImageConversions');
-      if (!await imageRoot.exists()) {
-        await imageRoot.create(recursive: true);
-      }
-      final toolDir = Directory('${imageRoot.path}/pdf-to-${_selectedFormat.toLowerCase()}');
-      if (!await toolDir.exists()) {
-        await toolDir.create(recursive: true);
-      }
+      final imageRoot = Directory('${root.path}/ImageConversion'); // Standardized folder name
+      if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
+      
+      final subFolder = 'pdf-to-${_selectedFormat.toLowerCase()}';
+      final toolDir = Directory('${imageRoot.path}/$subFolder');
+      if (!await toolDir.exists()) await toolDir.create(recursive: true);
 
-      // If we have extracted images, save them all
       if (_extractedImages != null && _extractedImages!.isNotEmpty) {
-          // Create a subdirectory for this batch if extracting multiple images
-          final batchName = p.basenameWithoutExtension(_convertedFile!.path);
-          final batchDir = Directory('${toolDir.path}/$batchName');
-          if (!await batchDir.exists()) {
-              await batchDir.create(recursive: true);
-          }
-          
-          for (var img in _extractedImages!) {
-             final targetName = p.basename(img.path);
-             final dest = File('${batchDir.path}/$targetName');
-             await img.copy(dest.path);
-          }
-          
-          setState(() => _savedFilePath = batchDir.path);
-          
-           if (!mounted) return;
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Saved images to: ${batchDir.path}'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+         // Batch save
+         final batchName = p.basenameWithoutExtension(_convertedFile!.path);
+         final batchDir = Directory('${toolDir.path}/$batchName');
+         if (!await batchDir.exists()) await batchDir.create(recursive: true);
 
-      } else {
-        // Just the single file (maybe a ZIP or single image)
-        String targetFileName = p.basename(_convertedFile!.path);
-        File destinationFile = File(p.join(toolDir.path, targetFileName));
-
-        if (await destinationFile.exists()) {
-            final fallbackName = FileManager.generateTimestampFilename(
-            p.basenameWithoutExtension(targetFileName),
-            p.extension(targetFileName).replaceAll('.', ''),
+         for (var img in _extractedImages!) {
+            final dest = File('${batchDir.path}/${p.basename(img.path)}');
+            await img.copy(dest.path);
+         }
+         setState(() => _savedFilePath = batchDir.path);
+         if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Saved images to: ${batchDir.path}'), backgroundColor: AppColors.success),
             );
-            targetFileName = fallbackName;
-            destinationFile = File(p.join(toolDir.path, targetFileName));
-        }
-
-        await _convertedFile!.copy(destinationFile.path);
-        setState(() => _savedFilePath = destinationFile.path);
-        
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-            content: Text('Saved to: ${destinationFile.path}'),
-            backgroundColor: AppColors.success,
-            ),
-        );
+         }
+      } else {
+         // Single file
+         String targetFileName = p.basename(_convertedFile!.path);
+         File dest = File(p.join(toolDir.path, targetFileName));
+         if (await dest.exists()) {
+             final fallback = FileManager.generateTimestampFilename(
+                 p.basenameWithoutExtension(targetFileName), 
+                 p.extension(targetFileName).replaceAll('.', '')
+             );
+             dest = File(p.join(toolDir.path, fallback));
+         }
+         await _convertedFile!.copy(dest.path);
+         setState(() => _savedFilePath = dest.path);
+         if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(content: Text('Saved to: ${dest.path}'), backgroundColor: AppColors.success),
+             );
+         }
       }
-
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Save failed: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
       if (mounted) {
-        setState(() => _isSaving = false);
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
+         );
       }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   Future<void> _shareConvertedFile() async {
     if (_convertedFile == null) return;
-    
-    if (_extractedImages != null && _extractedImages!.isNotEmpty) {
-        // Share images
-        final files = _extractedImages!.map((f) => XFile(f.path)).toList();
-        await Share.shareXFiles(files, text: 'Converted Images from PDF');
-    } else {
-        final pathToShare = _savedFilePath ?? _convertedFile!.path;
-        await Share.shareXFiles([
-        XFile(pathToShare),
-        ], text: 'Converted File from PDF');
+    try {
+      if (_extractedImages != null && _extractedImages!.isNotEmpty) {
+          final files = _extractedImages!.map((f) => XFile(f.path)).toList();
+          await Share.shareXFiles(files, text: 'Converted Images from PDF');
+      } else {
+          final path = _savedFilePath ?? _convertedFile!.path;
+          await Share.shareXFiles([XFile(path)], text: 'Converted File from PDF');
+      }
+    } catch (e) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text('Share failed: $e'), backgroundColor: AppColors.error),
+       );
     }
   }
 
@@ -368,36 +296,17 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
     if (_selectedFile == null) {
       setState(() {
         _suggestedBaseName = null;
-        if (!_fileNameEdited) {
-          _fileNameController.clear();
-        }
+        if (!_fileNameEdited) _fileNameController.clear();
       });
       return;
     }
-
     final baseName = p.basenameWithoutExtension(_selectedFile!.path);
-    final sanitized = _sanitizeBaseName(baseName);
-
+    // basic sanitize
+    final sanitized = baseName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     setState(() {
       _suggestedBaseName = sanitized;
-      if (!_fileNameEdited) {
-        _fileNameController.text = sanitized;
-      }
+      if (!_fileNameEdited) _fileNameController.text = sanitized;
     });
-  }
-
-  String _sanitizeBaseName(String input) {
-    var base = input.trim();
-    if (base.toLowerCase().endsWith('.pdf')) {
-      base = base.substring(0, base.length - 4);
-    }
-    base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    base = base.replaceAll(RegExp(r'_+'), '_');
-    base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-     if (base.isEmpty) {
-      base = 'converted_from_pdf';
-    }
-    return base.substring(0, min(base.length, 80));
   }
 
   void _resetForNewConversion() {
@@ -414,9 +323,9 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
       resetAdStatus(null);
     });
   }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
+  
+  String formatBytes(int bytes) {
+     if (bytes <= 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     final digitGroups = (log(bytes) / log(1024)).floor();
     final clampedGroups = digitGroups.clamp(0, units.length - 1);
@@ -428,20 +337,15 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
+      // Standard App Bar
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
           'PDF to Image',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: BackButton(color: AppColors.textPrimary),
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -451,22 +355,171 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(),
+                // Standard Header Widget
+                const ConversionHeaderCardWidget(
+                  title: 'PDF to Image', 
+                  description: 'Convert PDF pages to JPG, PNG, TIFF, or SVG.',
+                  iconTarget: Icons.image,
+                  iconSource: Icons.picture_as_pdf,
+                ),
+                
                 const SizedBox(height: 20),
-                _buildFormatDropdown(),
+                
+                // Format Dropdown (Custom to this page)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: AppColors.backgroundSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                      children: [
+                          const Text(
+                              'Output Format:',
+                              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                              child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                      value: _selectedFormat,
+                                      dropdownColor: AppColors.backgroundSurface,
+                                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.textPrimary),
+                                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                                      onChanged: (String? newValue) {
+                                          if (newValue != null && !_isConverting) {
+                                              setState(() {
+                                                  _selectedFormat = newValue;
+                                              });
+                                          }
+                                      },
+                                      items: _formats.map<DropdownMenuItem<String>>((String value) {
+                                          return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                          );
+                                      }).toList(),
+                                  ),
+                              ),
+                          ),
+                      ],
+                  ),
+                ),
+                
                 const SizedBox(height: 16),
-                _buildActionButtons(),
+                
+                // Standard Action Button (Using Shared Widget Logic)
+                ConversionActionButtonWidget(
+                  onPickFile: () => _pickPdfFile(),
+                  isFileSelected: _selectedFile != null,
+                  isConverting: _isConverting,
+                  onReset: _resetForNewConversion,
+                  buttonText: 'Select PDF File',
+                ),
+
                 const SizedBox(height: 16),
-                _buildSelectedFileCard(),
+
+                // Selected File Card
+                if (_selectedFile != null) ...[
+                   ConversionSelectedFileCardWidget(
+                    fileName: basename(_selectedFile!.path),
+                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileIcon: Icons.picture_as_pdf,
+                    onRemove: _resetForNewConversion,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // File Name Field
+                  ConversionFileNameFieldWidget(
+                    controller: _fileNameController,
+                    suggestedName: _suggestedBaseName,
+                    labelText: 'Output file name (optional)',
+                    extensionLabel: 'Extension added automatically based on format',
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Convert Button
+                  ConversionConvertButtonWidget(
+                    onConvert: _convertPdfToImage,
+                    isConverting: _isConverting,
+                    isEnabled: true,
+                    buttonText: 'Convert to $_selectedFormat',
+                  ),
+                ],
+
                 const SizedBox(height: 16),
-                _buildFileNameField(),
-                const SizedBox(height: 20),
-                _buildConvertButton(),
-                const SizedBox(height: 16),
-                _buildStatusMessage(),
+                
+                // Status Widget
+                // We're constructing a temporary ConversionResult object to pass to the widget, 
+                // or we could use the simpler ConversionStatusWidget options if we updated it.
+                // For now, let's just make a simple custom status row since we managed state manually.
+                Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: AppColors.backgroundSurface,
+                        borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                        children: [
+                            Icon(
+                                _isConverting ? Icons.hourglass_empty : _convertedFile != null ? Icons.check_circle : Icons.info_outline,
+                                color: _isConverting ? AppColors.warning : _convertedFile != null ? AppColors.success : AppColors.textSecondary,
+                                size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(_statusMessage, style: TextStyle(color: _isConverting ? AppColors.warning : _convertedFile != null ? AppColors.success : AppColors.textSecondary, fontSize: 13))),
+                        ],
+                    ),
+                ),
+                
+                // Results Card
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultCard(),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                            BoxShadow(color: AppColors.primaryBlue.withOpacity(0.2), blurRadius: 12, spreadRadius: 1),
+                        ],
+                    ),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Row(children: [
+                                Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(color: AppColors.backgroundSurface.withOpacity(0.3), borderRadius: BorderRadius.circular(10)),
+                                    child: const Icon(Icons.check_circle_outline, color: AppColors.textPrimary, size: 24),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Text('$_selectedFormat Ready', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    Text(_convertedFile!.path.split(Platform.pathSeparator).last, style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12)),
+                                ])),
+                            ]),
+                            const SizedBox(height: 20),
+                            Row(children: [
+                                Expanded(child: ElevatedButton.icon(
+                                    onPressed: _isSaving ? null : _saveConvertedFile,
+                                    icon: const Icon(Icons.save_alt),
+                                    label: Text(_isSaving ? 'Saving...' : 'Save File'),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primaryBlue, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                )),
+                                const SizedBox(width: 12),
+                                Expanded(child: ElevatedButton.icon(
+                                    onPressed: _shareConvertedFile,
+                                    icon: const Icon(Icons.share),
+                                    label: const Text('Share'),
+                                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.backgroundSurface.withOpacity(0.3), foregroundColor: AppColors.textPrimary, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                                )),
+                            ]),
+                        ],
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -475,427 +528,6 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-   Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.25),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundSurface.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.image,
-              size: 32,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'PDF to Image',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Convert PDF pages to JPG, PNG, TIFF, or SVG.',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormatDropdown() {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-            color: AppColors.backgroundSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-        ),
-        child: Row(
-            children: [
-                const Text(
-                    'Output Format:',
-                    style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                            value: _selectedFormat,
-                            dropdownColor: AppColors.backgroundSurface,
-                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.textPrimary),
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-                            onChanged: (String? newValue) {
-                                if (newValue != null && !_isConverting) {
-                                    setState(() {
-                                        _selectedFormat = newValue;
-                                    });
-                                }
-                            },
-                            items: _formats.map<DropdownMenuItem<String>>((String value) {
-                                return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                );
-                            }).toList(),
-                        ),
-                    ),
-                ),
-            ],
-        ),
-      );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isConverting ? null : _pickPdfFile,
-            icon: const Icon(Icons.file_open_outlined),
-            label: Text(
-              _selectedFile == null ? 'Select PDF File' : 'Change File',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: AppColors.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        if (_selectedFile != null) ...[
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 56,
-            child: ElevatedButton(
-              onPressed: _isConverting ? null : _resetForNewConversion,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Icon(Icons.refresh),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-  
-  // Reuse FileCard, FileNameField, StatusMessage, ResultCard from standard
-  
-    Widget _buildSelectedFileCard() {
-    if (_selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final file = _selectedFile!;
-    final fileName = p.basename(file.path);
-    
-    String fileSize;
-    try {
-      if (file.existsSync()) {
-        fileSize = _formatBytes(file.lengthSync());
-      } else {
-        fileSize = 'File no longer available';
-      }
-    } catch (e) {
-      fileSize = 'Unknown size';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.picture_as_pdf,
-              color: AppColors.primaryBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  fileSize,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFileNameField() {
-    if (_selectedFile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final hintText = _suggestedBaseName ?? 'converted_page';
-
-    return TextField(
-      controller: _fileNameController,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(
-        labelText: 'Output file name',
-        hintText: hintText,
-        prefixIcon: const Icon(Icons.edit_outlined),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: AppColors.backgroundSurface,
-        helperText: 'Extension is added automatically based on format',
-        helperStyle: const TextStyle(color: AppColors.textSecondary),
-      ),
-      style: const TextStyle(color: AppColors.textPrimary),
-    );
-  }
-
-  Widget _buildConvertButton() {
-    final canConvert = _selectedFile != null && !_isConverting;
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canConvert ? _convertPdfToImage : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 4,
-        ),
-        child: _isConverting
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.textPrimary,
-                  ),
-                ),
-              )
-            : const Text(
-                'Convert PDF to Image',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-      ),
-    );
-  }
-
-  Widget _buildStatusMessage() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isConverting
-                ? Icons.hourglass_empty
-                : _convertedFile != null
-                ? Icons.check_circle
-                : Icons.info_outline,
-            color: _isConverting
-                ? AppColors.warning
-                : _convertedFile != null
-                ? AppColors.success
-                : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _isConverting
-                    ? AppColors.warning
-                    : _convertedFile != null
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.image,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$_selectedFormat Ready',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _convertedFile != null ? p.basename(_convertedFile!.path) : '',
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveConvertedFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _shareConvertedFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
