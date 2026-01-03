@@ -23,7 +23,12 @@ COPY app/ ./app/
 # Create necessary directories
 RUN mkdir -p uploads outputs
 
-# Expose port
+# -- AWS LAMBDA WEB ADAPTER SETUP --
+# This allows FastAPI (standard web server) to run on Lambda
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt/extensions/lambda-adapter
+
+# Expose port (Adapter listens on 8080, forwards to 8000)
+ENV PORT=8000
 EXPOSE 8000
 
 # Set environment variables
