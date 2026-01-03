@@ -143,15 +143,6 @@ class _RepairPdfPageState extends State<RepairPdfPage> with AdHelper {
     });
   }
 
-  String formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -187,12 +178,16 @@ class _RepairPdfPageState extends State<RepairPdfPage> with AdHelper {
                 if (_selectedFile != null) ...[
                   ConversionSelectedFileCardWidget(
                     fileName: basename(_selectedFile!.path),
-                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileSize: getSafeFileSize(_selectedFile!),
                     fileIcon: Icons.picture_as_pdf,
                     onRemove: _reset,
                   ),
                   const SizedBox(height: 16),
-                  _buildOptionsCard(),
+                  ConversionFileNameFieldWidget(
+                    controller: _fileNameController,
+                    suggestedName: basenameWithoutExtension(_selectedFile!.path),
+                    extensionLabel: '.pdf extension is preserved',
+                  ),
                   const SizedBox(height: 20),
                   ConversionConvertButtonWidget(
                     onConvert: _repairPdf,
@@ -209,13 +204,19 @@ class _RepairPdfPageState extends State<RepairPdfPage> with AdHelper {
                 ),
                 if (_resultFile != null) ...[
                   const SizedBox(height: 20),
-                   _savedFilePath != null 
-                    ? ConversionResultCardWidget(
+                   _savedFilePath == null 
+                    ? ConversionFileSaveCardWidget(
+                        fileName: basename(_resultFile!.path),
+                        isSaving: _isSaving,
+                        onSave: _saveResult,
+                        title: 'PDF File Ready',
+                      )
+                    : ConversionResultCardWidget(
                         savedFilePath: _savedFilePath!,
                         onShare: _shareResult,
-                      )
-                    : _buildResultCard(),
+                      ),
                 ],
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -225,144 +226,21 @@ class _RepairPdfPageState extends State<RepairPdfPage> with AdHelper {
     );
   }
 
-  Widget _buildOptionsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: _fileNameController,
-            decoration: InputDecoration(
-              labelText: 'Output file name (Optional)',
-              hintText: 'Enter custom name',
-              prefixIcon: const Icon(Icons.edit_outlined),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: AppColors.backgroundSurface,
-            ),
-            style: const TextStyle(color: AppColors.textPrimary),
-          ),
-        ],
-      ),
-    );
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
 
-  Widget _buildResultCard() {
-    final res = _resultFile!;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PDF Repaired',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      basename(res.path),
-                      style: TextStyle(
-                        color: AppColors.textPrimary.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-               Flexible(
-                flex: 3,
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveResult,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
-                          ),
-                        )
-                      : const Icon(Icons.save_outlined, size: 18),
-                  label: const Text('Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: _shareResult,
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  String getSafeFileSize(File file) {
+    try {
+      if (!file.existsSync()) return 'File not found';
+      return formatBytes(file.lengthSync());
+    } catch (e) {
+      return 'Unknown size';
+    }
   }
 }
