@@ -47,6 +47,7 @@ class NotificationService {
   static Future<void> showFileSavedNotification({
     required String fileName,
     required String filePath,
+    bool showOpenFileButton = true,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final allNotifications = prefs.getBool('all_notifications') ?? true;
@@ -72,12 +73,13 @@ class NotificationService {
         category: NotificationCategory.Status,
       ),
       actionButtons: [
-        NotificationActionButton(
-          key: 'OPEN',
-          label: 'Open File',
-          actionType: ActionType.Default,
-          color: AppColors.primaryBlue,
-        ),
+        if (showOpenFileButton)
+          NotificationActionButton(
+            key: 'OPEN',
+            label: 'Open File',
+            actionType: ActionType.Default,
+            color: AppColors.primaryBlue,
+          ),
         NotificationActionButton(
           key: 'VIEW',
           label: 'Open Folder',
@@ -215,7 +217,10 @@ Future<void> onActionReceivedMethod(
   try {
     if (receivedAction.buttonKeyPressed == 'VIEW') {
       debugPrint('🔔 Action: VIEW (Open Folder)');
-      final directoryPath = dirname(filePath);
+      String directoryPath = filePath;
+      if (!await Directory(filePath).exists()) {
+          directoryPath = dirname(filePath);
+      }
       debugPrint('🔔 Opening directory: $directoryPath');
       await NotificationService.openFile(directoryPath);
     } else {

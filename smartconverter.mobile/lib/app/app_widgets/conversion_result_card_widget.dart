@@ -4,12 +4,14 @@ class ConversionResultCardWidget extends StatefulWidget {
   final String savedFilePath;
   final VoidCallback onShare;
   final String title;
+  final bool showActions;
 
   const ConversionResultCardWidget({
     super.key,
     required this.savedFilePath,
     required this.onShare,
     this.title = 'CONVERSION RESULT',
+    this.showActions = true,
   });
 
   @override
@@ -109,11 +111,15 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
               ),
               child: ElevatedButton.icon(
                 onPressed: () {
+                   String navigationPath = widget.savedFilePath;
+                   if (!Directory(widget.savedFilePath).existsSync()) {
+                       navigationPath = dirname(widget.savedFilePath);
+                   }
                    Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => MyFilesPage(
-                        initialPath: dirname(widget.savedFilePath),
+                        initialPath: navigationPath,
                       ),
                     ),
                   );
@@ -167,8 +173,11 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
               ),
               child: ElevatedButton.icon(
                 onPressed: () async {
-                   final folderPath = dirname(widget.savedFilePath);
-                   await NotificationService.openFile(folderPath);
+                   String openPath = widget.savedFilePath;
+                   if (!await Directory(widget.savedFilePath).exists()) {
+                       openPath = dirname(widget.savedFilePath);
+                   }
+                   await NotificationService.openFile(openPath);
                 },
                 icon: const Icon(Icons.arrow_forward, size: 25, color: Colors.white),
                 label: const Text(
@@ -183,62 +192,64 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          Divider(color: AppColors.success.withOpacity(0.5), thickness: 2, height: 1),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 130,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                       if (!await File(widget.savedFilePath).exists()) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('File no longer exists.')),
-                            );
-                          }
-                          return;
-                       }
-                       await NotificationService.openFile(widget.savedFilePath);
-                    },
-                    icon: const Icon(Icons.open_in_new, size: 14),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Open File'),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryBlue,
-                      side: const BorderSide(color: AppColors.primaryBlue),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                      textStyle: const TextStyle(fontSize: 11),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 130,
-                  child: OutlinedButton.icon(
-                    onPressed: widget.onShare,
-                    icon: const Icon(Icons.share, size: 14),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Share'),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.warning,
-                      side: const BorderSide(color: AppColors.warning),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                      textStyle: const TextStyle(fontSize: 11),
+          if (widget.showActions) ...[
+            const SizedBox(height: 20),
+            Divider(color: AppColors.success.withOpacity(0.5), thickness: 2, height: 1),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                         if (!await File(widget.savedFilePath).exists()) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('File no longer exists.')),
+                              );
+                            }
+                            return;
+                         }
+                         await NotificationService.openFile(widget.savedFilePath);
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 14),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Open File'),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryBlue,
+                        side: const BorderSide(color: AppColors.primaryBlue),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                        textStyle: const TextStyle(fontSize: 11),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    width: 130,
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onShare,
+                      icon: const Icon(Icons.share, size: 14),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Share'),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.warning,
+                        side: const BorderSide(color: AppColors.warning),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                        textStyle: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

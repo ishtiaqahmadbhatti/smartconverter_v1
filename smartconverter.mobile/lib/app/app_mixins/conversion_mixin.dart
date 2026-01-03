@@ -30,7 +30,13 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   String get convertingMessage => 'Converting $fileTypeLabel...';
 
   /// Custom share subject. Defaults to "Converted File: {fileName}".
-  String get shareSubject => 'Converted File: ${model.conversionResult?.fileName}';
+  String get shareSubject {
+    final result = model.conversionResult;
+    if (result is PdfToImagesResult) {
+      return 'Converted Images (${result.files.length})';
+    }
+    return 'Converted File: ${(result as dynamic)?.fileName}';
+  }
   
   // The actual conversion action to perform
   Future<dynamic> performConversion(File? file, String? outputName);
@@ -165,37 +171,56 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
 
       if (result is PdfToImagesResult) {
           // Handle PdfToImagesResult
-          // Save all files to the directory
+          // determine folder name
+          String baseName;
+          if (fileNameController.text.trim().isNotEmpty) {
+             baseName = fileNameController.text.trim();
+          } else if (model.selectedFile != null) {
+             baseName = basenameWithoutExtension(model.selectedFile!.path);
+          } else {
+             baseName = result.folderName;
+          }
+          final sanitizedFolderName = sanitizeBaseName(baseName);
+
+          // Create subfolder
+          Directory destDir = Directory(join(directory.path, sanitizedFolderName));
+          
+          // Handle collision
+          if (await destDir.exists()) {
+             int counter = 1;
+             while (await destDir.exists()) {
+                destDir = Directory(join(directory.path, '${sanitizedFolderName}_$counter'));
+                counter++;
+             }
+          }
+          await destDir.create(recursive: true);
+
+          // Save files into subfolder
           final savedPaths = <String>[];
           for (int i = 0; i < result.files.length; i++) {
              final file = result.files[i];
-             final originalName = result.fileNames.length > i ? result.fileNames[i] : basename(file.path);
+             final ext = extension(file.path);
+             // Name: FolderName_1.jpg
+             final targetFileName = '${basename(destDir.path)}_${i + 1}$ext';
+             final destFile = File(join(destDir.path, targetFileName));
              
-             // Fallback naming if unique needed or custom name logic
-             String targetName = originalName;
-             
-             // Check if file exists logic (simplified for batch)
-             File dest = File(join(directory.path, targetName));
-             if (await dest.exists()) {
-                 targetName = '${basenameWithoutExtension(targetName)}_${DateTime.now().millisecondsSinceEpoch}${extension(targetName)}';
-                 dest = File(join(directory.path, targetName));
-             }
-             
-             await file.copy(dest.path);
-             savedPaths.add(dest.path);
+             await file.copy(destFile.path);
+             savedPaths.add(destFile.path);
           }
           
           if (!mounted) return;
-          setState(() => model.savedFilePath = savedPaths.isNotEmpty ? directory.path : null);
+          // For multi-file, savedFilePath points to the folder
+          setState(() => model.savedFilePath = destDir.path);
           
           await NotificationService.showFileSavedNotification(
              fileName: '${savedPaths.length} images',
-             filePath: directory.path,
+             filePath: destDir.path,
+             showOpenFileButton: false,
           );
           
           if (mounted) {
             setState(() {
-              model.statusMessage = 'Saved ${savedPaths.length} files successfully!';
+              model.statusMessage = 'Saved ${savedPaths.length} files to ${basename(destDir.path)}';
             });
           }
           
@@ -267,7 +292,40 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
   Future<void> shareFile() async {
     final result = model.conversionResult;
     if (result == null) return;
-    final pathToShare = model.savedFilePath ?? result.file.path;
+
+    if (result is PdfToImagesResult) {
+        final List<XFile> filesToShare = [];
+        if (model.savedFilePath != null) {
+            // If saved, it points to the directory
+            final dir = Directory(model.savedFilePath!);
+            if (await dir.exists()) {
+               final entities = dir.listSync(); 
+               for (final entity in entities) {
+                   if (entity is File) {
+                      filesToShare.add(XFile(entity.path));
+                   }
+               }
+            }
+        } else {
+            // Use temp files
+            for (final f in result.files) {
+                filesToShare.add(XFile(f.path));
+            }
+        }
+        
+        if (filesToShare.isEmpty) {
+             if (mounted) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No files to share'), backgroundColor: AppColors.error),
+                 );
+             }
+             return;
+        }
+        await Share.shareXFiles(filesToShare, text: shareSubject);
+        return;
+    }
+
+    final pathToShare = model.savedFilePath ?? (result as dynamic).file.path;
     final fileToShare = File(pathToShare);
 
     if (!await fileToShare.exists()) {
@@ -362,5 +420,14 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
     final clampedGroups = digitGroups.clamp(0, units.length - 1);
     final value = bytes / pow(1024, clampedGroups);
     return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
+  String getSafeFileSize(File file) {
+    try {
+      if (!file.existsSync()) return 'File not found';
+      return formatBytes(file.lengthSync());
+    } catch (e) {
+      return 'Unknown size';
+    }
   }
 }

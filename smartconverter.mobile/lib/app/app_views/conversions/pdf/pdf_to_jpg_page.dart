@@ -80,7 +80,7 @@ class _PdfToJpgPageState extends State<PdfToJpgPage> with AdHelper, ConversionMi
                 if (model.selectedFile != null)
                   ConversionSelectedFileCardWidget(
                     fileName: basename(model.selectedFile!.path),
-                    fileSize: formatBytes(model.selectedFile!.lengthSync()),
+                    fileSize: getSafeFileSize(model.selectedFile!),
                     fileIcon: Icons.picture_as_pdf,
                     onRemove: resetForNewConversion,
                   ),
@@ -109,15 +109,18 @@ class _PdfToJpgPageState extends State<PdfToJpgPage> with AdHelper, ConversionMi
                   const SizedBox(height: 20),
                   if (model.savedFilePath == null)
                     ConversionFileSaveCardWidget(
-                      fileName: model.conversionResult!.fileName,
+                      fileName: model.conversionResult is PdfToImagesResult
+                          ? '${(model.conversionResult as PdfToImagesResult).files.length} Images'
+                          : (model.conversionResult as dynamic).fileName,
                       isSaving: model.isSaving,
                       onSave: saveResult,
-                      title: "JPG File Ready",
+                      title: "JPG Files Ready",
                     )
                   else
                     ConversionResultCardWidget(
                       savedFilePath: model.savedFilePath!,
                       onShare: shareFile,
+                      showActions: model.conversionResult is! PdfToImagesResult,
                     ),
                 ],
                 const SizedBox(height: 24),
