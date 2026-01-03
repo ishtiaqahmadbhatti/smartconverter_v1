@@ -402,9 +402,13 @@ class PDFConversionService:
     def oxps_to_pdf(oxps_path: str, output_path: str) -> str:
         """Convert OXPS to PDF."""
         try:
-            # OXPS is essentially XPS format
-            # This is a simplified conversion - in production you'd need specialized libraries
-            raise FileProcessingError("OXPS to PDF conversion requires specialized libraries not available in standard Python packages")
+            # Use PyMuPDF (fitz) to convert OXPS to PDF
+            doc = fitz.open(oxps_path)
+            pdf_bytes = doc.convert_to_pdf()
+            with open(output_path, "wb") as f:
+                f.write(pdf_bytes)
+            doc.close()
+            return output_path
             
         except Exception as e:
             raise FileProcessingError(f"Error converting OXPS to PDF: {str(e)}")
@@ -444,7 +448,123 @@ class PDFConversionService:
                 # Fallback to basic markdown if extensions not available
                 html_content = markdown.markdown(md_content)
             
-            if not WEASYPRINT_AVAILABLE:
+            
+            # custom flag to track if we need fallback
+            weasyprint_success = False
+
+            # Try WeasyPrint FIRST
+            if WEASYPRINT_AVAILABLE:
+                try:
+                    # Use WeasyPrint for proper HTML to PDF conversion with CSS styling
+                    css_content = """
+                    @page {
+                        size: A4;
+                        margin: 2cm;
+                    }
+                    body {
+                        font-family: 'DejaVu Sans', Arial, sans-serif;
+                        font-size: 11pt;
+                        line-height: 1.6;
+                        color: #333;
+                    }
+                    h1 {
+                        font-size: 24pt;
+                        color: #1a1a1a;
+                        margin-top: 20pt;
+                        margin-bottom: 12pt;
+                        border-bottom: 2px solid #ddd;
+                        padding-bottom: 8pt;
+                    }
+                    h2 {
+                        font-size: 20pt;
+                        color: #2a2a2a;
+                        margin-top: 16pt;
+                        margin-bottom: 10pt;
+                        border-bottom: 1px solid #eee;
+                        padding-bottom: 6pt;
+                    }
+                    h3 {
+                        font-size: 16pt;
+                        color: #3a3a3a;
+                        margin-top: 12pt;
+                        margin-bottom: 8pt;
+                    }
+                    h4 {
+                        font-size: 14pt;
+                        color: #4a4a4a;
+                        margin-top: 10pt;
+                        margin-bottom: 6pt;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 12pt 0;
+                    }
+                    th {
+                        background-color: #f0f0f0;
+                        color: #000;
+                        font-weight: bold;
+                        padding: 8pt;
+                        border: 1px solid #ddd;
+                    }
+                    td {
+                        padding: 6pt;
+                        border: 1px solid #ddd;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    p {
+                        margin: 8pt 0;
+                    }
+                    ul, ol {
+                        margin: 8pt 0;
+                        padding-left: 24pt;
+                    }
+                    li {
+                        margin: 4pt 0;
+                    }
+                    code {
+                        background-color: #f4f4f4;
+                        padding: 2pt 4pt;
+                        border-radius: 3pt;
+                        font-family: 'Courier New', monospace;
+                    }
+                    pre {
+                        background-color: #f5f5f5;
+                        border: 1px solid #ddd;
+                        border-radius: 4pt;
+                        padding: 12pt;
+                        margin: 12pt 0;
+                        overflow-x: auto;
+                        font-family: 'Courier New', 'Courier', monospace;
+                        font-size: 8pt;
+                        line-height: 1.4;
+                        white-space: pre;
+                        word-wrap: normal;
+                    }
+                    pre code {
+                        background-color: transparent;
+                        padding: 0;
+                        border-radius: 0;
+                        font-size: inherit;
+                    }
+                    """
+                    
+                    font_config = FontConfiguration()
+                    HTML(string=html_content).write_pdf(
+                        output_path,
+                        font_config=font_config,
+                        stylesheets=[CSS(string=css_content)]
+                    )
+                    
+                    weasyprint_success = True
+                    return output_path
+                except Exception as e:
+                    print(f"WeasyPrint failed: {e}. Falling back to ReportLab.")
+                    weasyprint_success = False
+
+            if not weasyprint_success:
                 # Fallback to reportlab with proper HTML parsing using BeautifulSoup
                 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
                 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
@@ -829,111 +949,7 @@ class PDFConversionService:
                     encoding='utf-8'
                 )
                 doc.build(story)
-            else:
-                # Use WeasyPrint for proper HTML to PDF conversion with CSS styling
-                css_content = """
-                @page {
-                    size: A4;
-                    margin: 2cm;
-                }
-                body {
-                    font-family: 'DejaVu Sans', Arial, sans-serif;
-                    font-size: 11pt;
-                    line-height: 1.6;
-                    color: #333;
-                }
-                h1 {
-                    font-size: 24pt;
-                    color: #1a1a1a;
-                    margin-top: 20pt;
-                    margin-bottom: 12pt;
-                    border-bottom: 2px solid #ddd;
-                    padding-bottom: 8pt;
-                }
-                h2 {
-                    font-size: 20pt;
-                    color: #2a2a2a;
-                    margin-top: 16pt;
-                    margin-bottom: 10pt;
-                    border-bottom: 1px solid #eee;
-                    padding-bottom: 6pt;
-                }
-                h3 {
-                    font-size: 16pt;
-                    color: #3a3a3a;
-                    margin-top: 12pt;
-                    margin-bottom: 8pt;
-                }
-                h4 {
-                    font-size: 14pt;
-                    color: #4a4a4a;
-                    margin-top: 10pt;
-                    margin-bottom: 6pt;
-                }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin: 12pt 0;
-                }
-                th {
-                    background-color: #f0f0f0;
-                    color: #000;
-                    font-weight: bold;
-                    padding: 8pt;
-                    border: 1px solid #ddd;
-                }
-                td {
-                    padding: 6pt;
-                    border: 1px solid #ddd;
-                }
-                tr:nth-child(even) {
-                    background-color: #f9f9f9;
-                }
-                p {
-                    margin: 8pt 0;
-                }
-                ul, ol {
-                    margin: 8pt 0;
-                    padding-left: 24pt;
-                }
-                li {
-                    margin: 4pt 0;
-                }
-                code {
-                    background-color: #f4f4f4;
-                    padding: 2pt 4pt;
-                    border-radius: 3pt;
-                    font-family: 'Courier New', monospace;
-                }
-                pre {
-                    background-color: #f5f5f5;
-                    border: 1px solid #ddd;
-                    border-radius: 4pt;
-                    padding: 12pt;
-                    margin: 12pt 0;
-                    overflow-x: auto;
-                    font-family: 'Courier New', 'Courier', monospace;
-                    font-size: 8pt;
-                    line-height: 1.4;
-                    white-space: pre;
-                    word-wrap: normal;
-                }
-                pre code {
-                    background-color: transparent;
-                    padding: 0;
-                    border-radius: 0;
-                    font-size: inherit;
-                }
-                """
-                
-            font_config = FontConfiguration()
-            HTML(string=html_content).write_pdf(
-                output_path,
-                font_config=font_config,
-                stylesheets=[CSS(string=css_content)]
-            )
-            
-            return output_path
+
             
         except Exception as e:
             raise FileProcessingError(f"Error converting Markdown to PDF: {str(e)}")

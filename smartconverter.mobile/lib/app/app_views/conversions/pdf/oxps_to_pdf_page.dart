@@ -37,10 +37,34 @@ class _OxpsToPdfPageState extends State<OxpsToPdfPage> with AdHelper, Conversion
   Future<Directory> get saveDirectory => FileManager.getOxpsToPdfDirectory();
 
   @override
-  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) async {
-    // Feature not yet implemented in backend
-    await Future.delayed(const Duration(milliseconds: 500));
-    throw UnimplementedError('This feature is coming soon!');
+  Future<MarkdownToPdfResult?> performConversion(File? file, String? outputName) async {
+    if (file == null) return null;
+    return await service.convertOxpsToPdf(file, outputFilename: outputName);
+  }
+
+  @override
+  Future<void> pickFile({String type = 'custom'}) async {
+    // Override to use 'any' because OXPS is not supported by standard file picker types
+    await super.pickFile(type: 'any');
+
+    // Post-pick validation
+    if (model.selectedFile != null) {
+      final ext = extension(model.selectedFile!.path).toLowerCase().replaceAll('.', '');
+      if (!allowedExtensions.contains(ext)) {
+        setState(() {
+          model.selectedFile = null;
+          model.statusMessage = 'Invalid file type. Please select an OXPS or XPS file.';
+        });
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid file type. Please select an OXPS or XPS file.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -50,7 +74,10 @@ class _OxpsToPdfPageState extends State<OxpsToPdfPage> with AdHelper, Conversion
       appBar: AppBar(
         title: const Text(
           'Convert OXPS to PDF',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -70,27 +97,57 @@ class _OxpsToPdfPageState extends State<OxpsToPdfPage> with AdHelper, Conversion
                   iconSource: Icons.description_outlined,
                 ),
                 const SizedBox(height: 20),
-                const Card(
-                  color: AppColors.backgroundSurface,
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      'This feature is currently under maintenance and will be available in a future update.',
-                      style: TextStyle(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Disabled UI
                 ConversionActionButtonWidget(
-                  onPickFile: () {},
-                  isFileSelected: false,
-                  isConverting: false,
-                  onReset: () {},
+                  onPickFile: () => pickFile(),
+                  isFileSelected: model.selectedFile != null,
+                  isConverting: model.isConverting,
+                  onReset: resetForNewConversion,
                   buttonText: 'Select OXPS File',
                 ),
-                 const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                if (model.selectedFile != null) ...[
+                  ConversionSelectedFileCardWidget(
+                    fileName: basename(model.selectedFile!.path),
+                    fileSize: getSafeFileSize(model.selectedFile!),
+                    fileIcon: Icons.description_outlined,
+                    onRemove: resetForNewConversion,
+                  ),
+                  const SizedBox(height: 16),
+                  ConversionFileNameFieldWidget(
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
+                    extensionLabel: '.pdf extension is added automatically',
+                  ),
+                  const SizedBox(height: 20),
+                  ConversionConvertButtonWidget(
+                    onConvert: convert,
+                    isConverting: model.isConverting,
+                    isEnabled: model.selectedFile != null,
+                    buttonText: 'Convert to PDF',
+                  ),
+                ],
+                const SizedBox(height: 16),
+                ConversionStatusWidget(
+                  statusMessage: model.statusMessage,
+                  isConverting: model.isConverting,
+                  conversionResult: model.conversionResult,
+                ),
+                if (model.conversionResult != null) ...[
+                  const SizedBox(height: 20),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'PDF File Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
+                ],
+                const SizedBox(height: 24),
               ],
             ),
           ),

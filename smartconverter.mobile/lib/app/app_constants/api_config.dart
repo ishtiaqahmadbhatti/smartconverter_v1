@@ -60,7 +60,7 @@ class ApiConfig {
   static const String loginEndpoint = '/api/v1/auth/login';
   static const String loginUserListEndpoint = '/api/v1/auth/login-userlist';
   static const String registerEndpoint = '/api/v1/auth/register-userlist';
-  static const String pdfToWordEndpoint = '/convert/pdf-to-word';
+  static const String pdfToWordEndpoint = '/api/v1/pdfconversiontools/pdf-to-word';
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';
   static const String imagesToPdfEndpoint = '/convert/images-to-pdf';
   static const String pdfToImagesEndpoint = '/convert/pdf-to-images';
@@ -72,6 +72,8 @@ class ApiConfig {
   static const String mergePdfEndpoint = '/api/v1/pdfconversiontools/merge';
   static const String markdownToPdfEndpoint =
       '/api/v1/pdfconversiontools/markdown-to-pdf';
+  static const String oxpsToPdfEndpoint =
+      '/api/v1/pdfconversiontools/oxps-to-pdf';
   static const String jpgToPdfEndpoint =
       '/api/v1/pdfconversiontools/jpg-to-pdf';
   static const String pngToPdfEndpoint =

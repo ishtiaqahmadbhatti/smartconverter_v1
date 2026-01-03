@@ -83,6 +83,8 @@ class FileService:
             allowed_types = [".avi"]
         elif file_type == "mp4":
             allowed_types = [".mp4"]
+        elif file_type == "oxps":
+            allowed_types = [".oxps"]
         else:  # general/default
             allowed_types = [
                 ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", 

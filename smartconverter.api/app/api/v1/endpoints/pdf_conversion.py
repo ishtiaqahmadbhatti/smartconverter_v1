@@ -141,7 +141,7 @@ async def convert_pdf_to_markdown(
 
 
 # AI: Convert PDF to CSV
-@router.post("/pdf-to-csv", response_model=PDFConversionResponse)
+@router.post("/pdf-to-csv-ai", response_model=PDFConversionResponse)
 async def convert_pdf_to_csv(
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
@@ -195,7 +195,7 @@ async def convert_pdf_to_csv(
 
 
 # AI: Convert PDF to Excel
-@router.post("/pdf-to-excel", response_model=PDFConversionResponse)
+@router.post("/pdf-to-excel-ai", response_model=PDFConversionResponse)
 async def convert_pdf_to_excel(
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
@@ -392,27 +392,36 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
 
 # Convert OXPS to PDF
 @router.post("/oxps-to-pdf", response_model=PDFConversionResponse)
-async def convert_oxps_to_pdf(file: UploadFile = File(...)):
+async def convert_oxps_to_pdf(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None)
+):
     """Convert OXPS to PDF."""
     input_path = None
     output_path = None
     
     try:
         # Validate file
-        FileService.validate_file(file, "pdf")
+        FileService.validate_file(file, "oxps")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
+        # Generate output path
+        if output_filename:
+            output_path, final_filename = FileService.generate_output_path_with_filename(output_filename, ".pdf")
+        else:
+            output_path = FileService.get_output_path(input_path, "_converted.pdf")
+            final_filename = os.path.basename(output_path)
+            
         # Convert OXPS to PDF
-        output_path = FileService.get_output_path(input_path, "_converted.pdf")
         result_path = PDFConversionService.oxps_to_pdf(input_path, output_path)
         
         return PDFConversionResponse(
             success=True,
             message="OXPS converted to PDF successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -747,7 +756,7 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
 
 
 # Convert PDF to CSV
-@router.post("/pdf-to-csv-extract", response_model=PDFConversionResponse)
+@router.post("/pdf-to-csv", response_model=PDFConversionResponse)
 async def convert_pdf_to_csv_extract(
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
@@ -801,7 +810,7 @@ async def convert_pdf_to_csv_extract(
 
 
 # Convert PDF to Excel
-@router.post("/pdf-to-excel-extract", response_model=PDFConversionResponse)
+@router.post("/pdf-to-excel", response_model=PDFConversionResponse)
 async def convert_pdf_to_excel_extract(
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
@@ -855,8 +864,11 @@ async def convert_pdf_to_excel_extract(
 
 
 # Convert PDF to Word
-@router.post("/pdf-to-word-extract", response_model=PDFConversionResponse)
-async def convert_pdf_to_word_extract(file: UploadFile = File(...)):
+@router.post("/pdf-to-word", response_model=PDFConversionResponse)
+async def convert_pdf_to_word_extract(
+    file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
+):
     """Convert PDF to Word document."""
     input_path = None
     output_path = None
@@ -868,8 +880,15 @@ async def convert_pdf_to_word_extract(file: UploadFile = File(...)):
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
+        # Determine desired output filename
+        original_name = file.filename or "pdf_word"
+        desired_name = (output_filename or original_name).strip() or "pdf_word"
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".docx",
+        )
+        
         # Convert PDF to Word
-        output_path = FileService.get_output_path(input_path, "_extracted.docx")
         result_path = PDFConversionService.pdf_to_word_extract(input_path, output_path)
         
         return PDFConversionResponse(

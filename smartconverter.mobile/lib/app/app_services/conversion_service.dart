@@ -1909,6 +1909,68 @@ class ConversionService {
     }
   }
 
+  // Convert OXPS to PDF
+  Future<MarkdownToPdfResult?> convertOxpsToPdf(
+    File oxpsFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!oxpsFile.existsSync()) {
+        throw Exception('OXPS file does not exist');
+      }
+
+      // Validate file extension
+      final ext = extension(oxpsFile.path).toLowerCase();
+      if (ext != '.oxps' && ext != '.xps') {
+        throw Exception('Only .oxps and .xps files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        oxpsFile.path,
+        filename: basename(oxpsFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading OXPS file for PDF conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.oxpsToPdfEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${basenameWithoutExtension(oxpsFile.path)}.pdf';
+
+        _debugLog('✅ OXPS converted to PDF successfully!');
+        _debugLog('📥 Downloading PDF: $fileName');
+
+        // Try multiple download endpoints
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return MarkdownToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert OXPS to PDF: $e');
+    }
+  }
+
 
 
   // Convert PDF to JPG (multiple images)
@@ -3618,6 +3680,8 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       } else if (type == 'pdf' || allowedExtensions?.contains('pdf') == true) {
         fileType = FileType.custom;
         allowedExtensions = const ['pdf'];
+      } else if (type == 'any') {
+        fileType = FileType.any;
       } else if (allowedExtensions != null && allowedExtensions.isNotEmpty) {
         fileType = FileType.custom;
       }
