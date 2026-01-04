@@ -12,8 +12,8 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
   final TextEditingController _rangesCtrl = TextEditingController();
   File? _selectedFile;
   String _splitType = 'page_ranges';
-  bool _zip = false;
   bool _isProcessing = false;
+  bool _isSaving = false;
   List<SplitFileResult> _results = [];
   String? _savedFolderPath;
   String _statusMessage = 'Select a PDF file to begin.';
@@ -35,22 +35,26 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
   }
 
   Future<void> _pickPdfFile() async {
-    final file = await _service.pickFile(
-      allowedExtensions: const ['pdf'],
-      type: 'pdf',
-    );
-    if (file == null) {
-      if (mounted) setState(() => _statusMessage = 'No file selected.');
-      return;
+    try {
+      final file = await _service.pickFile(
+        allowedExtensions: const ['pdf'],
+        type: 'pdf',
+      );
+      if (file == null) {
+        if (mounted) setState(() => _statusMessage = 'No file selected.');
+        return;
+      }
+      setState(() {
+        _selectedFile = file;
+        _results = [];
+        _savedFolderPath = null;
+        _statusMessage = '1 PDF file selected.';
+        _prefixCtrl.text = basenameWithoutExtension(file.path);
+        resetAdStatus(file.path);
+      });
+    } catch (e) {
+       if (mounted) setState(() => _statusMessage = 'Error picking file: $e');
     }
-    setState(() {
-      _selectedFile = file;
-      _results = [];
-      _savedFolderPath = null;
-      _statusMessage = 'PDF file selected: ${basename(file.path)}';
-      _prefixCtrl.text = basenameWithoutExtension(file.path);
-      resetAdStatus(file.path);
-    });
   }
 
   Future<void> _splitPdf() async {
@@ -82,12 +86,11 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
         splitType: _splitType,
         pageRanges: ranges,
         outputPrefix: prefix,
-        zip: _zip,
       );
       if (mounted) {
         setState(() {
           _results = result?.files ?? [];
-          _statusMessage = 'Split completed: ${_results.length} files.';
+          _statusMessage = 'Split completed: ${_results.length} files created.';
         });
       }
     } catch (e) {
@@ -103,19 +106,18 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
     // Show Interstitial Ad before saving if ready
     await showInterstitialAd();
 
-    final baseDir = await FileManager.getSplitPdfsDirectory();
-    String targetFolder = _prefixCtrl.text.trim().isEmpty
-        ? (_selectedFile != null
-              ? basenameWithoutExtension(_selectedFile!.path)
-              : 'split')
-        : _prefixCtrl.text.trim();
+    setState(() => _isSaving = true);
+    try {
+      final baseDir = await FileManager.getSplitPdfsDirectory();
+      String targetFolder = _prefixCtrl.text.trim().isEmpty
+          ? (_selectedFile != null
+                ? basenameWithoutExtension(_selectedFile!.path)
+                : 'split')
+          : _prefixCtrl.text.trim();
     Directory destination = Directory(join(baseDir.path, targetFolder));
-    int counter = 1;
-    while (await destination.exists()) {
-      destination = Directory(join(baseDir.path, '${targetFolder}_$counter'));
-      counter++;
+    if (!await destination.exists()) {
+      await destination.create(recursive: true);
     }
-    await destination.create(recursive: true);
     
     bool anySaved = false;
     for (final part in _results) {
@@ -133,11 +135,21 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
       setState(() => _savedFolderPath = destination.path);
       
       await NotificationService.showFileSavedNotification(
-        fileName: targetFolder,
+        fileName: basename(destination.path),
         filePath: destination.path,
+        showOpenFileButton: false, 
       );
 
-      setState(() => _statusMessage = 'Files saved to $targetFolder');
+      setState(() => _statusMessage = 'Files saved to folder: ${basename(destination.path)}');
+    }
+    } catch (e) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -151,6 +163,24 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
       _rangesCtrl.clear();
       resetAdStatus(null);
     });
+  }
+
+  String formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    final digitGroups = (log(bytes) / log(1024)).floor();
+    final clampedGroups = digitGroups.clamp(0, units.length - 1);
+    final value = bytes / pow(1024, clampedGroups);
+    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
+  }
+
+  String getSafeFileSize(File file) {
+    try {
+      if (!file.existsSync()) return 'File not found';
+      return formatBytes(file.lengthSync());
+    } catch (e) {
+      return 'Unknown size';
+    }
   }
 
   @override
@@ -191,12 +221,18 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
                 if (_selectedFile != null) ...[
                    ConversionSelectedFileCardWidget(
                     fileName: basename(_selectedFile!.path),
-                    fileSize: formatBytes(_selectedFile!.lengthSync()),
+                    fileSize: getSafeFileSize(_selectedFile!),
                     fileIcon: Icons.picture_as_pdf,
                     onRemove: _reset,
                   ),
                   const SizedBox(height: 16),
                   _buildOptionsCard(),
+                   const SizedBox(height: 16),
+                   ConversionFileNameFieldWidget(
+                     controller: _prefixCtrl,
+                     suggestedName: basenameWithoutExtension(_selectedFile!.path),
+                     extensionLabel: 'Folder Name',
+                   ),
                   const SizedBox(height: 20),
                   ConversionConvertButtonWidget(
                     onConvert: _splitPdf,
@@ -209,11 +245,22 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
                 ConversionStatusWidget(
                   statusMessage: _statusMessage,
                   isConverting: _isProcessing,
-                  conversionResult: null, // Using custom result view
+                  conversionResult: null,
                 ),
                 if (_results.isNotEmpty) ...[
-                   const SizedBox(height: 20),
-                   _buildResultsList(),
+                  const SizedBox(height: 20),
+                  _savedFolderPath == null
+                    ? ConversionFileSaveCardWidget(
+                        fileName: '${_results.length} Files Ready',
+                        isSaving: _isSaving,
+                        onSave: _savePartsLocally,
+                        title: 'Split Files Ready',
+                      )
+                    : ConversionResultCardWidget(
+                        savedFilePath: _savedFolderPath!,
+                        onShare: () {}, // Share logic not applicable for folder in this context or handled externally
+                        showActions: false, // Hides Open/Share buttons as requested
+                      ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -284,144 +331,8 @@ class _PdfSplitPageState extends State<PdfSplitPage> with AdHelper {
             ),
             style: const TextStyle(color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _prefixCtrl,
-            decoration: InputDecoration(
-              labelText: 'Output prefix',
-              hintText: 'Auto from file name',
-              prefixIcon: const Icon(Icons.text_fields),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: AppColors.backgroundSurface,
-            ),
-            style: const TextStyle(color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            value: _zip,
-            onChanged: (v) => setState(() => _zip = v),
-            activeColor: AppColors.primaryBlue,
-            title: const Text(
-              'Return zip also',
-              style: TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  Widget _buildResultsList() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-         boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
-              ),
-               const SizedBox(width: 12),
-               const Expanded(
-                 child: Text(
-                   'Split Results',
-                   style: TextStyle(
-                     color: AppColors.textPrimary,
-                     fontSize: 16,
-                     fontWeight: FontWeight.bold,
-                   ),
-                 ),
-               ),
-               if (_results.isNotEmpty)
-                 TextButton.icon(
-                   onPressed: _savePartsLocally,
-                   icon: const Icon(Icons.save_alt, color: AppColors.textPrimary),
-                   label: const Text('Save All', style: TextStyle(color: AppColors.textPrimary)),
-                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_savedFolderPath != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Text(
-                'Saved to folder: ${_savedFolderPath!.split(Platform.pathSeparator).last}',
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _results.length,
-            itemBuilder: (context, index) {
-              final r = _results[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListTile(
-                  title: Text(
-                    r.fileName,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    'Pages: ${r.pages.join(', ')}',
-                    style: TextStyle(color: AppColors.textPrimary.withOpacity(0.7), fontSize: 12),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.download, color: AppColors.textPrimary, size: 20),
-                    onPressed: () async {
-                      final f = await _service.downloadConvertedFile(
-                        r.downloadUrl,
-                        r.fileName,
-                      );
-                      if (f != null && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Downloaded ${r.fileName}')),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-  String formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
 }
