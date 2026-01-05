@@ -1,6 +1,6 @@
 
 import '../../../app_modules/imports_module.dart';
-import 'package:path/path.dart' as p;
+
 
 class ImageToPdfPage extends StatefulWidget {
   const ImageToPdfPage({super.key});
@@ -9,40 +9,79 @@ class ImageToPdfPage extends StatefulWidget {
   State<ImageToPdfPage> createState() => _ImageToPdfPageState();
 }
 
-class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPdfPage> {
+class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPdfPage>, ConversionMixin {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
+  final ConversionModel _model = ConversionModel(statusMessage: 'Select image files (JPG, PNG) to begin.');
 
+  // Local state for multiple files (not handled by mixin's single file model)
   List<File> _selectedFiles = [];
-  File? _convertedFile;
-  String? _downloadUrl;
-  bool _isConverting = false;
-  bool _isSaving = false;
-  bool _fileNameEdited = false;
-  String _statusMessage = 'Select image files (JPG, PNG) to begin.';
-  String? _suggestedBaseName;
-  String? _savedFilePath;
 
   @override
   void initState() {
     super.initState();
-    _fileNameController.addListener(_handleFileNameChange);
+    _fileNameController.addListener(handleFileNameChange);
     _service.initialize();
   }
 
   @override
   void dispose() {
-    _fileNameController.removeListener(_handleFileNameChange);
+    _fileNameController.removeListener(handleFileNameChange);
     _fileNameController.dispose();
     super.dispose();
   }
 
-  void _handleFileNameChange() {
-    final trimmed = _fileNameController.text.trim();
-    final edited = trimmed.isNotEmpty;
-    if (_fileNameEdited != edited) {
-      setState(() => _fileNameEdited = edited);
+  // Mixin Overrides
+  @override
+  ConversionModel get model => _model;
+  @override
+  TextEditingController get fileNameController => _fileNameController;
+  @override
+  ConversionService get service => _service;
+  @override
+  String get conversionToolName => 'Images to PDF';
+  @override
+  String get fileTypeLabel => 'Images';
+  @override
+  String get targetExtension => 'pdf';
+  @override
+  List<String> get allowedExtensions => ['jpg', 'jpeg', 'png'];
+  @override
+  bool get requiresInputFile => false; // We handle selection manually
+
+  @override
+  Future<Directory> get saveDirectory async {
+    final root = await FileManager.getSmartConverterDirectory();
+    final imageRoot = Directory('${root.path}/ImageConversion');
+    if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
+    
+    final targetDir = Directory('${imageRoot.path}/image-to-pdf');
+    if (!await targetDir.exists()) await targetDir.create(recursive: true);
+    return targetDir;
+  }
+
+  @override
+  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) async {
+    if (_selectedFiles.isEmpty) {
+      throw Exception('Please select at least one image file.');
     }
+
+    // Ad check
+    final adWatched = await showRewardedAdGate(toolName: 'Images-to-PDF');
+    if (!adWatched) {
+       throw Exception('Ad required to proceed.');
+    }
+    
+    // We ignore the 'file' argument because we use _selectedFiles
+    final resultFile = await _service.convertImageToPdf(_selectedFiles);
+    
+    if (resultFile == null) return null;
+
+    return ImageToPdfResult(
+        file: resultFile, 
+        fileName: basename(resultFile.path), 
+        downloadUrl: ''
+    );
   }
 
   Future<void> _pickFiles() async {
@@ -55,7 +94,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
       if (result == null || result.files.isEmpty) {
         if (mounted && _selectedFiles.isEmpty) {
-          setState(() => _statusMessage = 'No files selected.');
+          setState(() => model.statusMessage = 'No files selected.');
         }
         return;
       }
@@ -67,10 +106,10 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
       setState(() {
         _selectedFiles = files;
-        _convertedFile = null;
-        _downloadUrl = null;
-        _savedFilePath = null;
-        _statusMessage = '${files.length} images selected';
+        // Reset mixin state
+        model.conversionResult = null;
+        model.savedFilePath = null;
+        model.statusMessage = '${files.length} images selected';
         resetAdStatus(null);
       });
 
@@ -78,7 +117,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     } catch (e) {
       final message = 'Failed to select files: $e';
       if (mounted) {
-        setState(() => _statusMessage = message);
+        setState(() => model.statusMessage = message);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: AppColors.warning),
         );
@@ -86,142 +125,11 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     }
   }
 
-  Future<void> _convertImagesToPdf() async {
-    if (_selectedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one image file.'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isConverting = true;
-      _statusMessage = 'Converting ${_selectedFiles.length} images to PDF...';
-      _convertedFile = null;
-      _downloadUrl = null;
-      _savedFilePath = null;
-    });
-
-    final adWatched = await showRewardedAdGate(toolName: 'Images-to-PDF');
-    if (!adWatched) {
-      setState(() {
-        _isConverting = false;
-        _statusMessage = 'Conversion cancelled (Ad required).';
-      });
-      return;
-    }
-
-    try {
-      final result = await _service.convertImageToPdf(_selectedFiles);
-
-      if (!mounted) return;
-
-      if (result != null) {
-        setState(() {
-          _convertedFile = result;
-          _statusMessage = 'Converted to PDF successfully!';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text('PDF file ready: ${basename(result.path)}'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        throw Exception('Conversion returned null');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _statusMessage = 'Conversion failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isConverting = false);
-      }
-    }
-  }
-
-  Future<void> _savePdfFile() async {
-    if (_convertedFile == null) return;
-
-    await showInterstitialAd();
-
-    setState(() => _isSaving = true);
-
-    try {
-      final root = await FileManager.getSmartConverterDirectory();
-      final imageRoot = Directory('${root.path}/ImageConversion');
-      if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
-      
-      final targetDir = Directory('${imageRoot.path}/image-to-pdf');
-      if (!await targetDir.exists()) await targetDir.create(recursive: true);
-
-      String targetFileName = _fileNameController.text.trim();
-      if (targetFileName.isEmpty) {
-         targetFileName = basename(_convertedFile!.path);
-      } else {
-         if (!targetFileName.toLowerCase().endsWith('.pdf')) {
-            targetFileName += '.pdf';
-         }
-      }
-
-      File destinationFile = File(p.join(targetDir.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          basenameWithoutExtension(targetFileName),
-          'pdf',
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(targetDir.path, targetFileName));
-      }
-
-      await _convertedFile!.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _savedFilePath = destinationFile.path);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Save failed: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  Future<void> _sharePdfFile() async {
-    if (_convertedFile == null) return;
-    final pathToShare = _savedFilePath ?? _convertedFile!.path;
-    await Share.shareXFiles([
-      XFile(pathToShare),
-    ], text: 'Converted PDF file');
-  }
-
   void _updateSuggestedFileName() {
     if (_selectedFiles.isEmpty) {
       setState(() {
-        _suggestedBaseName = null;
-        if (!_fileNameEdited) {
+        model.suggestedBaseName = null;
+        if (!model.fileNameEdited) {
           _fileNameController.clear();
         }
       });
@@ -230,51 +138,28 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
 
     if (_selectedFiles.length == 1) {
         final baseName = basenameWithoutExtension(_selectedFiles.first.path);
-        final sanitized = _sanitizeBaseName(baseName);
+        final sanitized = sanitizeBaseName(baseName);
          setState(() {
-            _suggestedBaseName = sanitized;
-            if (!_fileNameEdited) {
+            model.suggestedBaseName = sanitized;
+            if (!model.fileNameEdited) {
                 _fileNameController.text = sanitized;
             }
         });
     } else {
         setState(() {
-            _suggestedBaseName = 'merged_images';
-            if (!_fileNameEdited) {
+            model.suggestedBaseName = 'merged_images';
+            if (!model.fileNameEdited) {
                 _fileNameController.text = 'merged_images';
             }
         });
     }
   }
-
-  String _sanitizeBaseName(String input) {
-    var base = input.trim();
-    if (base.toLowerCase().contains('.')) {
-        base = base.substring(0, base.lastIndexOf('.'));
-    }
-    base = base.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    base = base.replaceAll(RegExp(r'_+'), '_');
-    base = base.trim().replaceAll(RegExp(r'^_|_$'), '');
-     if (base.isEmpty) {
-      base = 'converted_pdf';
-    }
-    return base.substring(0, min(base.length, 80));
-  }
-
-  void _resetForNewConversion() {
-    setState(() {
-      _selectedFiles = [];
-      _convertedFile = null;
-      _downloadUrl = null;
-      _isConverting = false;
-      _isSaving = false;
-      _fileNameEdited = false;
-      _suggestedBaseName = null;
-      _savedFilePath = null;
-      _statusMessage = 'Select image files (JPG, PNG) to begin.';
-      _fileNameController.clear();
-      resetAdStatus(null);
-    });
+  
+  void _resetLocal() {
+      setState(() {
+          _selectedFiles = [];
+      });
+      resetForNewConversion(customStatus: 'Select image files (JPG, PNG) to begin.');
   }
 
   String formatBytes(int bytes) {
@@ -285,6 +170,7 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
     final value = bytes / pow(1024, clampedGroups);
     return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -320,8 +206,8 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
                 ConversionActionButtonWidget(
                   onPickFile: _pickFiles,
                   isFileSelected: _selectedFiles.isNotEmpty,
-                  isConverting: _isConverting,
-                  onReset: _resetForNewConversion,
+                  isConverting: model.isConverting,
+                  onReset: _resetLocal,
                   buttonText: _selectedFiles.isEmpty ? 'Select Images' : 'Change Images',
                   icon: Icons.collections,
                 ),
@@ -380,37 +266,37 @@ class _ImageToPdfPageState extends State<ImageToPdfPage> with AdHelper<ImageToPd
                 const SizedBox(height: 16),
                 if (_selectedFiles.isNotEmpty) ...[
                    ConversionFileNameFieldWidget(
-                    controller: _fileNameController,
-                    suggestedName: _suggestedBaseName,
+                    controller: fileNameController,
+                    suggestedName: model.suggestedBaseName,
                     extensionLabel: '.pdf extension is added automatically',
                   ),
                   const SizedBox(height: 20),
                   ConversionConvertButtonWidget(
-                    onConvert: _convertImagesToPdf,
-                    isConverting: _isConverting,
+                    onConvert: convert,
+                    isConverting: model.isConverting,
                     isEnabled: true,
                     buttonText: 'Convert to PDF',
                   ),
                 ],
                 const SizedBox(height: 16),
                 ConversionStatusWidget(
-                  statusMessage: _statusMessage,
-                  isConverting: _isConverting,
-                  conversionResult: _convertedFile != null ? ImageToPdfResult(file: _convertedFile!, fileName: basename(_convertedFile!.path), downloadUrl: '') : null,
+                  statusMessage: model.statusMessage,
+                  isConverting: model.isConverting,
+                  conversionResult: model.conversionResult,
                 ),
-                if (_convertedFile != null) ...[
+                if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  if (_savedFilePath == null)
+                  if (model.savedFilePath == null)
                      ConversionFileSaveCardWidget(
-                      fileName: basename(_convertedFile!.path),
-                      isSaving: _isSaving,
-                      onSave: _savePdfFile,
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
                       title: 'PDF File Ready',
                     )
                   else
                      ConversionResultCardWidget(
-                      savedFilePath: _savedFilePath!,
-                      onShare: _sharePdfFile,
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
                     ),
                 ],
                 const SizedBox(height: 24),

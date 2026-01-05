@@ -394,9 +394,43 @@ class ImageConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".svg")
             
-            # For AI files, we'll try to open with PIL first, then convert
-            with Image.open(input_path) as img:
-                return ImageConversionService._convert_to_svg_from_pil(img, output_path)
+            # Attempt 1: Try Pillow (requires Ghostscript for EPS-like AI)
+            try:
+                with Image.open(input_path) as img:
+                    # Force load to ensure it's readable
+                    img.load()
+                    return ImageConversionService._convert_to_svg_from_pil(img, output_path)
+            except Exception as pil_error:
+                # Pillow failed (likely no Ghostscript or not EPS-compatible)
+                pass
+
+            # Attempt 2: Try pdf2image (requires Poppler, works for PDF-compatible AI)
+            try:
+                # AI files are often valid PDFs
+                images = convert_from_path(input_path, first_page=1, last_page=1)
+                if images:
+                    return ImageConversionService._convert_to_svg_from_pil(images[0], output_path)
+            except Exception as pdf_error:
+                pass
+            
+            # Attempt 3: Try PyMuPDF (fitz) - Robust, self-contained PDF/AI handler
+            try:
+                import fitz
+                doc = fitz.open(input_path)
+                if doc.page_count > 0:
+                    page = doc.load_page(0)
+                    svg_content = page.get_svg_image()
+                    
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(svg_content)
+                    return output_path
+            except Exception as fitz_error:
+                # Log detailed error for debugging if needed
+                logger.warning(f"PyMuPDF failed for AI conversion: {fitz_error}")
+                pass
+            
+            # If all fail
+            raise FileProcessingError("Could not convert .ai file. Ensure it is PDF-compatible or Ghostscript is installed.")
             
         except Exception as e:
             raise FileProcessingError(f"AI to SVG conversion failed: {str(e)}")

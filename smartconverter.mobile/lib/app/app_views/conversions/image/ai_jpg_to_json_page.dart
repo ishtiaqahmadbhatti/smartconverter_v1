@@ -11,11 +11,8 @@ class AiJpgToJsonPage extends StatefulWidget {
 class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, ConversionMixin {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select a JPG file to begin.');
-
-  bool _isSaving = false;
-  bool _isSharing = false;
-  String? _savedFilePath;
+  final ConversionModel _model = ConversionModel(
+      statusMessage: 'Select a JPG file to begin.');
 
   @override
   void initState() {
@@ -38,16 +35,22 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
   // Mixin overrides
   @override
   ConversionModel get model => _model;
+
   @override
   TextEditingController get fileNameController => _fileNameController;
+
   @override
   ConversionService get service => _service;
+
   @override
   String get conversionToolName => 'AI JPG to JSON';
+
   @override
   String get fileTypeLabel => 'JPG';
+
   @override
   String get targetExtension => 'json';
+
   @override
   List<String> get allowedExtensions => ['jpg', 'jpeg'];
 
@@ -56,14 +59,15 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
     final root = await FileManager.getSmartConverterDirectory();
     final imageRoot = Directory('${root.path}/ImageConversion');
     if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
-    
+
     final toolDir = Directory('${imageRoot.path}/ai-jpg-to-json');
     if (!await toolDir.exists()) await toolDir.create(recursive: true);
     return toolDir;
   }
 
   @override
-  Future<AiImageToJsonResult?> performConversion(File? file, String? outputName) async {
+  Future<AiImageToJsonResult?> performConversion(File? file,
+      String? outputName) async {
     if (file == null) throw Exception('File is null');
 
     // Ad check
@@ -75,68 +79,6 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
     return await service.convertAiJpgToJson(file, outputFilename: outputName);
   }
 
-  Future<void> _saveJsonFile() async {
-    final result = model.conversionResult as AiImageToJsonResult?;
-    if (result == null) return;
-
-    // Show Interstitial Ad before saving
-    await showInterstitialAd();
-
-    setState(() => _isSaving = true);
-
-    try {
-      final baseDir = await saveDirectory;
-      String targetFileName = result.fileName;
-      File destinationFile = File(p.join(baseDir.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          'json',
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(baseDir.path, targetFileName));
-      }
-
-      await result.file.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _savedFilePath = destinationFile.path);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _shareJsonFile() async {
-    final result = model.conversionResult as AiImageToJsonResult?;
-    if (result == null) return;
-    
-    setState(() => _isSharing = true);
-    try {
-      final pathToShare = _savedFilePath ?? result.file.path;
-      await Share.shareXFiles([XFile(pathToShare)], text: 'Converted JSON file');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Share failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,7 +88,8 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
         elevation: 0,
         title: const Text(
           'AI JPG to JSON',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: AppColors.textPrimary, fontWeight: FontWeight.w600),
         ),
         leading: BackButton(color: AppColors.textPrimary),
       ),
@@ -174,7 +117,7 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
                 ),
                 const SizedBox(height: 16),
                 if (model.selectedFile != null) ...[
-                   ConversionSelectedFileCardWidget(
+                  ConversionSelectedFileCardWidget(
                     fileName: basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
                     fileIcon: Icons.image,
@@ -203,7 +146,18 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
                 ),
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultsCard(),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'JSON File Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -212,91 +166,6 @@ class _AiJpgToJsonPageState extends State<AiJpgToJsonPage> with AdHelper, Conver
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-  Widget _buildResultsCard() {
-    final result = model.conversionResult as AiImageToJsonResult?;
-    if (result == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.data_object, color: AppColors.textPrimary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'JSON Ready',
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      result.fileName,
-                      style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveJsonFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSharing ? null : _shareJsonFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

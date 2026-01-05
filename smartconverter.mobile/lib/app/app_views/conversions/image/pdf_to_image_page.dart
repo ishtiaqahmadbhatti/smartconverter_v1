@@ -477,49 +477,21 @@ class _PdfToImagePageState extends State<PdfToImagePage> with AdHelper<PdfToImag
                 // Results Card
                 if (_convertedFile != null) ...[
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                            BoxShadow(color: AppColors.primaryBlue.withOpacity(0.2), blurRadius: 12, spreadRadius: 1),
-                        ],
+                  if (_savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: _extractedImages != null && _extractedImages!.isNotEmpty 
+                          ? '${_extractedImages!.length} files generated' 
+                          : p.basename(_convertedFile!.path),
+                      title: '$_selectedFormat Ready',
+                      isSaving: _isSaving,
+                      onSave: _saveConvertedFile,
+                      buttonLabel: _extractedImages != null && _extractedImages!.isNotEmpty ? 'Save All' : 'Save File',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: _savedFilePath!,
+                      onShare: _shareConvertedFile,
                     ),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                            Row(children: [
-                                Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(color: AppColors.backgroundSurface.withOpacity(0.3), borderRadius: BorderRadius.circular(10)),
-                                    child: const Icon(Icons.check_circle_outline, color: AppColors.textPrimary, size: 24),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text('$_selectedFormat Ready', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                                    Text(_convertedFile!.path.split(Platform.pathSeparator).last, style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12)),
-                                ])),
-                            ]),
-                            const SizedBox(height: 20),
-                            Row(children: [
-                                Expanded(child: ElevatedButton.icon(
-                                    onPressed: _isSaving ? null : _saveConvertedFile,
-                                    icon: const Icon(Icons.save_alt),
-                                    label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primaryBlue, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                                )),
-                                const SizedBox(width: 12),
-                                Expanded(child: ElevatedButton.icon(
-                                    onPressed: _shareConvertedFile,
-                                    icon: const Icon(Icons.share),
-                                    label: const Text('Share'),
-                                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.backgroundSurface.withOpacity(0.3), foregroundColor: AppColors.textPrimary, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                                )),
-                            ]),
-                        ],
-                    ),
-                  ),
                 ],
                 const SizedBox(height: 24),
               ],

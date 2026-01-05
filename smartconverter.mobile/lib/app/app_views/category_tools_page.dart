@@ -199,7 +199,10 @@ import 'conversions/pdf/compare_pdfs_page.dart';
 import 'conversions/pdf/pdf_metadata_page.dart';
 import 'conversions/image/ai_jpg_to_json_page.dart';
 import 'conversions/image/pdf_to_jpg_page.dart';
-import 'conversions/image/pdf_to_image_page.dart'; // Handles PNG, TIFF, SVG
+import 'conversions/image/pdf_to_png_page.dart';
+import 'conversions/image/pdf_to_tiff_page.dart';
+import 'conversions/image/pdf_to_svg_page.dart';
+import 'conversions/image/pdf_to_image_page.dart'; // Handles generic PDF Folder
 import 'conversions/image/ai_to_svg_page.dart';
 import 'conversions/image/remove_exif_page.dart';
 import 'conversions/image/png_to_svg_page.dart';
@@ -507,13 +510,13 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert PDF to Word':
           return const PdfToWordPage();
         case 'Convert PDF to JPG':
-          return const PdfToJpgPage();
+          return const PdfToJpgImagePage();
         case 'Convert PDF to PNG':
-          return const PdfToPngPage();
+          return const PdfToPngImagePage();
         case 'Convert PDF to TIFF':
-          return const PdfToTiffPage();
+          return const PdfToTiffImagePage();
         case 'Convert PDF to SVG':
-          return const PdfToSvgPage();
+          return const PdfToSvgImagePage();
         case 'Convert PDF to HTML':
           return const PdfToHtmlPage();
         case 'Convert PDF to Text':
@@ -682,11 +685,11 @@ class CategoryToolsPage extends StatefulWidget {
         case 'Convert PDF to JPG':
           return const PdfToJpgImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to PNG':
-          return const PdfToImagePage(initialFormat: 'PNG');
+          return const PdfToPngImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to TIFF':
-          return const PdfToImagePage(initialFormat: 'TIFF');
+          return const PdfToTiffImagePage(useImageCategoryStorage: true);
         case 'Convert PDF to SVG':
-          return const PdfToImagePage(initialFormat: 'SVG');
+          return const PdfToSvgImagePage(useImageCategoryStorage: true);
         case 'Convert AI to SVG':
           return const AiToSvgPage();
         case 'Convert PNG to SVG':

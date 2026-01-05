@@ -1,5 +1,5 @@
 import '../../../app_modules/imports_module.dart';
-import 'package:path/path.dart' as p;
+
 
 class ImageResizePage extends StatefulWidget {
   const ImageResizePage({super.key});
@@ -14,10 +14,9 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
   final TextEditingController _widthController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final ConversionModel _model = ConversionModel(statusMessage: 'Select an image to resize.');
+  bool maintainAspectRatio = true;
+  double? activeAspectRatio;
 
-  bool _isSaving = false;
-  bool _isSharing = false;
-  String? _savedFilePath;
 
   @override
   void initState() {
@@ -56,6 +55,22 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
   List<String> get allowedExtensions => ['jpg', 'jpeg', 'png', 'webp', 'tiff'];
 
   @override
+  Future<void> pickFile({String type = 'custom'}) async {
+    await super.pickFile(type: type);
+    if (model.selectedFile != null) {
+      try {
+        final decodedImage = await decodeImageFromList(model.selectedFile!.readAsBytesSync());
+        _widthController.text = decodedImage.width.toString();
+        _heightController.text = decodedImage.height.toString();
+        activeAspectRatio = decodedImage.width / decodedImage.height;
+      } catch (e) {
+        // Fallback or ignore if not decodable
+        activeAspectRatio = null;
+      }
+    }
+  }
+
+  @override
   Future<Directory> get saveDirectory async {
     final root = await FileManager.getSmartConverterDirectory();
     final imageRoot = Directory('${root.path}/ImageConversion');
@@ -90,67 +105,6 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
     );
   }
 
-  Future<void> _saveFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-
-    await showInterstitialAd();
-
-    setState(() => _isSaving = true);
-
-    try {
-      final baseDir = await saveDirectory;
-      String targetFileName = result.fileName;
-      File destinationFile = File(p.join(baseDir.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          p.extension(targetFileName).replaceAll('.', ''),
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(baseDir.path, targetFileName));
-      }
-
-      await result.file.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _savedFilePath = destinationFile.path);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _shareFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-    
-    setState(() => _isSharing = true);
-    try {
-      final pathToShare = _savedFilePath ?? result.file.path;
-      await Share.shareXFiles([XFile(pathToShare)], text: 'Resized Image');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Share failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,8 +128,8 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
               children: [
                 const ConversionHeaderCardWidget(
                   title: 'Resize Image',
-                  description: 'Change the dimensions of your image.',
-                  iconTarget: Icons.photo_size_select_large,
+                  description: 'Change the dimensions of your image files.',
+                  iconTarget: Icons.aspect_ratio,
                   iconSource: Icons.image,
                 ),
                 const SizedBox(height: 20),
@@ -196,16 +150,81 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
                   ),
                   const SizedBox(height: 16),
                   
-                  // Width/Height Inputs
+                  // Dimensions Inputs
                   Row(
                     children: [
-                      Expanded(child: _buildDimensionField('Width (px)', _widthController)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildDimensionField('Height (px)', _heightController)),
+                      Expanded(
+                        child: TextField(
+                          controller: _widthController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Width',
+                            labelStyle: TextStyle(color: AppColors.primaryBlue.withOpacity(0.8)),
+                            filled: true,
+                            fillColor: AppColors.backgroundSurface,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onChanged: (val) {
+                             if (!maintainAspectRatio || activeAspectRatio == null) return;
+                             if (val.isEmpty) return;
+                             final w = int.tryParse(val);
+                             if (w != null) {
+                                final h = (w / activeAspectRatio!).round();
+                                _heightController.text = h.toString();
+                             }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: _heightController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Height',
+                            labelStyle: TextStyle(color: AppColors.primaryBlue.withOpacity(0.8)),
+                            filled: true,
+                            fillColor: AppColors.backgroundSurface,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onChanged: (val) {
+                             if (!maintainAspectRatio || activeAspectRatio == null) return;
+                             if (val.isEmpty) return;
+                             final h = int.tryParse(val);
+                             if (h != null) {
+                                final w = (h * activeAspectRatio!).round();
+                                _widthController.text = w.toString();
+                             }
+                          },
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    value: maintainAspectRatio,
+                    onChanged: (val) {
+                      setState(() {
+                         maintainAspectRatio = val ?? true;
+                         if (maintainAspectRatio) {
+                            // Reset ratio based on current values or original file
+                            final w = int.tryParse(_widthController.text);
+                            final h = int.tryParse(_heightController.text);
+                            if (w != null && h != null && h != 0) {
+                               activeAspectRatio = w / h;
+                            }
+                         }
+                      });
+                    },
+                    title: const Text('Maintain Aspect Ratio', style: TextStyle(color: Colors.white70)),
+                    activeColor: AppColors.primaryBlue,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
 
+                  const SizedBox(height: 16),
                   ConversionFileNameFieldWidget(
                     controller: fileNameController,
                     suggestedName: model.suggestedBaseName,
@@ -228,7 +247,18 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
                 ),
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultsCard(),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: 'Resized Image Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -237,114 +267,6 @@ class _ImageResizePageState extends State<ImageResizePage> with AdHelper, Conver
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-  Widget _buildDimensionField(String label, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: AppColors.backgroundSurface,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primaryBlue)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.primaryBlue.withOpacity(0.3))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primaryBlue)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResultsCard() {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.check_circle_outline, color: AppColors.textPrimary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Resized Image Ready',
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      result.fileName,
-                      style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSharing ? null : _shareFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

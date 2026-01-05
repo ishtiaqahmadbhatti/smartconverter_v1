@@ -28,10 +28,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
   final TextEditingController _fileNameController = TextEditingController();
   late final ConversionModel _model;
 
-  bool _isSaving = false;
-  bool _isSharing = false;
-  String? _savedFilePath;
-
   @override
   void initState() {
     super.initState();
@@ -66,8 +62,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
   String get targetExtension => widget.targetExtension;
   @override
   List<String> get allowedExtensions {
-    // If sourceExtension is generic "image", allow common formats? 
-    // The previous code had strict checking unless "image".
     if (widget.sourceExtension.toLowerCase() == 'image') {
        return ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tiff', 'heic']; // Common image formats
     }
@@ -80,9 +74,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
     final imageRoot = Directory('${root.path}/ImageConversion');
     if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
     
-    // Create standard subfolder: src-to-tgt
-    // Ensure lowercase and kebab-case style if needed, though extension passes are usually simple
-    // Example: png-to-jpg
     final subFolderName = '${widget.sourceExtension.toLowerCase()}-to-${widget.targetExtension.toLowerCase()}';
     final toolDir = Directory('${imageRoot.path}/$subFolderName');
     if (!await toolDir.exists()) await toolDir.create(recursive: true);
@@ -106,72 +97,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
       outputFilename: outputName,
     );
   }
-
-  Future<void> _saveFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-
-    // Show Interstitial Ad before saving
-    await showInterstitialAd();
-
-    setState(() => _isSaving = true);
-
-    try {
-      final baseDir = await saveDirectory;
-      String targetFileName = result.fileName;
-      File destinationFile = File(p.join(baseDir.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          p.extension(targetFileName).replaceAll('.', ''),
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(baseDir.path, targetFileName));
-      }
-
-      await result.file.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _savedFilePath = destinationFile.path);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _shareFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-    
-    setState(() => _isSharing = true);
-    try {
-      final pathToShare = _savedFilePath ?? result.file.path;
-      await Share.shareXFiles(
-        [XFile(pathToShare)],
-        text: 'Converted ${widget.targetFormat} file',
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Share failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
-  }
-  
   // Handling custom validation logic from original file if needed, 
   // but mixin's pickFile usually handles extensions well. 
   // The original had a fallback check for jpg/jpeg loose matching. 
@@ -201,7 +126,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
                 ConversionHeaderCardWidget(
                   title: widget.toolName,
                   description: 'Convert ${widget.sourceFormat} files to ${widget.targetFormat} format.',
-                  iconTarget: Icons.transform, // Or dynamic based on type?
+                  iconTarget: Icons.transform,
                   iconSource: Icons.image,
                 ),
                 const SizedBox(height: 20),
@@ -217,7 +142,7 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
                    ConversionSelectedFileCardWidget(
                     fileName: basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
-                    fileIcon: Icons.image, // Generic image icon
+                    fileIcon: Icons.image,
                     onRemove: resetForNewConversion,
                   ),
                   const SizedBox(height: 16),
@@ -243,7 +168,18 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
                 ),
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultsCard(),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: '${widget.targetFormat} File Ready',
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -252,91 +188,6 @@ class _ImageFormatConversionPageState extends State<ImageFormatConversionPage> w
         ),
       ),
       bottomNavigationBar: buildBannerAd(),
-    );
-  }
-
-  Widget _buildResultsCard() {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.check_circle_outline, color: AppColors.textPrimary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${widget.targetFormat} Ready',
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      result.fileName,
-                      style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSharing ? null : _shareFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

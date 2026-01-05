@@ -192,7 +192,7 @@ class _ConversionResultCardWidgetState extends State<ConversionResultCardWidget>
               ),
             ),
           ),
-          if (widget.showActions) ...[
+          if (widget.showActions && !Directory(widget.savedFilePath).existsSync()) ...[
             const SizedBox(height: 20),
             Divider(color: AppColors.success.withOpacity(0.5), thickness: 2, height: 1),
             const SizedBox(height: 20),

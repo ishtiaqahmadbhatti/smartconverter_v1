@@ -1,5 +1,5 @@
 import '../../../app_modules/imports_module.dart';
-import 'package:path/path.dart' as p;
+
 
 class ImageCompressPage extends StatefulWidget {
   const ImageCompressPage({super.key});
@@ -11,11 +11,8 @@ class ImageCompressPage extends StatefulWidget {
 class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, ConversionMixin {
   final ConversionService _service = ConversionService();
   final TextEditingController _fileNameController = TextEditingController();
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select an image to compress.');
-
-  bool _isSaving = false;
-  bool _isSharing = false;
-  String? _savedFilePath;
+  final ConversionModel _model = ConversionModel(
+      statusMessage: 'Select an image to compress.');
 
   @override
   void initState() {
@@ -38,16 +35,22 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
   // Mixin overrides
   @override
   ConversionModel get model => _model;
+
   @override
   TextEditingController get fileNameController => _fileNameController;
+
   @override
   ConversionService get service => _service;
+
   @override
   String get conversionToolName => 'Image Compress';
+
   @override
   String get fileTypeLabel => 'Image';
+
   @override
-  String get targetExtension => 'jpg'; // Uses original or jpg usually, but mainly we want to just save it
+  String get targetExtension =>
+      'jpg'; // Uses original or jpg usually, but mainly we want to just save it
   @override
   List<String> get allowedExtensions => ['jpg', 'jpeg', 'png', 'webp', 'tiff'];
 
@@ -56,14 +59,15 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
     final root = await FileManager.getSmartConverterDirectory();
     final imageRoot = Directory('${root.path}/ImageConversion');
     if (!await imageRoot.exists()) await imageRoot.create(recursive: true);
-    
+
     final toolDir = Directory('${imageRoot.path}/compress');
     if (!await toolDir.exists()) await toolDir.create(recursive: true);
     return toolDir;
   }
 
   @override
-  Future<ImageFormatConversionResult?> performConversion(File? file, String? outputName) async {
+  Future<ImageFormatConversionResult?> performConversion(File? file,
+      String? outputName) async {
     if (file == null) throw Exception('File is null');
 
     final adWatched = await showRewardedAdGate(toolName: 'Image Compress');
@@ -74,66 +78,6 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
     return await service.compressImage(file, outputFilename: outputName);
   }
 
-  Future<void> _saveFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-
-    await showInterstitialAd();
-
-    setState(() => _isSaving = true);
-
-    try {
-      final baseDir = await saveDirectory;
-      String targetFileName = result.fileName;
-      File destinationFile = File(p.join(baseDir.path, targetFileName));
-
-      if (await destinationFile.exists()) {
-        final fallbackName = FileManager.generateTimestampFilename(
-          p.basenameWithoutExtension(targetFileName),
-          p.extension(targetFileName).replaceAll('.', ''),
-        );
-        targetFileName = fallbackName;
-        destinationFile = File(p.join(baseDir.path, targetFileName));
-      }
-
-      await result.file.copy(destinationFile.path);
-
-      if (!mounted) return;
-
-      setState(() => _savedFilePath = destinationFile.path);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved to: ${destinationFile.path}'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _shareFile() async {
-    final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return;
-    
-    setState(() => _isSharing = true);
-    try {
-      final pathToShare = _savedFilePath ?? result.file.path;
-      await Share.shareXFiles([XFile(pathToShare)], text: 'Compressed Image');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Share failed: $e'), backgroundColor: AppColors.error),
-      );
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +88,8 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
         elevation: 0,
         title: const Text(
           'Image Compress',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: AppColors.textPrimary, fontWeight: FontWeight.w600),
         ),
         leading: BackButton(color: AppColors.textPrimary),
       ),
@@ -172,7 +117,7 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
                 ),
                 const SizedBox(height: 16),
                 if (model.selectedFile != null) ...[
-                   ConversionSelectedFileCardWidget(
+                  ConversionSelectedFileCardWidget(
                     fileName: basename(model.selectedFile!.path),
                     fileSize: formatBytes(model.selectedFile!.lengthSync()),
                     fileIcon: Icons.image,
@@ -201,7 +146,18 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
                 ),
                 if (model.conversionResult != null) ...[
                   const SizedBox(height: 20),
-                  _buildResultsCard(),
+                  if (model.savedFilePath == null)
+                    ConversionFileSaveCardWidget(
+                      fileName: model.conversionResult!.fileName,
+                      isSaving: model.isSaving,
+                      onSave: saveResult,
+                      title: _getSavingsTitle(),
+                    )
+                  else
+                    ConversionResultCardWidget(
+                      savedFilePath: model.savedFilePath!,
+                      onShare: shareFile,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],
@@ -213,104 +169,18 @@ class _ImageCompressPageState extends State<ImageCompressPage> with AdHelper, Co
     );
   }
 
-  Widget _buildResultsCard() {
+  String _getSavingsTitle() {
     final result = model.conversionResult as ImageFormatConversionResult?;
-    if (result == null) return const SizedBox.shrink();
+    if (result == null || model.selectedFile == null)
+      return 'Compressed Image Ready';
 
-    // Calculate savings if possible
-    String savings = '';
-    if (model.selectedFile != null) {
-      final originalSize = model.selectedFile!.lengthSync();
-      final newSize = result.file.lengthSync();
-      if (newSize < originalSize) {
-        final percent = ((originalSize - newSize) / originalSize * 100).toStringAsFixed(1);
-        savings = 'Saved $percent%';
-      }
+    final originalSize = model.selectedFile!.lengthSync();
+    final newSize = result.file.lengthSync();
+    if (newSize < originalSize) {
+      final percent = ((originalSize - newSize) / originalSize * 100)
+          .toStringAsFixed(1);
+      return 'Saved $percent%';
     }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withOpacity(0.2),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.check_circle_outline, color: AppColors.textPrimary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Compression Complete',
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      result.fileName,
-                      style: TextStyle(color: AppColors.textPrimary.withOpacity(0.8), fontSize: 12),
-                    ),
-                    if (savings.isNotEmpty)
-                      Text(
-                        savings,
-                        style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _saveFile,
-                  icon: const Icon(Icons.save_alt),
-                  label: Text(_isSaving ? 'Saving...' : 'Save File'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSharing ? null : _shareFile,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.backgroundSurface.withOpacity(0.3),
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return 'Compressed Image Ready';
   }
 }

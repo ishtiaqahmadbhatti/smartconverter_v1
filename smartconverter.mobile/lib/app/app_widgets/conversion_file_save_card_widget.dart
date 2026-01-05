@@ -5,6 +5,7 @@ class ConversionFileSaveCardWidget extends StatelessWidget {
   final bool isSaving;
   final VoidCallback onSave;
   final String title;
+  final String? buttonLabel;
 
   const ConversionFileSaveCardWidget({
     super.key,
@@ -12,6 +13,7 @@ class ConversionFileSaveCardWidget extends StatelessWidget {
     required this.isSaving,
     required this.onSave,
     this.title = 'File Ready', // Default title, customizable
+    this.buttonLabel,
   });
 
   @override
@@ -90,9 +92,9 @@ class ConversionFileSaveCardWidget extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.save_alt_outlined, size: 18),
-              label: const Text(
-                'Save File',
-                style: TextStyle(fontSize: 14),
+              label: Text(
+                buttonLabel ?? 'Save File',
+                style: const TextStyle(fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.backgroundSurface,

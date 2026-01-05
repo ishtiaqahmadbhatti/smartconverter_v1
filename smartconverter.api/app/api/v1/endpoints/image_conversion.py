@@ -322,7 +322,7 @@ async def _handle_ai_conversion(
     """Helper for AI conversion."""
     input_path = None
     try:
-        FileService.validate_file(file, "image")
+        FileService.validate_file(file, "ai")
         input_path = FileService.save_uploaded_file(file)
         
         service_output_path = ImageConversionService.ai_to_svg(input_path)
