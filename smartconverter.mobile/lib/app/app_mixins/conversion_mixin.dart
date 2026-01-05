@@ -55,31 +55,72 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
         allowedExtensions: allowedExtensions,
         type: type,
       );
-
-      if (file == null) {
-        if (mounted) {
-          setState(() => model.statusMessage = 'No file selected.');
-        }
-        return;
-      }
-
-      setState(() {
-        model.selectedFile = file;
-        model.conversionResult = null;
-        model.savedFilePath = null;
-        model.statusMessage = '$fileTypeLabel file selected: ${basename(file.path)}';
-        resetAdStatus(file.path);
-      });
-
-      updateSuggestedFileName();
+      _handlePickedFile(file);
     } catch (e) {
-      final message = 'Failed to select $fileTypeLabel file: $e';
-      if (mounted) {
-        setState(() => model.statusMessage = message);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.warning),
-        );
+      // Handle unsupported filter error (common on some Android versions for specific extensions)
+      if (type == 'custom' && e.toString().contains('Unsupported filter')) {
+        debugPrint(
+            'Falling back to FileType.any due to unsupported filter error: $e');
+        try {
+          final file = await service.pickFile(
+            allowedExtensions: [],
+            type: 'any',
+          );
+          
+          // Verify extension if we fell back to 'any'
+          if (file != null && allowedExtensions.isNotEmpty) {
+             final ext = extension(file.path).replaceAll('.', '').toLowerCase();
+             if (!allowedExtensions.contains(ext)) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Selected file does not have a supported extension (${allowedExtensions.join(', ')}).'),
+                      backgroundColor: AppColors.warning,
+                    ),
+                  );
+                }
+                return;
+             }
+          }
+
+          _handlePickedFile(file);
+          return;
+        } catch (retryError) {
+          _handlePickError(retryError);
+          return;
+        }
       }
+      _handlePickError(e);
+    }
+  }
+
+  void _handlePickedFile(File? file) {
+    if (file == null) {
+      if (mounted) {
+        setState(() => model.statusMessage = 'No file selected.');
+      }
+      return;
+    }
+
+    setState(() {
+      model.selectedFile = file;
+      model.conversionResult = null;
+      model.savedFilePath = null;
+      model.statusMessage =
+          '$fileTypeLabel file selected: ${basename(file.path)}';
+      resetAdStatus(file.path);
+    });
+
+    updateSuggestedFileName();
+  }
+
+  void _handlePickError(dynamic e) {
+    final message = 'Failed to select $fileTypeLabel file: $e';
+    if (mounted) {
+      setState(() => model.statusMessage = message);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.warning),
+      );
     }
   }
 
@@ -161,8 +202,15 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
     final result = model.conversionResult;
     if (result == null) return;
 
-    // Show Interstitial Ad before saving if ready
-    await showInterstitialAd();
+    // Show Interstitial Ad before saving if ready (with timeout to prevent blocking)
+    try {
+      await showInterstitialAd().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => debugPrint('Ad timeout'),
+      );
+    } catch (e) {
+      debugPrint('Ad show failed: $e');
+    }
 
     setState(() => model.isSaving = true);
 
@@ -243,6 +291,16 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
             targetFileName = fileName;
           }
 
+
+          // Ensure directory exists (redundant safety check)
+          if (!await directory.exists()) {
+             try {
+               await directory.create(recursive: true);
+             } catch (e) {
+               throw Exception('Failed to create output directory: $e');
+             }
+          }
+
           File destinationFile = File(join(directory.path, targetFileName));
 
           if (await destinationFile.exists()) {
@@ -253,6 +311,10 @@ mixin ConversionMixin<T extends StatefulWidget> on State<T>, AdHelper<T> {
             );
             targetFileName = fallbackName;
             destinationFile = File(join(directory.path, targetFileName));
+          }
+
+          if (!await file.exists()) {
+            throw Exception('Source file for copy does not exist: ${file.path}');
           }
 
           final savedFile = await file.copy(destinationFile.path);

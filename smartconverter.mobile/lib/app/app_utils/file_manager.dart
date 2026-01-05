@@ -1692,4 +1692,64 @@ class FileManager {
     return dir;
   }
 
+  static const String _ebookConversionsFolder = 'EBookConversion';
+
+  static const String _azw3ToPdfSubFolder = 'azw3-to-pdf';
+  static const String _azwToEpubSubFolder = 'azw-to-epub';
+  static const String _azwToMobiSubFolder = 'azw-to-mobi';
+  static const String _azwToPdfSubFolder = 'azw-to-pdf';
+  static const String _epubToAzwSubFolder = 'epub-to-azw';
+  static const String _epubToMobiSubFolder = 'epub-to-mobi';
+  static const String _epubToPdfSubFolder = 'epub-to-pdf';
+  static const String _fb2ToPdfSubFolder = 'fb2-to-pdf';
+  static const String _fbzToPdfSubFolder = 'fbz-to-pdf';
+  static const String _markdownToEpubSubFolder = 'markdown-to-epub';
+  static const String _mobiToAzwSubFolder = 'mobi-to-azw';
+  static const String _mobiToEpubSubFolder = 'mobi-to-epub';
+  static const String _mobiToPdfSubFolder = 'mobi-to-pdf';
+  static const String _pdfToAzw3SubFolder = 'pdf-to-azw3';
+  static const String _pdfToAzwSubFolder = 'pdf-to-azw';
+  static const String _pdfToEpubSubFolder = 'pdf-to-epub';
+  static const String _pdfToFb2SubFolder = 'pdf-to-fb2';
+  static const String _pdfToFbzSubFolder = 'pdf-to-fbz';
+  static const String _pdfToMobiSubFolder = 'pdf-to-mobi';
+
+  /// Get or create the EBook conversions directory
+  static Future<Directory> getEbookConversionsDirectory() async {
+    final smartConverterDir = await getSmartConverterDirectory();
+    final ebookConversionsDir = Directory(
+      '${smartConverterDir.path}/$_ebookConversionsFolder',
+    );
+    if (!await ebookConversionsDir.exists()) {
+      await ebookConversionsDir.create(recursive: true);
+    }
+    return ebookConversionsDir;
+  }
+
+  static Future<Directory> _getEbookSubDir(String subFolder) async {
+    final root = await getEbookConversionsDirectory();
+    final dir = Directory('${root.path}/$subFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static Future<Directory> getAzw3ToPdfDirectory() => _getEbookSubDir(_azw3ToPdfSubFolder);
+  static Future<Directory> getAzwToEpubDirectory() => _getEbookSubDir(_azwToEpubSubFolder);
+  static Future<Directory> getAzwToMobiDirectory() => _getEbookSubDir(_azwToMobiSubFolder);
+  static Future<Directory> getAzwToPdfDirectory() => _getEbookSubDir(_azwToPdfSubFolder);
+  static Future<Directory> getEpubToAzwDirectory() => _getEbookSubDir(_epubToAzwSubFolder);
+  static Future<Directory> getEpubToMobiDirectory() => _getEbookSubDir(_epubToMobiSubFolder);
+  static Future<Directory> getEpubToPdfDirectory() => _getEbookSubDir(_epubToPdfSubFolder);
+  static Future<Directory> getFb2ToPdfDirectory() => _getEbookSubDir(_fb2ToPdfSubFolder);
+  static Future<Directory> getFbzToPdfDirectory() => _getEbookSubDir(_fbzToPdfSubFolder);
+  static Future<Directory> getMarkdownToEpubDirectory() => _getEbookSubDir(_markdownToEpubSubFolder);
+  static Future<Directory> getMobiToAzwDirectory() => _getEbookSubDir(_mobiToAzwSubFolder);
+  static Future<Directory> getMobiToEpubDirectory() => _getEbookSubDir(_mobiToEpubSubFolder);
+  static Future<Directory> getMobiToPdfDirectory() => _getEbookSubDir(_mobiToPdfSubFolder);
+  static Future<Directory> getPdfToAzw3Directory() => _getEbookSubDir(_pdfToAzw3SubFolder);
+  static Future<Directory> getPdfToAzwDirectory() => _getEbookSubDir(_pdfToAzwSubFolder);
+  static Future<Directory> getPdfToEpubDirectory() => _getEbookSubDir(_pdfToEpubSubFolder);
+  static Future<Directory> getPdfToFb2Directory() => _getEbookSubDir(_pdfToFb2SubFolder);
+  static Future<Directory> getPdfToFbzDirectory() => _getEbookSubDir(_pdfToFbzSubFolder);
+  static Future<Directory> getPdfToMobiDirectory() => _getEbookSubDir(_pdfToMobiSubFolder);
 }

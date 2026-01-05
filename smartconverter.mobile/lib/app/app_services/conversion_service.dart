@@ -6013,8 +6013,73 @@ async def download_file(filename: str):
     }
   }
 
+  // ===========================================================================
+  // EBook Conversion Methods
+  // ===========================================================================
 
-  // Convert SRT to XLS
+  /// Generic method for EBook conversions
+  Future<ImageToPdfResult?> convertEbook(
+    File inputFile, {
+    String? outputFilename,
+    required String endpoint,
+    required String outputExt,
+    Map<String, dynamic>? extraParams,
+  }) async {
+    try {
+      if (!inputFile.existsSync()) {
+        throw Exception('${extension(inputFile.path)} file does not exist');
+      }
+
+      final file = await MultipartFile.fromFile(
+        inputFile.path,
+        filename: basename(inputFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+        ...?extraParams,
+      });
+
+      _debugLog('📤 Uploading EBook file for conversion...');
+
+      Response response = await _dio.post(
+        endpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName = response.data['output_filename'] ??
+            '${basenameWithoutExtension(inputFile.path)}.$outputExt';
+
+        _debugLog('✅ EBook conversion successful!');
+        _debugLog('📥 Downloading EBook: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(
+          fileName, 
+          downloadUrl, 
+          fileExtension: outputExt
+        );
+        
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert EBook: $e');
+    }
+  }
+
   Future<ImageToPdfResult?> convertSrtToXls(
     File srtFile, {
     String? outputFilename,
