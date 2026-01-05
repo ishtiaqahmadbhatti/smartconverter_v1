@@ -7,6 +7,7 @@ class ConversionHeaderCardWidget extends StatelessWidget {
   final IconData? iconTarget;
   final IconData? sourceIcon;
   final IconData? destinationIcon;
+  final IconData? icon;
 
   const ConversionHeaderCardWidget({
     super.key,
@@ -16,11 +17,19 @@ class ConversionHeaderCardWidget extends StatelessWidget {
     this.iconTarget,
     this.sourceIcon,
     this.destinationIcon,
-  }) : assert(iconSource != null || sourceIcon != null, 'Must provide iconSource or sourceIcon'),
-       assert(iconTarget != null || destinationIcon != null, 'Must provide iconTarget or destinationIcon');
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Determine effective icons
+    final effectiveSource = iconSource ?? sourceIcon ?? icon ?? Icons.error;
+    final effectiveTarget = iconTarget ?? destinationIcon ?? icon ?? Icons.error;
+    
+    // If only one icon is provided (via 'icon'), we might want a different layout,
+    // but for consistency we'll use it for both slots or just rely on the fallback logic above.
+    // If 'icon' is provided and others are null, effectiveSource and effectiveTarget will be 'icon'.
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -54,7 +63,7 @@ class ConversionHeaderCardWidget extends StatelessWidget {
                   top: 4,
                   left: 4,
                   child: Icon(
-                    iconSource ?? sourceIcon ?? Icons.error, // Fallback safely
+                    effectiveSource,
                     color: AppColors.textPrimary,
                     size: 24,
                   ),
@@ -63,7 +72,7 @@ class ConversionHeaderCardWidget extends StatelessWidget {
                   bottom: 4,
                   right: 4,
                   child: Icon(
-                    iconTarget ?? destinationIcon ?? Icons.error, // Fallback safely
+                    effectiveTarget,
                     color: AppColors.textPrimary,
                     size: 24,
                   ),

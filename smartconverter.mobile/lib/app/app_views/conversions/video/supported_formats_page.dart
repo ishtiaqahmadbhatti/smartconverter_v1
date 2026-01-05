@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import '../../../app_constants/app_colors.dart';
-import '../../../app_constants/api_config.dart';
+import '../../../app_modules/imports_module.dart';
 
 class SupportedFormatsPage extends StatefulWidget {
   const SupportedFormatsPage({super.key});
@@ -29,18 +26,22 @@ class _SupportedFormatsPageState extends State<SupportedFormatsPage> {
       final response = await dio.get(ApiConfig.videoSupportedFormatsEndpoint);
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        setState(() {
-          _formats = response.data['formats'];
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _formats = response.data['formats'];
+            _isLoading = false;
+          });
+        }
       } else {
         throw Exception('Failed to load formats');
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -60,10 +61,7 @@ class _SupportedFormatsPageState extends State<SupportedFormatsPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: _buildBody(),
-      ),
+      body: _buildBody(),
     );
   }
 
@@ -104,10 +102,16 @@ class _SupportedFormatsPageState extends State<SupportedFormatsPage> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+            ConversionHeaderCardWidget(
+              title: 'Supported Formats',
+              description: 'View the list of supported video input and output formats.',
+              icon: Icons.list_alt,
+            ),
+          const SizedBox(height: 20),
           _buildFormatSection('Input Formats', _formats!['input_formats']),
           const SizedBox(height: 24),
           _buildFormatSection('Output Formats', _formats!['output_formats']),
@@ -143,7 +147,7 @@ class _SupportedFormatsPageState extends State<SupportedFormatsPage> {
                 border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
               ),
               child: Text(
-                format.toString(),
+                format.toString().toUpperCase(),
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,

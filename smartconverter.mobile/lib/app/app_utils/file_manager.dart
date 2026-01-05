@@ -800,6 +800,35 @@ class FileManager {
     return videoConversionsDir;
   }
 
+  static Future<Directory> _getVideoSubDir(String subFolder) async {
+    final root = await getVideoConversionsDirectory();
+    final dir = Directory('${root.path}/$subFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static const String _movToMp4SubFolder = 'mov-to-mp4';
+  static const String _mkvToMp4SubFolder = 'mkv-to-mp4';
+  static const String _aviToMp4SubFolder = 'avi-to-mp4';
+  static const String _mp4ToMp3VideoSubFolder = 'mp4-to-mp3';
+  static const String _convertVideoFormatSubFolder = 'convert-video-format';
+  static const String _videoToAudioSubFolder = 'video-to-audio';
+  static const String _extractAudioSubFolder = 'extract-audio';
+  static const String _resizeVideoSubFolder = 'resize-video';
+  static const String _compressVideoSubFolder = 'compress-video';
+  static const String _videoInfoSubFolder = 'get-video-info';
+
+  static Future<Directory> getMovToMp4Directory() => _getVideoSubDir(_movToMp4SubFolder);
+  static Future<Directory> getMkvToMp4Directory() => _getVideoSubDir(_mkvToMp4SubFolder);
+  static Future<Directory> getAviToMp4Directory() => _getVideoSubDir(_aviToMp4SubFolder);
+  static Future<Directory> getMp4ToMp3VideoDirectory() => _getVideoSubDir(_mp4ToMp3VideoSubFolder);
+  static Future<Directory> getConvertVideoFormatDirectory() => _getVideoSubDir(_convertVideoFormatSubFolder);
+  static Future<Directory> getVideoToAudioDirectory() => _getVideoSubDir(_videoToAudioSubFolder);
+  static Future<Directory> getExtractAudioDirectory() => _getVideoSubDir(_extractAudioSubFolder);
+  static Future<Directory> getResizeVideoDirectory() => _getVideoSubDir(_resizeVideoSubFolder);
+  static Future<Directory> getCompressVideoDirectory() => _getVideoSubDir(_compressVideoSubFolder);
+  static Future<Directory> getGetVideoInfoDirectory() => _getVideoSubDir(_videoInfoSubFolder);
+
   /// Get directory for Audio Conversions folder
   static Future<Directory> getAudioConversionsDirectory() async {
     final smartConverterDir = await getSmartConverterDirectory();
@@ -814,19 +843,7 @@ class FileManager {
     return audioConversionsDir;
   }
 
-  /// Get directory for Video to Audio conversion (from Video category)
-  static Future<Directory> getVideoToAudioDirectory() async {
-    final videoConversionsDir = await getVideoConversionsDirectory();
-    final videoToAudioDir = Directory(
-      '${videoConversionsDir.path}/$_videoToAudioFolder',
-    );
 
-    if (!await videoToAudioDir.exists()) {
-      await videoToAudioDir.create(recursive: true);
-    }
-
-    return videoToAudioDir;
-  }
 
   /// Get directory for Video to Audio conversion (from Audio category)
   static Future<Directory> getAudioVideoToAudioDirectory() async {
