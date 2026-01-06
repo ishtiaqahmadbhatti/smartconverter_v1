@@ -8,20 +8,38 @@ import numpy as np
 from app.core.exceptions import FileProcessingError
 from app.services.file_service import FileService
 
-# Configure pydub to use ffmpeg from imageio-ffmpeg if available
+# Configure ffmpeg path
+ffmpeg_path = None
 try:
     import imageio_ffmpeg
     ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
-    AudioSegment.converter = ffmpeg_path
+    print(f"AudioConversionService: configured ffmpeg from imageio-ffmpeg at {ffmpeg_path}")
     
-    # Add ffmpeg directory to PATH so pydub can find it (and potentially ffprobe if it's there)
-    ffmpeg_dir = os.path.dirname(ffmpeg_path)
-    os.environ["PATH"] += os.pathsep + ffmpeg_dir
-    
-    # print(f"AudioConversionService: configured ffmpeg at {ffmpeg_path}")
+    # Configure pydub to use this ffmpeg
+    if ffmpeg_path:
+        AudioSegment.converter = ffmpeg_path
+        
 except ImportError:
-    pass
+    print("AudioConversionService: imageio-ffmpeg not found. Will rely on system PATH.")
 
+# Helper to run ffmpeg command
+import subprocess
+def run_ffmpeg(args):
+    """Run ffmpeg command with error handling."""
+    exe = ffmpeg_path if ffmpeg_path else "ffmpeg"
+    cmd = [exe] + args
+    try:
+        # Check if executable exists or is in path
+        if not ffmpeg_path and not which("ffmpeg"):
+             raise FileProcessingError("FFmpeg executable not found. Please install ffmpeg or imageio-ffmpeg.")
+             
+        process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if process.returncode != 0:
+            raise FileProcessingError(f"FFmpeg command failed: {process.stderr}")
+    except FileNotFoundError:
+         raise FileProcessingError("FFmpeg executable not found (FileNotFound).")
+    except Exception as e:
+         raise FileProcessingError(f"FFmpeg execution error: {str(e)}")
 
 class AudioConversionService:
     """Service for handling audio conversions between various formats."""
@@ -66,19 +84,15 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".mp3")
             
-            # Load WAV file
-            audio = AudioSegment.from_wav(input_path)
-            
-            # Set quality parameters
-            quality_settings = AudioConversionService._get_quality_settings(quality)
-            
-            # Export to MP3
-            audio.export(
-                output_path,
-                format="mp3",
-                bitrate=bitrate,
-                parameters=quality_settings['parameters']
-            )
+            # Map quality/bitrate to ffmpeg args
+            # ffmpeg -i input.wav -b:a 192k output.mp3
+            args = [
+                '-y',
+                '-i', input_path,
+                '-b:a', bitrate,
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -95,19 +109,14 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".mp3")
             
-            # Load FLAC file
-            audio = AudioSegment.from_file(input_path, format="flac")
-            
-            # Set quality parameters
-            quality_settings = AudioConversionService._get_quality_settings(quality)
-            
-            # Export to MP3
-            audio.export(
-                output_path,
-                format="mp3",
-                bitrate=bitrate,
-                parameters=quality_settings['parameters']
-            )
+            # ffmpeg -i input.flac -b:a 192k output.mp3
+            args = [
+                '-y',
+                '-i', input_path,
+                '-b:a', bitrate,
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -124,18 +133,17 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".wav")
             
-            # Load MP3 file
-            audio = AudioSegment.from_mp3(input_path)
+            # Use subprocess to call ffmpeg directly
+            # ffmpeg -i input.mp3 -ar 44100 -ac 2 output.wav
+            args = [
+                '-y', # Overwrite output
+                '-i', input_path,
+                '-ar', str(sample_rate),
+                '-ac', str(channels),
+                output_path
+            ]
             
-            # Set sample rate and channels
-            audio = audio.set_frame_rate(sample_rate)
-            if channels == 1:
-                audio = audio.set_channels(1)
-            elif channels == 2:
-                audio = audio.set_channels(2)
-            
-            # Export to WAV
-            audio.export(output_path, format="wav")
+            run_ffmpeg(args)
             
             return output_path
             
@@ -152,18 +160,15 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".wav")
             
-            # Load FLAC file
-            audio = AudioSegment.from_file(input_path, format="flac")
-            
-            # Set sample rate and channels
-            audio = audio.set_frame_rate(sample_rate)
-            if channels == 1:
-                audio = audio.set_channels(1)
-            elif channels == 2:
-                audio = audio.set_channels(2)
-            
-            # Export to WAV
-            audio.export(output_path, format="wav")
+            # Use subprocess to call ffmpeg directly
+            args = [
+                '-y',
+                '-i', input_path,
+                '-ar', str(sample_rate),
+                '-ac', str(channels),
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -180,15 +185,14 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, ".flac")
             
-            # Load WAV file
-            audio = AudioSegment.from_wav(input_path)
-            
-            # Export to FLAC with compression level
-            audio.export(
-                output_path,
-                format="flac",
-                parameters=["-compression_level", str(compression_level)]
-            )
+            # ffmpeg -i input.wav -compression_level 5 output.flac
+            args = [
+                '-y',
+                '-i', input_path,
+                '-compression_level', str(compression_level),
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -205,28 +209,27 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, f".{output_format.lower()}")
             
-            # Load audio file
-            audio = AudioSegment.from_file(input_path)
+            # Build ffmpeg args
+            # ffmpeg -y -i input ... output
+            args = ['-y', '-i', input_path]
             
-            # Set quality parameters
-            quality_settings = AudioConversionService._get_quality_settings(quality)
+            # Format specific parameters
+            fmt = output_format.lower()
+            if fmt == "mp3":
+                args.extend(['-b:a', bitrate])
+            elif fmt == "flac":
+                 args.extend(['-compression_level', '5'])
+            elif fmt in ["aac", "m4a"]:
+                 args.extend(['-c:a', 'aac', '-b:a', bitrate])
+            elif fmt == "ogg":
+                 args.extend(['-c:a', 'libvorbis', '-q:a', '5'])
+            elif fmt == "wav":
+                 # Default pcm_s16le is usually fine, or just verify format
+                 pass
+                 
+            args.append(output_path)
             
-            # Export to target format
-            if output_format.lower() == "wav":
-                audio.export(output_path, format="wav")
-            elif output_format.lower() == "flac":
-                audio.export(
-                    output_path,
-                    format="flac",
-                    parameters=["-compression_level", "5"]
-                )
-            else:
-                audio.export(
-                    output_path,
-                    format=output_format.lower(),
-                    bitrate=bitrate,
-                    parameters=quality_settings['parameters']
-                )
+            run_ffmpeg(args)
             
             return output_path
             
@@ -235,7 +238,7 @@ class AudioConversionService:
     
     @staticmethod
     def normalize_audio(input_path: str, target_dBFS: float = -20.0) -> str:
-        """Normalize audio to target dBFS level."""
+        """Normalize audio using ffmpeg loudnorm filter."""
         try:
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input audio file not found: {input_path}")
@@ -243,14 +246,15 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, "_normalized.wav")
             
-            # Load audio file
-            audio = AudioSegment.from_file(input_path)
-            
-            # Normalize audio
-            normalized_audio = audio.apply_gain(target_dBFS - audio.dBFS)
-            
-            # Export normalized audio
-            normalized_audio.export(output_path, format="wav")
+            # Use ffmpeg loudnorm filter
+            # ffmpeg -y -i input -af loudnorm=I=-20 output.wav
+            args = [
+                '-y',
+                '-i', input_path,
+                '-af', f'loudnorm=I={target_dBFS}',
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -267,18 +271,15 @@ class AudioConversionService:
             # Generate output path
             output_path = FileService.get_output_path(input_path, "_trimmed.wav")
             
-            # Load audio file
-            audio = AudioSegment.from_file(input_path)
-            
-            # Convert time to milliseconds
-            start_ms = int(start_time * 1000)
-            end_ms = int(end_time * 1000)
-            
-            # Trim audio
-            trimmed_audio = audio[start_ms:end_ms]
-            
-            # Export trimmed audio
-            trimmed_audio.export(output_path, format="wav")
+            # ffmpeg -y -i input -ss start -to end output.wav
+            args = [
+                '-y',
+                '-i', input_path,
+                '-ss', str(start_time),
+                '-to', str(end_time),
+                output_path
+            ]
+            run_ffmpeg(args)
             
             return output_path
             
@@ -287,51 +288,106 @@ class AudioConversionService:
     
     @staticmethod
     def get_audio_info(input_path: str) -> Dict[str, Any]:
-        """Get audio file information."""
+        """Get audio file information using ffmpeg/ffprobe."""
         try:
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input audio file not found: {input_path}")
             
-            # Load audio file
-            audio = AudioSegment.from_file(input_path)
+            # Try parsing ffmpeg output as fallback since we might lack ffprobe
+            # ffmpeg -i input
+            exe = ffmpeg_path if ffmpeg_path else "ffmpeg"
+            cmd = [exe, '-i', input_path]
             
-            # Get audio information
-            info = {
-                "duration": len(audio) / 1000.0,  # Duration in seconds
-                "sample_rate": audio.frame_rate,
-                "channels": audio.channels,
-                "bit_depth": audio.sample_width * 8,
-                "bitrate": audio.frame_rate * audio.sample_width * audio.channels,
-                "dBFS": audio.dBFS,
-                "max_dBFS": audio.max_dBFS,
-                "format": input_path.split('.')[-1].upper()
+            # ffmpeg prints info to stderr
+            try:
+                 result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                 stderr = result.stderr
+            except Exception as e:
+                 raise FileProcessingError(f"Failed to run ffmpeg for info: {e}")
+
+            # Simple regex parsing for basic info
+            import re
+            
+            # Duration: 00:00:30.50, start: ...
+            duration_match = re.search(r"Duration:\s+(\d+):(\d+):(\d+\.\d+)", stderr)
+            duration_sec = 0.0
+            if duration_match:
+                h, m, s = map(float, duration_match.groups())
+                duration_sec = h*3600 + m*60 + s
+            
+            # Stream #0:0: Audio: mp3, 44100 Hz, stereo, fltp, 128 kb/s
+            audio_match = re.search(r"Stream.*Audio:\s+([^,]+),\s+(\d+)\s+Hz,\s+([^,]+),.*,\s+(\d+)\s+kb/s", stderr)
+            
+            if not duration_match and not audio_match:
+                 # Fallback to pydub if we happen to have ffprobe or simple wav/raw reading
+                 audio = AudioSegment.from_file(input_path)
+                 return {
+                    "duration": len(audio) / 1000.0,
+                    "sample_rate": audio.frame_rate,
+                    "channels": audio.channels,
+                    "bit_depth": audio.sample_width * 8,
+                    "bitrate": audio.frame_rate * audio.sample_width * audio.channels, # approx
+                    "dBFS": audio.dBFS,
+                    "max_dBFS": audio.max_dBFS,
+                    "format": input_path.split('.')[-1].upper()
+                }
+
+            # Construct info from regex
+            fmt = audio_match.group(1) if audio_match else "unknown"
+            sample_rate = int(audio_match.group(2)) if audio_match else 0
+            channels_str = audio_match.group(3) if audio_match else "unknown"
+            channels = 2 if "stereo" in channels_str else (1 if "mono" in channels_str else 0)
+            bitrate_kbps = int(audio_match.group(4)) if audio_match else 0
+            
+            return {
+                "duration": duration_sec,
+                "sample_rate": sample_rate,
+                "channels": channels,
+                "bit_depth": 16, # approximation
+                "bitrate": bitrate_kbps * 1000,
+                "dBFS": -20.0, # dummy value as we can't calculate without processing
+                "max_dBFS": 0.0, # dummy
+                "format": fmt.upper()
             }
-            
-            return info
             
         except Exception as e:
             raise FileProcessingError(f"Failed to get audio info: {str(e)}")
     
     @staticmethod
     def merge_audio_files(input_paths: List[str], output_path: str) -> str:
-        """Merge multiple audio files into one."""
+        """Merge multiple audio files into one using ffmpeg concat demuxer."""
         try:
             if not input_paths:
                 raise FileProcessingError("No input files provided")
             
-            # Load first audio file
-            merged_audio = AudioSegment.from_file(input_paths[0])
-            
-            # Merge with other files
-            for path in input_paths[1:]:
-                if os.path.exists(path):
-                    audio = AudioSegment.from_file(path)
-                    merged_audio += audio
-            
-            # Export merged audio
-            merged_audio.export(output_path, format="wav")
-            
-            return output_path
+            # Create a temporary file list for ffmpeg
+            # file 'path1'
+            # file 'path2'
+            list_path = os.path.join(os.path.dirname(output_path), "concat_list.txt")
+            try:
+                with open(list_path, 'w', encoding='utf-8') as f:
+                    for path in input_paths:
+                        # Escape single quotes
+                        safe_path = path.replace("'", "'\\''") 
+                        f.write(f"file '{safe_path}'\n")
+                
+                # ffmpeg -f concat -safe 0 -i list.txt -c copy output.wav
+                # Re-encoding is safer if formats differ, but copy is faster
+                # Let's re-encode to be safe and consistent with previous pydub behavior (which re-encodes)
+                args = [
+                    '-y',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', list_path,
+                    '-c:a', 'pcm_s16le', # Force generic WAV encoding
+                    output_path
+                ]
+                run_ffmpeg(args)
+                
+                return output_path
+            finally:
+                if os.path.exists(list_path):
+                    os.remove(list_path)
             
         except Exception as e:
             raise FileProcessingError(f"Audio merging failed: {str(e)}")
@@ -343,21 +399,38 @@ class AudioConversionService:
             if not os.path.exists(input_path):
                 raise FileProcessingError(f"Input audio file not found: {input_path}")
             
-            # Load audio file
-            audio = AudioSegment.from_file(input_path)
+            # Use ffmpeg segment muxer
+            # ffmpeg -i input.wav -f segment -segment_time 30 -c copy output_%03d.wav
+            output_pattern = FileService.get_output_path(input_path, "_segment_%03d.wav")
+            # We need to return the list of created files.
+            # It's hard to predict exactly what filenames ffmpeg will create without listing dir.
+            # But the pattern is predictable.
             
-            # Calculate segment duration in milliseconds
-            segment_ms = int(segment_duration * 1000)
+            args = [
+                '-y',
+                '-i', input_path,
+                '-f', 'segment',
+                '-segment_time', str(segment_duration),
+                '-c', 'copy', # Copy codec for speed if possible
+                '-reset_timestamps', '1',
+                output_pattern
+            ]
+            run_ffmpeg(args)
             
-            # Split audio into segments
-            output_paths = []
-            for i in range(0, len(audio), segment_ms):
-                segment = audio[i:i + segment_ms]
-                segment_path = FileService.get_output_path(input_path, f"_segment_{i//segment_ms + 1}.wav")
-                segment.export(segment_path, format="wav")
-                output_paths.append(segment_path)
+            # Collect generated files
+            output_dir = os.path.dirname(output_pattern)
+            base_name_pattern = os.path.basename(output_pattern).replace("%03d", r"\d{3}")
+            generated_files = []
             
-            return output_paths
+            import re
+            for f in os.listdir(output_dir):
+                if re.match(base_name_pattern, f):
+                    generated_files.append(os.path.join(output_dir, f))
+            
+            return sorted(generated_files)
+            
+        except Exception as e:
+            raise FileProcessingError(f"Audio splitting failed: {str(e)}")
             
         except Exception as e:
             raise FileProcessingError(f"Audio splitting failed: {str(e)}")

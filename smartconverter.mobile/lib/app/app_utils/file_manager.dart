@@ -46,7 +46,7 @@ class FileManager {
   static const String _pdfOdsToPdfSubFolder = 'ods-to-pdf';
   static const String _pdfOxpsToPdfSubFolder = 'oxps-to-pdf';
   static const String _videoConversionsFolder = 'VideoConversions';
-  static const String _audioConversionsFolder = 'AudioConversions';
+  static const String _audioConversionsFolder = 'AudioConversion';
   static const String _videoToAudioFolder = 'video-to-audio';
   static const String _imageConversionsFolder = 'ImageConversion';
   static const String _imagePdfToJpgSubFolder = 'pdf-to-jpg';
@@ -858,6 +858,37 @@ class FileManager {
 
     return videoToAudioDir;
   }
+
+  static const String _mp4ToMp3AudioSubFolder = 'mp4-to-mp3';
+  static const String _wavToMp3SubFolder = 'wav-to-mp3';
+  static const String _flacToMp3SubFolder = 'flac-to-mp3';
+  static const String _mp3ToWavSubFolder = 'mp3-to-wav';
+  static const String _flacToWavSubFolder = 'flac-to-wav';
+  static const String _wavToFlacSubFolder = 'wav-to-flac';
+  static const String _convertAudioFormatSubFolder = 'convert-audio-format';
+  static const String _normalizeAudioSubFolder = 'normalize-audio';
+  static const String _trimAudioSubFolder = 'trim-audio';
+  static const String _getAudioInfoSubFolder = 'get-audio-info';
+  static const String _supportedAudioFormatsSubFolder = 'supported-audio-formats';
+
+  static Future<Directory> _getAudioSubDir(String subFolder) async {
+    final root = await getAudioConversionsDirectory();
+    final dir = Directory('${root.path}/$subFolder');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  static Future<Directory> getMp4ToMp3AudioDirectory() => _getAudioSubDir(_mp4ToMp3AudioSubFolder);
+  static Future<Directory> getWavToMp3Directory() => _getAudioSubDir(_wavToMp3SubFolder);
+  static Future<Directory> getFlacToMp3Directory() => _getAudioSubDir(_flacToMp3SubFolder);
+  static Future<Directory> getMp3ToWavDirectory() => _getAudioSubDir(_mp3ToWavSubFolder);
+  static Future<Directory> getFlacToWavDirectory() => _getAudioSubDir(_flacToWavSubFolder);
+  static Future<Directory> getWavToFlacDirectory() => _getAudioSubDir(_wavToFlacSubFolder);
+  static Future<Directory> getConvertAudioFormatDirectory() => _getAudioSubDir(_convertAudioFormatSubFolder);
+  static Future<Directory> getNormalizeAudioDirectory() => _getAudioSubDir(_normalizeAudioSubFolder);
+  static Future<Directory> getTrimAudioDirectory() => _getAudioSubDir(_trimAudioSubFolder);
+  static Future<Directory> getGetAudioInfoDirectory() => _getAudioSubDir(_getAudioInfoSubFolder);
+
 
   /// Generate a timestamp-based filename
   static String generateTimestampFilename(String prefix, String extension) {

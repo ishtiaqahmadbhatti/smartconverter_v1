@@ -92,11 +92,27 @@ mixin AdHelper<T extends StatefulWidget> on State<T> {
 
   /// Show Interstitial Ad before an action (like saving)
   Future<void> showInterstitialAd() async {
+    // If not ready, try to load and wait a bit
+    if (!_admobService.isInterstitialReady) {
+      debugPrint('⚠️ Interstitial Ad not ready, attempting to load and wait...');
+      _admobService.loadInterstitialAd();
+      
+      // Wait for up to 2.5 seconds (5 checks * 500ms)
+      int retries = 0;
+      while (!_admobService.isInterstitialReady && retries < 5) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        retries++;
+      }
+    }
+
     if (_admobService.isInterstitialReady) {
       debugPrint('🎬 Showing Interstitial Ad');
+      // Adding a small delay to ensure UI is stable
+      await Future.delayed(const Duration(milliseconds: 200));
       await _admobService.showInterstitialAd();
     } else {
-      debugPrint('⚠️ Interstitial Ad not ready, loading for next time');
+      debugPrint('⚠️ Interstitial Ad still not ready, skipping');
+      // Ensure load is triggered for next time
       _admobService.loadInterstitialAd();
     }
   }
