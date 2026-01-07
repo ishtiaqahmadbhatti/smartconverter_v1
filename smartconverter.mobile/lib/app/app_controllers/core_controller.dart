@@ -22,5 +22,6 @@ export 'package:android_intent_plus/flag.dart';
 export 'package:flutter_animate/flutter_animate.dart';
 export 'package:google_fonts/google_fonts.dart';
 export 'package:provider/provider.dart';
+export 'package:url_launcher/url_launcher.dart';
 
 

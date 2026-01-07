@@ -1,6 +1,7 @@
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app_constants/app_colors.dart';
 import '../app_constants/app_strings.dart';
 
@@ -515,7 +516,12 @@ class _AboutPageState extends State<AboutPage> {
         const SizedBox(width: 20),
         _buildSocialIcon(FontAwesomeIcons.instagram, 'Instagram', () {}, glowColor: const Color(0xFFE1306C)),
         const SizedBox(width: 20),
-        _buildSocialIcon(FontAwesomeIcons.youtube, 'YouTube', () {}, glowColor: const Color(0xFFFF0000)),
+        _buildSocialIcon(
+          FontAwesomeIcons.youtube, 
+          'YouTube', 
+          () => _launchUrl('https://youtube.com/@techmindsforge?si=oDmsdTVyOR6Qlsdu'), 
+          glowColor: const Color(0xFFFF0000),
+        ),
       ],
     );
   }
@@ -578,5 +584,23 @@ class _AboutPageState extends State<AboutPage> {
       duration: 1500.ms,
       color: Colors.white.withOpacity(0.4),
     );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Could not launch: $url')),
+           );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error launching URL: $e')),
+        );
+      }
+    }
   }
 }
