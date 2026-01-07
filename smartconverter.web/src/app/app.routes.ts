@@ -8,22 +8,22 @@ export const AppRoutes: Routes = [
   },
   {
     path: '',
-    loadComponent: () => import('./app_modules/home/home/home.component').then(c => c.HomeComponent)
+    loadComponent: () => import('./app_views/home/home/home.component').then(c => c.HomeComponent)
   },
   {
     path: 'authentication',
-    loadChildren: () => import('./app_modules/authentication/authentication.routes').then(r =>r.AuthenticatioRoutes),
+    loadChildren: () => import('./app_views/authentication/authentication.routes').then(r =>r.AuthenticatioRoutes),
   },
   {
     path: 'profile',
-    loadChildren: () => import('./app_modules/profile/profile.routes').then(r => r.ProfileRoutes),
+    loadChildren: () => import('./app_views/profile/profile.routes').then(r => r.ProfileRoutes),
   },
   {
     path: 'verification',
-    loadChildren: () => import('./app_modules/verification/verification.routes').then(r => r.VerificationRoutes),
+    loadChildren: () => import('./app_views/verification/verification.routes').then(r => r.VerificationRoutes),
   },
   {
     path: 'convert',
-    loadChildren: () => import('./app_modules/convert/convert.routes').then(r => r.ConvertRoutes),
+    loadChildren: () => import('./app_views/convert/convert.routes').then(r => r.ConvertRoutes),
   }
 ];
