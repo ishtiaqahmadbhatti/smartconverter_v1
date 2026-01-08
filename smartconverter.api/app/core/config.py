@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     database_url: Optional[str] = None
     db_host: str = "localhost"
     db_port: int = 5432
-    db_name: str = "techmindsforge"
+    db_name: str = "SmartConverterDB"
     db_user: str = "postgres"
     db_password: str = "Ishtiaq@913"
     
