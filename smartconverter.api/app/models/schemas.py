@@ -128,7 +128,7 @@ class UserListResponse(UserListBase):
     """Schema for UserList response."""
     id: int
     created_at: datetime
-    modified_at: datetime
+    modified_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
