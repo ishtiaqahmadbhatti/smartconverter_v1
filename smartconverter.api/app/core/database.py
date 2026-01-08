@@ -38,9 +38,6 @@ def init_db():
     """Initialize database tables."""
     try:
         # Import all models here to ensure they are registered
-        from app.models.user import User
-        from app.models.conversion_log import ConversionLog
-        from app.models.person import Person
         from app.models.request_log import RequestLog
         from app.models.user_list import UserList
         
