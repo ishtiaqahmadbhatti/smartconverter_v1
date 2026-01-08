@@ -100,4 +100,44 @@ class PDFOperationRequest(BaseModel):
     permissions: Optional[List[str]] = None  # ["print", "copy", "modify", "annotate"]
 
 
+# UserList Schemas
+class UserListBase(BaseModel):
+    """Base schema for UserList."""
+    first_name: str = Field(..., min_length=1, max_length=100)
+    last_name: str = Field(..., min_length=1, max_length=100)
+    gender: str = Field(..., min_length=1, max_length=50)
+    phone_number: str = Field(..., min_length=1, max_length=20)
+    email: EmailStr
+
+
+class UserListCreate(UserListBase):
+    """Schema for creating a new user in UserList."""
+    password: str = Field(..., min_length=8, max_length=100)
+
+
+class UserListUpdate(BaseModel):
+    """Schema for updating UserList."""
+    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    gender: Optional[str] = Field(None, min_length=1, max_length=50)
+    phone_number: Optional[str] = Field(None, min_length=1, max_length=20)
+    email: Optional[EmailStr] = None
+
+
+class UserListResponse(UserListBase):
+    """Schema for UserList response."""
+    id: int
+    created_at: datetime
+    modified_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserListLogin(BaseModel):
+    """Schema for UserList login."""
+    email: EmailStr
+    password: str
+
+
 
