@@ -19,6 +19,3 @@ export * from '../app_views/profile/deleteprofile/deleteprofile.component';
 
 //Convert Components
 export * from '../app_views/convert/pdf-to-word/pdf-to-word.component';
-export * from '../app_views/convert/word-to-pdf/word-to-pdf.component';
-export * from '../app_views/convert/image-to-pdf/image-to-pdf.component';
-export * from '../app_views/convert/merge-pdfs/merge-pdfs.component';
