@@ -13,8 +13,7 @@ from app.core.exceptions import (
     FileSizeExceededError,
     create_error_response
 )
-from app.api.v1.dependencies import get_current_active_user
-from app.models.user import User
+
 from PyPDF2 import PdfReader
 
 router = APIRouter()

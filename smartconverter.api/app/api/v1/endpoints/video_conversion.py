@@ -13,8 +13,8 @@ from app.core.exceptions import (
 )
 from app.services.file_service import FileService
 from app.core.config import settings
-from app.api.v1.dependencies import get_current_active_user
-from app.models.user import User
+
+
 
 router = APIRouter()
 

@@ -81,62 +81,8 @@ class HealthCheckResponse(BaseModel):
 
 
 # User Authentication Schemas
-class UserRole(str, Enum):
-    """User roles for authorization."""
-    USER = "user"
-    ADMIN = "admin"
-    MODERATOR = "moderator"
-    PREMIUM = "premium"
 
 
-class UserBase(BaseModel):
-    """Base user schema with common fields."""
-    email: EmailStr
-    username: str = Field(..., min_length=3, max_length=100)
-    full_name: Optional[str] = Field(None, max_length=255)
-
-
-class UserCreate(UserBase):
-    """Schema for user registration."""
-    password: str = Field(..., min_length=8, max_length=100)
-
-
-class UserResponse(UserBase):
-    """Schema for user data in responses."""
-    id: int
-    role: UserRole
-    is_active: bool
-    is_verified: bool
-    created_at: datetime
-    last_login: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
-
-
-class UserLogin(BaseModel):
-    """Schema for user login."""
-    email: EmailStr
-    password: str
-
-
-class Token(BaseModel):
-    """Token response schema."""
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    expires_in: int
-
-
-class TokenData(BaseModel):
-    """Token data schema."""
-    email: Optional[str] = None
-
-
-class UserUpdate(BaseModel):
-    """Schema for updating user information."""
-    full_name: Optional[str] = Field(None, max_length=255)
-    username: Optional[str] = Field(None, min_length=3, max_length=100)
 
 
 # PDF Operation Schemas
@@ -154,69 +100,4 @@ class PDFOperationRequest(BaseModel):
     permissions: Optional[List[str]] = None  # ["print", "copy", "modify", "annotate"]
 
 
-# Person API Schemas
-class PersonBase(BaseModel):
-    """Base person schema with common fields."""
-    name: str = Field(..., min_length=1, max_length=255, description="Full name of the person")
-    age: str = Field(..., min_length=1, max_length=10, description="Age of the person")
-    gender: str = Field(..., min_length=1, max_length=50, description="Gender of the person")
 
-
-class PersonCreate(PersonBase):
-    """Schema for creating a new person."""
-    pass
-
-
-class PersonUpdate(BaseModel):
-    """Schema for updating person information."""
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    age: Optional[str] = Field(None, min_length=1, max_length=10)
-    gender: Optional[str] = Field(None, min_length=1, max_length=50)
-
-
-class PersonResponse(PersonBase):
-    """Schema for person data in responses."""
-    id: int
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class PersonListResponse(BaseModel):
-    """Schema for listing persons."""
-    persons: List[PersonResponse]
-    total: int
-    page: int
-    size: int
-
-
-# UserList Schemas (Specific for registration task)
-class UserListBase(BaseModel):
-    """Base schema for UserList."""
-    email: EmailStr
-    first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
-    gender: str = Field(..., min_length=1, max_length=50)
-    phone_number: str = Field(..., min_length=1, max_length=20)
-
-
-class UserListCreate(UserListBase):
-    """Schema for creating a new user in UserList."""
-    password: str = Field(..., min_length=8, max_length=100)
-
-
-class UserListResponse(UserListBase):
-    """Schema for UserList response."""
-    id: int
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class UserListLogin(BaseModel):
-    """Schema for UserList login via JSON."""
-    email: EmailStr
-    password: str

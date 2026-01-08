@@ -123,26 +123,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 GET /api/v1/health
 ```
 
-### Convert PDF to Word
-```http
-POST /api/v1/convert/pdf-to-word
-Content-Type: multipart/form-data
 
-file: [PDF file]
-```
-
-### Extract Text from Image
-```http
-POST /api/v1/convert/image-to-text
-Content-Type: multipart/form-data
-
-file: [Image file]
-```
-
-### Download Converted File
-```http
-GET /api/v1/convert/download/{filename}
-```
 
 ## Docker Deployment
 
