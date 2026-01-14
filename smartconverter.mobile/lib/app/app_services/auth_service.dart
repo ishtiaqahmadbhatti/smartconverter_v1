@@ -51,6 +51,7 @@ class AuthService {
     required String password,
     String? deviceId,
   }) async {
+    print('DEBUG: AuthService.register called with deviceId: $deviceId');
     final baseUrl = await ApiConfig.baseUrl;
     final url = Uri.parse('$baseUrl${ApiConfig.registerEndpoint}');
 

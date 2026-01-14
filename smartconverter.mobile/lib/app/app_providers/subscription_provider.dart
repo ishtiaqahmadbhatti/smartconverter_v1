@@ -65,9 +65,11 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   Future<String?> getDeviceId() async {
+    print('DEBUG: SubscriptionProvider.getDeviceId called');
     try {
       if (Platform.isAndroid) {
         final androidInfo = await _deviceInfo.androidInfo;
+        print('DEBUG: Android Device ID: ${androidInfo.id}');
         return androidInfo.id; // Unique ID on Android
       } else if (Platform.isIOS) {
         final iosInfo = await _deviceInfo.iosInfo;

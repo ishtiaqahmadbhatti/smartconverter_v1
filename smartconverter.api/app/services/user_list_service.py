@@ -35,11 +35,17 @@ class UserListService:
 
     @staticmethod
     def create_user(db: Session, user: UserListCreate) -> UserList:
+        # Debug logging
+        print(f"DEBUG: create_user called with email={user.email}, device_id={user.device_id}")
+        
         # Check if we have a guest user with this device_id
         if user.device_id:
             existing_guest = UserListService.get_user_by_device_id(db, user.device_id)
+            print(f"DEBUG: Search for existing guest with device_id={user.device_id} returned: {existing_guest}")
+            
             if existing_guest:
                 # Update existing guest to registered user
+                print(f"DEBUG: Merging with existing guest {existing_guest.id}")
                 existing_guest.email = user.email
                 existing_guest.password = get_password_hash(user.password) if user.password else None
                 existing_guest.first_name = user.first_name
