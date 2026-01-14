@@ -60,6 +60,12 @@ class ApiConfig {
   static const String loginEndpoint = '/api/v1/auth/login';
   static const String loginUserListEndpoint = '/api/v1/auth/login-userlist';
   static const String registerEndpoint = '/api/v1/auth/register-userlist';
+
+  // Subscription & Guest
+  static const String guestRegisterEndpoint = '/api/v1/guest/register';
+  static const String subscriptionUpgradeEndpoint = '/api/v1/subscription/upgrade';
+  static const String subscriptionStatusEndpoint = '/api/v1/subscription/status';
+
   static const String pdfToWordEndpoint = '/api/v1/pdfconversiontools/pdf-to-word';
   static const String wordToPdfEndpoint = '/convert/word-to-pdf';
   static const String imagesToPdfEndpoint = '/convert/images-to-pdf';

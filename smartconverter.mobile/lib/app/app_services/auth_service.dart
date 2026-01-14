@@ -49,6 +49,7 @@ class AuthService {
     required String phone,
     required String gender,
     required String password,
+    String? deviceId,
   }) async {
     final baseUrl = await ApiConfig.baseUrl;
     final url = Uri.parse('$baseUrl${ApiConfig.registerEndpoint}');
@@ -64,6 +65,7 @@ class AuthService {
           'phone_number': phone,
           'gender': gender,
           'password': password,
+          'device_id': deviceId,
         }),
       );
 

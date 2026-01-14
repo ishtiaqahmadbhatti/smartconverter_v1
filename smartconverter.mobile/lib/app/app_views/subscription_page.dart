@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
 import '../app_constants/app_colors.dart';
 
 class SubscriptionPage extends StatelessWidget {
@@ -7,139 +9,154 @@ class SubscriptionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Subscription Plans',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  'Choose Your Journey',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    letterSpacing: 1.2,
-                    shadows: [
-                      Shadow(
-                        color: AppColors.primaryBlue.withOpacity(0.5),
-                        blurRadius: 15,
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2),
-                const SizedBox(height: 8),
-                Text(
-                  'Unlock premium features and higher limits',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary.withOpacity(0.8),
-                  ),
-                ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
-                const SizedBox(height: 40),
-                
-                // Plans List
-                _buildPlanCard(
-                  context: context,
-                  title: 'FREE',
-                  price: '\$0',
-                  subtitle: 'Perfect for casual use',
-                  features: [
-                    '5 Daily Conversions',
-                    '50MB Max File Size',
-                    'Basic Tools Access',
-                    'Watch Ads for More Conversions',
-                  ],
-                  icon: Icons.flash_on_outlined,
-                  color: AppColors.textTertiary,
-                  index: 0,
-                ),
-                
-                const SizedBox(height: 20),
-                
-                _buildPlanCard(
-                  context: context,
-                  title: 'MONTHLY',
-                  price: '\$3',
-                  period: '/month',
-                  subtitle: 'Ideal for power users',
-                  features: [
-                    '100 Daily Conversions',
-                    '200MB Max File Size',
-                    'Ad-Free Experience',
-                    'Priority Support',
-                    'All Premium Tools',
-                  ],
-                  icon: Icons.auto_awesome_outlined,
-                  color: AppColors.primaryBlue,
-                  isPopular: true,
-                  index: 1,
-                ),
-                
-                const SizedBox(height: 20),
-                
-                _buildPlanCard(
-                  context: context,
-                  title: 'YEARLY',
-                  price: '\$50',
-                  period: '/year',
-                  subtitle: 'Ultimate value & freedom',
-                  features: [
-                    'Unlimited Conversions',
-                    'Unlimited File Size',
-                    'Ad-Free Experience',
-                    'VIP Priority Support',
-                    'Full Cloud Integration',
-                  ],
-                  icon: Icons.workspace_premium_outlined,
-                  color: AppColors.secondaryGreen,
-                  index: 2,
-                ),
-                
-                const SizedBox(height: 40),
-                const Text(
-                  'Payments are securely processed. Cancel anytime.',
-                  style: TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 12,
-                  ),
-                ).animate().fadeIn(delay: 1.seconds),
-                const SizedBox(height: 20),
-              ],
+    return Consumer<SubscriptionProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: AppColors.backgroundDark,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'Subscription Plans',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-        ),
-      ),
+          body: provider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: AppColors.backgroundGradient,
+                  ),
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          // ... existing header text ...
+                          Text(
+                            'Choose Your Journey',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                              letterSpacing: 1.2,
+                              shadows: [
+                                Shadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.5),
+                                  blurRadius: 15,
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Unlock premium features and higher limits',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary.withOpacity(0.8),
+                            ),
+                          ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
+                          const SizedBox(height: 40),
+                          
+                          // Plans List
+                          _buildPlanCard(
+                            context: context,
+                            title: 'FREE',
+                            provider: provider,
+                            planId: 'free',
+                            price: '\$0',
+                            subtitle: 'Perfect for casual use',
+                            features: [
+                              '5 Daily Conversions',
+                              '50MB Max File Size',
+                              'Basic Tools Access',
+                              'Watch Ads for More Conversions',
+                            ],
+                            icon: Icons.flash_on_outlined,
+                            color: AppColors.textTertiary,
+                            index: 0,
+                          ),
+                          
+                          const SizedBox(height: 20),
+                          
+                          _buildPlanCard(
+                            context: context,
+                            title: 'MONTHLY',
+                            provider: provider,
+                            planId: 'monthly',
+                            price: '\$3',
+                            period: '/month',
+                            subtitle: 'Ideal for power users',
+                            features: [
+                              '100 Daily Conversions',
+                              '200MB Max File Size',
+                              'Ad-Free Experience',
+                              'Priority Support',
+                              'All Premium Tools',
+                            ],
+                            icon: Icons.auto_awesome_outlined,
+                            color: AppColors.primaryBlue,
+                            isPopular: true,
+                            index: 1,
+                          ),
+                          
+                          const SizedBox(height: 20),
+                          
+                          _buildPlanCard(
+                            context: context,
+                            title: 'YEARLY',
+                            provider: provider,
+                            planId: 'yearly',
+                            price: '\$50',
+                            period: '/year',
+                            subtitle: 'Ultimate value & freedom',
+                            features: [
+                              'Unlimited Conversions',
+                              'Unlimited File Size',
+                              'Ad-Free Experience',
+                              'VIP Priority Support',
+                              'Full Cloud Integration',
+                            ],
+                            icon: Icons.workspace_premium_outlined,
+                            color: AppColors.secondaryGreen,
+                            index: 2,
+                          ),
+                          
+                          const SizedBox(height: 40),
+                          const Text(
+                            'Payments are securely processed. Cancel anytime.',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
+                          ).animate().fadeIn(delay: 1.seconds),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        );
+      },
     );
   }
 
   Widget _buildPlanCard({
     required BuildContext context,
     required String title,
+    required SubscriptionProvider provider,
+    required String planId,
     required String price,
     String? period,
     required String subtitle,
@@ -149,6 +166,7 @@ class SubscriptionPage extends StatelessWidget {
     bool isPopular = false,
     required int index,
   }) {
+    final bool isCurrentPlan = provider.currentPlan == planId;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.backgroundCard,
@@ -278,28 +296,48 @@ class SubscriptionPage extends StatelessWidget {
                 )),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
-                    // Implementation for plan selection
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Selected $title Plan'),
-                        backgroundColor: color,
-                      ),
-                    );
+                  onPressed: () async {
+                    if (isCurrentPlan) return;
+                    
+                    if (planId == 'free') {
+                      // Already handled or downgrade logic ?
+                      return;
+                    }
+
+                    if (provider.isGuest) {
+                       // Redirect to Login
+                       Navigator.pushNamed(context, '/signin');
+                       ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please sign in to upgrade')),
+                      );
+                      return;
+                    }
+
+                    // Upgrade logic
+                    final success = await provider.upgrade(planId);
+                    if (success) {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Upgraded to $title successfully!'), backgroundColor: Colors.green),
+                      );
+                    } else {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Upgrade failed'), backgroundColor: Colors.red),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isPopular ? color : Colors.transparent,
+                    backgroundColor: isCurrentPlan ? Colors.grey : (isPopular ? color : Colors.transparent),
                     foregroundColor: AppColors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: color, width: 2),
+                      side: BorderSide(color: isCurrentPlan ? Colors.grey : color, width: 2),
                     ),
                     elevation: isPopular ? 8 : 0,
                     shadowColor: color.withOpacity(0.5),
                   ),
                   child: Text(
-                    isPopular ? 'GET STARTED' : 'SELECT PLAN',
+                    isCurrentPlan ? 'CURRENT PLAN' : (isPopular ? 'GET STARTED' : 'SELECT PLAN'),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,

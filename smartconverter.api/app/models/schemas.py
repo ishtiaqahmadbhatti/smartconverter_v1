@@ -81,6 +81,17 @@ class HealthCheckResponse(BaseModel):
 
 
 # User Authentication Schemas
+class Token(BaseModel):
+    """Schema for JWT token."""
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int
+
+
+class TokenData(BaseModel):
+    """Schema for JWT token data."""
+    email: Optional[str] = None
 
 
 
@@ -103,11 +114,15 @@ class PDFOperationRequest(BaseModel):
 # UserList Schemas
 class UserListBase(BaseModel):
     """Base schema for UserList."""
-    first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
-    gender: str = Field(..., min_length=1, max_length=50)
-    phone_number: str = Field(..., min_length=1, max_length=20)
-    email: EmailStr
+    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    gender: Optional[str] = Field(None, min_length=1, max_length=50)
+    phone_number: Optional[str] = Field(None, min_length=1, max_length=20)
+    email: Optional[EmailStr] = None
+    device_id: Optional[str] = None
+    is_premium: Optional[bool] = False
+    subscription_plan: Optional[str] = 'free'
+    subscription_expiry: Optional[datetime] = None
 
 
 class UserListCreate(UserListBase):
@@ -139,5 +154,14 @@ class UserListLogin(BaseModel):
     email: EmailStr
     password: str
 
+# Alias for backward compatibility or generic usage
+UserLogin = UserListLogin
+class GuestRegistration(BaseModel):
+    """Schema for guest registration."""
+    device_id: str = Field(..., min_length=5)
+
+class SubscriptionUpgrade(BaseModel):
+    """Schema for subscription upgrade."""
+    plan_id: str # monthly, yearly
 
 

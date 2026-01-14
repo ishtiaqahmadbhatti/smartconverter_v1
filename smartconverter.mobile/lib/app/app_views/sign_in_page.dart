@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
 import 'sign_up_page.dart';
 import 'main_navigation.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
 import '../app_services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
@@ -46,6 +48,10 @@ class _SignInPageState extends State<SignInPage> {
         name: data['full_name'] ?? 'User',
         email: _emailController.text.trim(),
       );
+      
+      if (!mounted) return;
+      await Provider.of<SubscriptionProvider>(context, listen: false).refresh();
+      
       if (!mounted) return;
       Navigator.of(
         context,

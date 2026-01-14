@@ -4,6 +4,8 @@ import '../app_constants/app_colors.dart';
 import 'sign_in_page.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import '../app_services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -60,6 +62,7 @@ class _SignUpPageState extends State<SignUpPage> {
       phone: _phoneController.text,
       gender: _gender!,
       password: _passwordController.text,
+      deviceId: await Provider.of<SubscriptionProvider>(context, listen: false).getDeviceId() ?? '',
     );
 
     if (!mounted) return;
