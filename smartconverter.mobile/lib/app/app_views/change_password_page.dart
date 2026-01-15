@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
+import '../app_services/auth_service.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -33,20 +34,42 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     
     setState(() => _isSubmitting = true);
     
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password changed successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-    
-    Navigator.of(context).pop();
+    try {
+      final result = await AuthService.changePassword(
+        oldPassword: _oldPasswordController.text,
+        newPassword: _newPasswordController.text,
+      );
+      
+      if (!mounted) return;
+      
+      setState(() => _isSubmitting = false);
+      
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password changed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to change password'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override

@@ -60,6 +60,7 @@ class ApiConfig {
   static const String loginEndpoint = '/api/v1/auth/login';
   static const String loginUserListEndpoint = '/api/v1/auth/login-userlist';
   static const String registerEndpoint = '/api/v1/auth/register-userlist';
+  static const String changePasswordEndpoint = '/api/v1/auth/change-password';
 
   // Subscription & Guest
   static const String guestRegisterEndpoint = '/api/v1/guest/register';

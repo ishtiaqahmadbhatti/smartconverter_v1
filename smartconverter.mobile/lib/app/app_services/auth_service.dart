@@ -133,4 +133,44 @@ class AuthService {
       return {'success': false, 'message': 'Connection error: $e'};
     }
   }
+
+  static Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.changePasswordEndpoint}');
+    final token = await getAccessToken();
+
+    if (token == null) {
+      return {'success': false, 'message': 'Not logged in'};
+    }
+
+    try {
+      final response = await post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'old_password': oldPassword,
+          'new_password': newPassword,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Password changed successfully'};
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to change password'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
 }

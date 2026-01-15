@@ -140,6 +140,12 @@ class UserListUpdate(BaseModel):
     email: Optional[EmailStr] = None
 
 
+class ChangePassword(BaseModel):
+    """Schema for changing password."""
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+
 class UserListResponse(UserListBase):
     """Schema for UserList response."""
     id: int

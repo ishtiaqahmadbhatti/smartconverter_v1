@@ -6,11 +6,12 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user_list import UserList
 from app.models.schemas import (
-    UserLogin, Token, UserListCreate, UserListResponse
+    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword
 )
 from app.services.auth_service import (
     authenticate_user, create_token_pair, 
-    refresh_access_token, blacklist_token, get_user_by_email
+    refresh_access_token, blacklist_token, get_user_by_email,
+    verify_password, get_password_hash
 )
 from app.services.user_list_service import UserListService
 from app.api.v1.dependencies import get_current_user, get_current_active_user
@@ -104,6 +105,28 @@ async def logout_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="auth/l
 async def get_current_user_info(current_user: UserList = Depends(get_current_active_user)):
     """Get current user information."""
     return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    password_data: ChangePassword,
+    current_user: UserList = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Change user password."""
+    # Verify old password
+    if not current_user.password or not verify_password(password_data.old_password, current_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect old password"
+        )
+    
+    # Update with new password
+    current_user.password = get_password_hash(password_data.new_password)
+    db.add(current_user)
+    db.commit()
+    
+    return {"message": "Password updated successfully"}
 
 # Update user, Admin endpoints etc are disabled as they rely on old User model
 # ...
