@@ -37,8 +37,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 24),
           _buildAboutSection(),
           const SizedBox(height: 32),
-          _buildLogoutButton(),
-          const SizedBox(height: 24),
+
         ],
       ),
     );
@@ -206,46 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildLogoutButton() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [AppColors.error.withOpacity(0.8), AppColors.error],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.error.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // Implement logout logic
-        },
-        icon: const Icon(Icons.logout, color: AppColors.textPrimary),
-        label: const Text(
-          'Sign Out',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildSettingsCard(List<Widget> items) {
     return Container(

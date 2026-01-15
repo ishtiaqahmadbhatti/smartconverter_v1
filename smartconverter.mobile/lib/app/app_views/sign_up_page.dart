@@ -28,6 +28,7 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isObscure = true;
   bool _isConfirmObscure = true;
   bool _isSubmitting = false;
+  String _completePhoneNumber = '';
 
   final List<String> _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
@@ -59,7 +60,7 @@ class _SignUpPageState extends State<SignUpPage> {
       firstName: _firstNameController.text,
       lastName: _lastNameController.text,
       email: _emailController.text,
-      phone: _phoneController.text,
+      phone: _completePhoneNumber,
       gender: _gender!,
       password: _passwordController.text,
       deviceId: await Provider.of<SubscriptionProvider>(context, listen: false).getDeviceId() ?? '',
@@ -249,7 +250,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                             languageCode: "en",
                             onChanged: (phone) {
-                              print(phone.completeNumber);
+                              _completePhoneNumber = phone.completeNumber;
                             },
                             validator: (v) {
                               if (v == null || v.number.isEmpty) {

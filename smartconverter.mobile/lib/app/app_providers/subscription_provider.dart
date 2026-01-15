@@ -7,12 +7,16 @@ class SubscriptionProvider extends ChangeNotifier {
   String _currentPlan = 'free';
   bool _isLoading = false;
   DateTime? _expiryDate;
+  String _userName = 'Guest User';
+  String _userEmail = 'Sign in to sync your data';
 
   bool get isPremium => _isPremium;
   bool get isGuest => _isGuest;
   String get currentPlan => _currentPlan;
   bool get isLoading => _isLoading;
   DateTime? get expiryDate => _expiryDate;
+  String get userName => _userName;
+  String get userEmail => _userEmail;
 
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
@@ -33,6 +37,11 @@ class SubscriptionProvider extends ChangeNotifier {
     
     if (isLoggedIn) {
       _isGuest = false;
+      final name = await AuthService.getUserName();
+      final email = await AuthService.getUserEmail();
+      _userName = name ?? 'User';
+      _userEmail = email ?? '';
+      
       final result = await SubscriptionService.getSubscriptionStatus();
       if (result['success']) {
         final data = result['data'];
@@ -43,6 +52,11 @@ class SubscriptionProvider extends ChangeNotifier {
       }
     } else {
       _isGuest = true;
+      _userName = 'Guest User';
+      _userEmail = 'Sign in to sync your data';
+      _isPremium = false;
+      _currentPlan = 'free';
+      
       // Start guest session if needed (register device)
       await _registerGuestIfNeeded();
     }
@@ -82,12 +96,20 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   void _updateStateFromData(Map<String, dynamic> data) {
-    _isPremium = data['is_premium'] ?? false;
-    _currentPlan = data['subscription_plan'] ?? 'free';
-    if (data['subscription_expiry'] != null) {
-      _expiryDate = DateTime.tryParse(data['subscription_expiry']);
-    } else {
+    // If we are in Guest mode, but the returned data belongs to a registered user (has email),
+    // we should treat it as a Free Guest user to respect the "Logout" action.
+    if (_isGuest && data['email'] != null && data['email'].toString().isNotEmpty) {
+      _isPremium = false;
+      _currentPlan = 'free';
       _expiryDate = null;
+    } else {
+      _isPremium = data['is_premium'] ?? false;
+      _currentPlan = data['subscription_plan'] ?? 'free';
+      if (data['subscription_expiry'] != null) {
+        _expiryDate = DateTime.tryParse(data['subscription_expiry']);
+      } else {
+        _expiryDate = null;
+      }
     }
     
     // Check expiry

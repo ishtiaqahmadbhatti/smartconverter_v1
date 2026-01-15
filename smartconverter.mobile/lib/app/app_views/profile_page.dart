@@ -6,6 +6,10 @@ import '../app_constants/app_colors.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';
 import '../app_services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
+import 'sign_in_page.dart';
+import 'main_navigation.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,27 +21,15 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
-  bool _isLoggedIn = false;
-  String _userName = 'Guest User';
-  String _userEmail = 'Please sign in to access all features';
+
 
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
-  }
-
-  Future<void> _checkLoginStatus() async {
-    final loggedIn = await AuthService.isLoggedIn();
-    if (loggedIn) {
-      final name = await AuthService.getUserName();
-      final email = await AuthService.getUserEmail();
-      setState(() {
-        _isLoggedIn = true;
-        _userName = name ?? 'User';
-        _userEmail = email ?? '';
-      });
-    }
+    // Refresh to get latest data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SubscriptionProvider>(context, listen: false).checkStatus();
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -179,7 +171,104 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 24),
           _buildAccountSection(),
           const SizedBox(height: 32),
+          _buildAccountSection(),
+          const SizedBox(height: 32),
+          Consumer<SubscriptionProvider>(
+            builder: (context, subscription, _) {
+              if (subscription.isGuest) return const SizedBox.shrink();
+              return Column(
+                children: [
+                   _buildLogoutButton(),
+                   const SizedBox(height: 24),
+                ],
+              );
+            },
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.error.withOpacity(0.8), AppColors.error],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          // Show confirmation dialog
+          final bool? confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: AppColors.backgroundCard,
+              title: const Text('Log Out', style: TextStyle(color: AppColors.textPrimary)),
+              content: const Text(
+                'Are you sure you want to log out?',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Log Out', style: TextStyle(color: AppColors.error)),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm == true) {
+             await AuthService.clearTokens();
+             if (!mounted) return;
+             
+             // Update subscription provider
+             Provider.of<SubscriptionProvider>(context, listen: false).refresh();
+             
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(
+                 content: Text('Signed out successfully'),
+                 backgroundColor: Colors.green,
+               ),
+             );
+             
+             // Redirect to Home Page (Index 0)
+             try {
+               MainNavigation.of(context).setSelectedIndex(0);
+             } catch (e) {
+               debugPrint('Navigation error: $e');
+             }
+          }
+        },
+        icon: const Icon(Icons.logout, color: AppColors.textPrimary),
+        label: const Text(
+          'Log Out',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
     );
   }
@@ -210,99 +299,135 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Stack(
+      child: Consumer<SubscriptionProvider>(
+        builder: (context, subscription, child) {
+          final isPremium = subscription.isPremium;
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppColors.primaryGradient,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryBlue.withOpacity(0.3),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+              Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppColors.primaryGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryBlue.withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: _profileImage != null
-                        ? Image.file(
-                            _profileImage!,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          )
-                        : const Icon(
-                            Icons.person,
-                            size: 50,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(50),
+                        child: _profileImage != null
+                            ? Image.file(
+                                _profileImage!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              )
+                            : const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: AppColors.textPrimary,
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _showImageSourcePicker,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.secondaryGradient,
+                            border: Border.all(
+                              color: AppColors.backgroundCard,
+                              width: 3,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 16,
                             color: AppColors.textPrimary,
                           ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: _showImageSourcePicker,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColors.secondaryGradient,
-                        border: Border.all(
-                          color: AppColors.backgroundCard,
-                          width: 3,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 16,
-                        color: AppColors.textPrimary,
-                      ),
                     ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                subscription.userName,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subscription.userEmail,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              if (!subscription.isGuest)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: isPremium 
+                        ? const LinearGradient(
+                            colors: [Color(0xFFFFC107), Color(0xFFFF9800)], // Gold to Orange
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : LinearGradient(
+                            colors: [AppColors.textSecondary.withOpacity(0.2), AppColors.textSecondary.withOpacity(0.1)],
+                          ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: isPremium 
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFFFF9800).withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : null,
+                    border: isPremium 
+                        ? Border.all(color: Colors.white.withOpacity(0.5), width: 1)
+                        : Border.all(color: AppColors.textSecondary.withOpacity(0.3), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isPremium) ...[
+                        const Icon(Icons.workspace_premium, color: Colors.white, size: 16),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        isPremium ? 'PREMIUM MEMBER' : 'FREE ACCOUNT',
+                        style: TextStyle(
+                          color: isPremium ? Colors.white : AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _userName,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _userEmail,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: AppColors.secondaryGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Premium User',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

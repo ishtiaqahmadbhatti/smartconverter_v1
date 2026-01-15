@@ -99,11 +99,17 @@ def create_token_pair(user: Any) -> Dict[str, Any]:
         data={"sub": user.email, "user_id": user.id}
     )
     
+    # Construct full name
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    if not full_name:
+        full_name = "User"
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "full_name": full_name
     }
 
 

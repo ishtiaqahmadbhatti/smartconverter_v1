@@ -1,4 +1,7 @@
 import '../app_modules/imports_module.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
+import '../app_views/main_navigation.dart';
 
 class DrawerMenuWidget extends StatefulWidget {
   const DrawerMenuWidget({super.key});
@@ -11,33 +14,13 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
   bool _isCheckingHealth = false;
   String _healthStatus = '';
   Color _healthStatusColor = AppColors.textSecondary;
-  bool _isLoggedIn = false;
-  String _userName = 'Guest User';
-  String _userEmail = 'Sign in to sync your data';
 
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
-  }
-
-  Future<void> _checkLoginStatus() async {
-    final loggedIn = await AuthService.isLoggedIn();
-    if (loggedIn) {
-      final name = await AuthService.getUserName();
-      final email = await AuthService.getUserEmail();
-      setState(() {
-        _isLoggedIn = true;
-        _userName = name ?? 'User';
-        _userEmail = email ?? '';
-      });
-    } else {
-      setState(() {
-        _isLoggedIn = false;
-        _userName = 'Guest User';
-        _userEmail = 'Sign in to sync your data';
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SubscriptionProvider>(context, listen: false).checkStatus();
+    });
   }
 
   Future<void> _checkApiHealth() async {
@@ -74,8 +57,22 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
   Future<void> _logout(BuildContext context) async {
     // Show confirmation dialog or just logout
     await AuthService.clearTokens();
+    
+    // Refresh state
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/signin', (route) => false);
+    await Provider.of<SubscriptionProvider>(context, listen: false).refresh();
+    
+    // Close drawer
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    
+    // Navigate to Home
+    try {
+      MainNavigation.of(context).setSelectedIndex(0);
+    } catch (e) {
+      // Fallback if not in MainNavigation context structure
+       Navigator.of(context).pushNamedAndRemoveUntil('/signin', (route) => false);
+    }
   }
 
   @override
@@ -89,24 +86,31 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                if (!_isLoggedIn) ...[
-                  _buildDrawerItem(
-                    icon: Icons.login,
-                    title: 'Sign In',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushNamed('/signin');
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.person_add_alt,
-                    title: 'Sign Up',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushNamed('/signup');
-                    },
-                  ),
-                ],
+                Consumer<SubscriptionProvider>(
+                  builder: (context, subscription, _) {
+                    if (!subscription.isGuest) return const SizedBox.shrink();
+                    return Column(
+                      children: [
+                        _buildDrawerItem(
+                          icon: Icons.login,
+                          title: 'Sign In',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushNamed('/signin');
+                          },
+                        ),
+                        _buildDrawerItem(
+                          icon: Icons.person_add_alt,
+                          title: 'Sign Up',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushNamed('/signup');
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
                 const Divider(color: AppColors.textTertiary),
                 _buildDrawerItem(
                   icon: Icons.dashboard_outlined,
@@ -216,7 +220,10 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
   }
 
   Widget _buildDrawerHeader() {
-    return Container(
+    return Consumer<SubscriptionProvider>(
+      builder: (context, subscription, child) {
+        final isPremium = subscription.isPremium;
+        return Container(
           decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
           child: SafeArea(
             bottom: false,
@@ -246,7 +253,7 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _userName,
+                              subscription.userName,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -255,7 +262,7 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _userEmail,
+                              subscription.userEmail,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textPrimary.withOpacity(0.8),
@@ -267,24 +274,56 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.textPrimary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Premium User',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                  const SizedBox(height: 20),
+                  if (!subscription.isGuest)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: isPremium 
+                            ? const LinearGradient(
+                                colors: [Color(0xFFFFC107), Color(0xFFFF9800)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : LinearGradient(
+                                colors: [Colors.black.withOpacity(0.2), Colors.black.withOpacity(0.1)],
+                              ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: isPremium 
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFFFF9800).withOpacity(0.4),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                )
+                              ]
+                            : null,
+                        border: isPremium 
+                            ? Border.all(color: Colors.white.withOpacity(0.3), width: 1)
+                            : Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isPremium) ...[
+                             const Icon(Icons.workspace_premium, color: Colors.white, size: 14),
+                             const SizedBox(width: 4),
+                          ],
+                          Text(
+                            isPremium ? 'PREMIUM' : 'FREE',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isPremium ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -293,6 +332,8 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
         .animate()
         .fadeIn(duration: 600.ms)
         .slideX(begin: -0.3, duration: 600.ms, curve: Curves.easeOutCubic);
+      },
+    );
   }
 
   Widget _buildDrawerItem({
@@ -333,26 +374,30 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
             children: [
               const Divider(color: AppColors.textTertiary),
               const SizedBox(height: 16),
-              if (_isLoggedIn)
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _logout(context),
-                        icon: const Icon(Icons.logout, size: 18),
-                        label: const Text(AppStrings.logout),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+              Consumer<SubscriptionProvider>(
+                builder: (context, subscription, _) {
+                  if (subscription.isGuest) return const SizedBox.shrink();
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _logout(context),
+                          icon: const Icon(Icons.logout, size: 18),
+                          label: const Text(AppStrings.logout),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: AppColors.textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: 16),
               Text(
                 'Version ${AppStrings.appVersion}',

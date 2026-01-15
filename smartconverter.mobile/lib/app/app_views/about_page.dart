@@ -510,9 +510,19 @@ class _AboutPageState extends State<AboutPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildSocialIcon(FontAwesomeIcons.globe, 'Website', () {}, glowColor: AppColors.secondaryCyan),
+        _buildSocialIcon(
+          FontAwesomeIcons.globe, 
+          'Website', 
+          () => _launchUrl('https://www.techmindsforge.com'), 
+          glowColor: AppColors.secondaryCyan
+        ),
         const SizedBox(width: 20),
-        _buildSocialIcon(FontAwesomeIcons.facebookF, 'Facebook', () {}, glowColor: const Color(0xFF1877F2)),
+        _buildSocialIcon(
+          FontAwesomeIcons.facebookF, 
+          'Facebook', 
+          () => _launchUrl('https://www.facebook.com/techmindsforge'), 
+          glowColor: const Color(0xFF1877F2)
+        ),
         const SizedBox(width: 20),
         _buildSocialIcon(FontAwesomeIcons.instagram, 'Instagram', () {}, glowColor: const Color(0xFFE1306C)),
         const SizedBox(width: 20),

@@ -40,7 +40,7 @@ async def register_user_list_endpoint(user_data: UserListCreate, db: Session = D
     if UserListService.get_user_by_email(db, user_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered in UserList"
+            detail="Email already registered. Please Sign In with this email or use another email."
         )
     
     # Create user

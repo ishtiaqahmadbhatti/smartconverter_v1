@@ -87,6 +87,7 @@ class Token(BaseModel):
     refresh_token: str
     token_type: str
     expires_in: int
+    full_name: Optional[str] = None
 
 
 class TokenData(BaseModel):

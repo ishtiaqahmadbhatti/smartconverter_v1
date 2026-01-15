@@ -38,7 +38,7 @@ void main() async {
       providers: [
         Provider<ConversionService>.value(value: conversionService),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider(), lazy: false),
       ],
       child: const SmartConverterApp(),
     ),
