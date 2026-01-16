@@ -7,7 +7,7 @@ import '../app_modules/imports_module.dart';
 class ApiConfig {
   // FastAPI Backend Configuration
   // Network IP for physical devices (change if your server IP is different)
-  static const String networkIp = '192.168.8.101';
+  static const String networkIp = '192.168.8.100';
   static const int networkPort = 8000;
 
   // For Android Emulator: Use 10.0.2.2 to access host machine's localhost
@@ -64,6 +64,7 @@ class ApiConfig {
   static const String forgotPasswordEndpoint = '/api/v1/auth/forgot-password'; // Send OTP
   static const String verifyOtpEndpoint = '/api/v1/auth/verify-otp';
   static const String resetPasswordEndpoint = '/api/v1/auth/reset-password-confirm';
+  static const String uploadProfileImageEndpoint = '/api/v1/auth/upload-profile-image';
 
   // Subscription & Guest
   static const String guestRegisterEndpoint = '/api/v1/guest/register';

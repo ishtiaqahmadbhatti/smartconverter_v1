@@ -53,6 +53,7 @@ dependencies:
   permission_handler: ^11.3.1
   intl_phone_field: ^3.2.0
   image_picker: ^1.1.2
+  image_cropper: ^8.0.2
   font_awesome_flutter: ^10.9.1
 
   archive: any

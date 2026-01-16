@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../app_constants/app_colors.dart';
+import '../app_constants/api_config.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';
 import '../app_services/auth_service.dart';
@@ -36,21 +38,129 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 512,
-        maxHeight: 512,
+        maxWidth: 1024,
+        maxHeight: 1024,
         imageQuality: 85,
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _profileImage = File(pickedFile.path);
-        });
+        // Crop the image
+        await _cropImage(File(pickedFile.path));
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to pick image')),
+        );
+      }
+    }
+  }
+
+  Future<void> _cropImage(File imageFile) async {
+    try {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: imageFile.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: AppColors.backgroundCard,
+            toolbarWidgetColor: AppColors.textPrimary,
+            backgroundColor: AppColors.backgroundCard,
+            activeControlsWidgetColor: AppColors.primaryBlue,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            title: 'Crop Image',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        if (mounted) {
+          _showConfirmationDialog(File(croppedFile.path));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cropping image: $e');
+    }
+  }
+
+  void _showConfirmationDialog(File imageFile) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        title: const Text('Update Profile Photo', style: TextStyle(color: AppColors.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipOval(
+              child: Image.file(
+                imageFile,
+                width: 150,
+                height: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Do you want to set this as your profile picture?',
+              style: TextStyle(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              _uploadImage(imageFile);
+            },
+            child: const Text('Update', style: TextStyle(color: AppColors.primaryBlue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _uploadImage(File imageFile) async {
+    setState(() {
+      _profileImage = imageFile;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploading image...')),
+      );
+    }
+
+    final result = await AuthService.uploadProfileImage(imageFile);
+
+    if (mounted) {
+      if (result['success']) {
+        final data = result['data'];
+        final profileImageUrl = data['profile_image_url'];
+
+        if (profileImageUrl != null) {
+          Provider.of<SubscriptionProvider>(context, listen: false).updateProfileImage(profileImageUrl);
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile image updated successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Failed to upload image')),
         );
       }
     }
@@ -329,11 +439,37 @@ class _ProfilePageState extends State<ProfilePage> {
                                 height: 100,
                                 fit: BoxFit.cover,
                               )
-                            : const Icon(
-                                Icons.person,
-                                size: 50,
-                                color: AppColors.textPrimary,
-                              ),
+                            : (subscription.profileImageUrl != null
+                                ? FutureBuilder<String>(
+                                    future: ApiConfig.baseUrl, // We need base URL to construct full path
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        // Handle relative path
+                                        final fullUrl = subscription.profileImageUrl!.startsWith('http') 
+                                            ? subscription.profileImageUrl!
+                                            : '${snapshot.data}/${subscription.profileImageUrl!}';
+                                        return Image.network(
+                                          fullUrl,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.person,
+                                              size: 50,
+                                              color: AppColors.textPrimary,
+                                            );
+                                          },
+                                        );
+                                      }
+                                      return const CircularProgressIndicator();
+                                    },
+                                  )
+                                : const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: AppColors.textPrimary,
+                                  )),
                       ),
                     ),
                     Positioned(

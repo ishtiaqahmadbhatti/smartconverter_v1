@@ -13,6 +13,7 @@ class UserList(Base):
     gender = Column(String(50), nullable=True)
     phone_number = Column(String(20), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=True)
+    profile_image_url = Column(String(500), nullable=True)
     password = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     modified_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())

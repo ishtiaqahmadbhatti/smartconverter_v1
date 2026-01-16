@@ -17,8 +17,11 @@ class SubscriptionProvider extends ChangeNotifier {
   DateTime? get expiryDate => _expiryDate;
   String get userName => _userName;
   String get userEmail => _userEmail;
+  String? get profileImageUrl => _profileImageUrl;
 
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin(); 
+
+  String? _profileImageUrl;
 
   SubscriptionProvider() {
     _init();
@@ -56,6 +59,7 @@ class SubscriptionProvider extends ChangeNotifier {
       _userEmail = 'Sign in to sync your data';
       _isPremium = false;
       _currentPlan = 'free';
+      _profileImageUrl = null;
       
       // Start guest session if needed (register device)
       await _registerGuestIfNeeded();
@@ -110,6 +114,11 @@ class SubscriptionProvider extends ChangeNotifier {
       } else {
         _expiryDate = null;
       }
+      
+      // Update profile image if available
+      if (data.containsKey('profile_image_url')) {
+        _profileImageUrl = data['profile_image_url'];
+      }
     }
     
     // Check expiry
@@ -145,6 +154,15 @@ class SubscriptionProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  void updateProfileImage(String url) {
+    // Note: In a real app we might want to check if this is full URL or relative
+    // If relative, prepend base URL. But for now, let's store what we get.
+    // Ideally we fetch the Base URL asynchronously, but here we just notify.
+    // The UI will likely construct the full URL.
+    _profileImageUrl = url;
+    notifyListeners();
   }
   
   // Method to refresh status manually (e.g. after login)

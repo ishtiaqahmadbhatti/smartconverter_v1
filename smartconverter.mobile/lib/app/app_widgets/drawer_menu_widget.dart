@@ -2,6 +2,7 @@ import '../app_modules/imports_module.dart';
 import 'package:provider/provider.dart';
 import '../app_providers/subscription_provider.dart';
 import '../app_views/main_navigation.dart';
+import '../app_constants/api_config.dart';
 
 class DrawerMenuWidget extends StatefulWidget {
   const DrawerMenuWidget({super.key});
@@ -241,10 +242,41 @@ class _DrawerMenuWidgetState extends State<DrawerMenuWidget> {
                           shape: BoxShape.circle,
                           color: AppColors.textPrimary.withOpacity(0.2),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 30,
-                          color: AppColors.textPrimary,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: subscription.profileImageUrl != null
+                              ? FutureBuilder<String>(
+                                  future: ApiConfig.baseUrl, 
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      final fullUrl = subscription.profileImageUrl!.startsWith('http') 
+                                          ? subscription.profileImageUrl!
+                                          : '${snapshot.data}/${subscription.profileImageUrl!}';
+                                      return Image.network(
+                                        fullUrl,
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.person,
+                                            size: 30,
+                                            color: AppColors.textPrimary,
+                                          );
+                                        },
+                                      );
+                                    }
+                                    return const Padding(
+                                      padding: EdgeInsets.all(12.0),
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary),
+                                    );
+                                  },
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 30,
+                                  color: AppColors.textPrimary,
+                                ),
                         ),
                       ),
                       const SizedBox(width: 16),

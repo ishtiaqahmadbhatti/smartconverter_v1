@@ -1,4 +1,6 @@
 import '../app_modules/imports_module.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 class AuthService {
   static const String _accessTokenKey = 'access_token';
@@ -237,6 +239,46 @@ class AuthService {
         return {
           'success': false,
           'message': data['detail'] ?? 'Verification failed'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // 4. Upload Profile Image
+  static Future<Map<String, dynamic>> uploadProfileImage(File imageFile) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.uploadProfileImageEndpoint}');
+    final token = await getAccessToken();
+
+    if (token == null) {
+      return {'success': false, 'message': 'Not logged in'};
+    }
+
+    try {
+      final request = http.MultipartRequest('POST', url);
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+      ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true, 
+          'message': 'Profile image uploaded successfully',
+          'data': data
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to upload image'
         };
       }
     } catch (e) {

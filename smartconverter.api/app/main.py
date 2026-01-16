@@ -234,6 +234,8 @@ async def request_logging_middleware(request: Request, call_next):
 
 # Mount static files for downloads
 app.mount("/download", StaticFiles(directory=settings.output_dir), name="downloads")
+# Mount uploads directory for profile images
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

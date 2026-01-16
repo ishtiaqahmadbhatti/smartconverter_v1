@@ -120,6 +120,7 @@ class UserListBase(BaseModel):
     gender: Optional[str] = Field(None, min_length=1, max_length=50)
     phone_number: Optional[str] = Field(None, min_length=1, max_length=20)
     email: Optional[EmailStr] = None
+    profile_image_url: Optional[str] = None
     device_id: Optional[str] = None
     is_premium: Optional[bool] = False
     subscription_plan: Optional[str] = 'free'

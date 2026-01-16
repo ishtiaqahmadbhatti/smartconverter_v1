@@ -261,5 +261,40 @@ async def reset_password_confirm(
     
     return {"message": "Password has been reset successfully."}
 
-# Update user, Admin endpoints etc are disabled as they rely on old User model
-# ...
+    return {"message": "Password has been reset successfully."}
+
+
+from fastapi import UploadFile, File
+import shutil
+import os
+import uuid
+
+@router.post("/upload-profile-image", response_model=UserListResponse)
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    current_user: UserList = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload profile image and update user record."""
+    UPLOAD_DIR = "uploads/profile_images"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    filename = f"{current_user.id}_{uuid.uuid4().hex}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    # Store relative path (client will prepend base URL)
+    relative_path = f"uploads/profile_images/{filename}"
+    
+    current_user.profile_image_url = relative_path
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user
+
