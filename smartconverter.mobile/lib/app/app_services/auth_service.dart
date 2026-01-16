@@ -173,4 +173,34 @@ class AuthService {
       return {'success': false, 'message': 'Connection error: $e'};
     }
   }
+
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.forgotPasswordEndpoint}');
+
+    try {
+      final response = await post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Password reset email sent'};
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to reset password'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
 }

@@ -60,6 +60,17 @@ class Settings(BaseSettings):
         from urllib.parse import quote_plus
         encoded_password = quote_plus(self.db_password)
         return f"postgresql://{self.db_user}:{encoded_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+
+    # Email Settings
+    MAIL_USERNAME: str = "techmindsforge@gmail.com"
+    MAIL_PASSWORD: str = "ckpm hbdy zuux qsym"
+    MAIL_FROM: str = "techmindsforge@gmail.com"
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
     
     class Config:
         env_file = ".env"

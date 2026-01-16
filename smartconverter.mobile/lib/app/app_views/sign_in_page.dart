@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
 import 'sign_up_page.dart';
+import 'forgot_password_page.dart';
 import 'main_navigation.dart';
 import 'package:provider/provider.dart';
 import '../app_providers/subscription_provider.dart';
@@ -250,6 +251,26 @@ class _SignInPageState extends State<SignInPage> {
                               .animate()
                               .fadeIn(delay: 800.ms)
                               .scale(duration: 400.ms, curve: Curves.easeOut),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const ForgotPasswordPage(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                  color: AppColors.primaryBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           const SizedBox(height: 12),
                           Row(

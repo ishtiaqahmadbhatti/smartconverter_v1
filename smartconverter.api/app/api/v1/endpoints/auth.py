@@ -6,13 +6,16 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user_list import UserList
 from app.models.schemas import (
-    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword
+    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword, ForgotPassword
 )
 from app.services.auth_service import (
     authenticate_user, create_token_pair, 
     refresh_access_token, blacklist_token, get_user_by_email,
     verify_password, get_password_hash
 )
+from app.services.email_service import EmailService
+import secrets
+import string
 from app.services.user_list_service import UserListService
 from app.api.v1.dependencies import get_current_user, get_current_active_user
 # from authlib.integrations.starlette_client import OAuth
@@ -127,6 +130,44 @@ async def change_password(
     db.commit()
     
     return {"message": "Password updated successfully"}
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    data: ForgotPassword,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset user password and send it via email.
+    """
+    user = get_user_by_email(db, data.email)
+    if not user:
+        # Per user request: Explicitly inform if email does not exist
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address."
+        )
+    
+    # Generate new random password (8 chars, alphanumeric)
+    alphabet = string.ascii_letters + string.digits
+    new_password = ''.join(secrets.choice(alphabet) for i in range(8))
+    
+    # Update DB
+    user.password = get_password_hash(new_password)
+    db.add(user)
+    db.commit()
+    
+    # Send Email
+    email_sent = await EmailService.send_password_reset_email(data.email, new_password)
+    
+    if not email_sent:
+        # If email fails (e.g. bad config), we might want to log it. 
+        # For now, we return success to the user but they won't get the email.
+        # In a real app we might alert admins.
+        print(f"FAILED TO SEND EMAIL. New Password for {data.email}: {new_password}")
+        return {"message": "Password reset, but failed to send email. Check server logs."}
+        
+    return {"message": "Password reset email sent successfully."}
 
 # Update user, Admin endpoints etc are disabled as they rely on old User model
 # ...

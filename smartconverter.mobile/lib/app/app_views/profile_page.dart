@@ -171,8 +171,6 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 24),
           _buildAccountSection(),
           const SizedBox(height: 32),
-          _buildAccountSection(),
-          const SizedBox(height: 32),
           Consumer<SubscriptionProvider>(
             builder: (context, subscription, _) {
               if (subscription.isGuest) return const SizedBox.shrink();
