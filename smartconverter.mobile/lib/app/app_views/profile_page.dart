@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:local_auth/local_auth.dart';
 import '../app_constants/app_colors.dart';
 import '../app_constants/api_config.dart';
 import 'change_password_page.dart';
@@ -25,13 +26,86 @@ class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
 
 
+  bool _isBiometricEnabled = false;
+  final LocalAuthentication auth = LocalAuthentication();
+
   @override
   void initState() {
     super.initState();
-    // Refresh to get latest data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubscriptionProvider>(context, listen: false).checkStatus();
+      _checkBiometricStatus();
     });
+  }
+
+  Future<void> _checkBiometricStatus() async {
+    final enabled = await AuthService.isBiometricEnabled();
+    if (mounted) setState(() => _isBiometricEnabled = enabled);
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      // Enabling: Ask for password to save credentials
+      final password = await _showPasswordDialog();
+      if (password != null && password.isNotEmpty) {
+        // Optional: Verify password with an API call here if strict security needed,
+        // or just rely on current valid session + user knowing the password.
+        // For better security, let's just save valid email/pass.
+        // We need the email from SubscriptionProvider
+        final email = Provider.of<SubscriptionProvider>(context, listen: false).userEmail;
+        await AuthService.saveCredentialsForBiometric(email, password);
+        await AuthService.setBiometricEnabled(true);
+        setState(() => _isBiometricEnabled = true);
+        if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(content: Text('Biometric login enabled')),
+             );
+        }
+      }
+    } else {
+      // Disabling
+      await AuthService.setBiometricEnabled(false);
+      setState(() => _isBiometricEnabled = false);
+    }
+  }
+
+  Future<String?> _showPasswordDialog() async {
+    String password = '';
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        title: const Text('Confirm Password', style: TextStyle(color: AppColors.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Please enter your password to enable biometric login.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              obscureText: true,
+              onChanged: (v) => password = v,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, password),
+            child: const Text('Enable', style: TextStyle(color: AppColors.primaryBlue)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -724,6 +798,36 @@ class _ProfilePageState extends State<ProfilePage> {
                 'Update your account password',
                 Icons.lock_outline,
                 () => _showChangePasswordPage(),
+              ),
+              SwitchListTile(
+                value: _isBiometricEnabled,
+                onChanged: _toggleBiometric,
+                title: const Text(
+                  'Biometric Login',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Use fingerprint/face ID to sign in',
+                  style: TextStyle(
+                     color: AppColors.textSecondary,
+                     fontSize: 12,
+                  ),
+                ),
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBlue.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.fingerprint, color: AppColors.primaryBlue, size: 20),
+                ),
+                activeColor: AppColors.primaryBlue,
+                activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               ),
               _buildSettingItem(
                 'Subscription',

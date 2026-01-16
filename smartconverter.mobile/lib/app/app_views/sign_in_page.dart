@@ -7,6 +7,7 @@ import 'main_navigation.dart';
 import 'package:provider/provider.dart';
 import '../app_providers/subscription_provider.dart';
 import '../app_services/auth_service.dart';
+import 'package:local_auth/local_auth.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -21,6 +22,67 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isObscure = true;
   bool _isSubmitting = false;
+  final LocalAuthentication auth = LocalAuthentication();
+  bool _canCheckBiometrics = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    bool canCheckBiometrics = false;
+    try {
+      canCheckBiometrics = await auth.canCheckBiometrics;
+      // Also check if user has enabled it in settings
+      final isEnabled = await AuthService.isBiometricEnabled();
+      if (isEnabled) {
+         // Check if we have credentials
+         final creds = await AuthService.getBiometricCredentials();
+         if (creds['email'] == null || creds['password'] == null) {
+           canCheckBiometrics = false;
+         }
+      } else {
+        canCheckBiometrics = false;
+      }
+    } catch (e) {
+      canCheckBiometrics = false;
+    }
+    if (mounted) {
+      setState(() {
+        _canCheckBiometrics = canCheckBiometrics;
+      });
+    }
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Please authenticate to sign in',
+        options: const AuthenticationOptions(biometricOnly: true),
+      );
+      
+      if (didAuthenticate) {
+        final creds = await AuthService.getBiometricCredentials();
+        final email = creds['email'];
+        final password = creds['password'];
+        
+        if (email != null && password != null) {
+           setState(() => _isSubmitting = true);
+           // Login directly without showing credentials
+           await _submit(email: email, password: password); 
+        }
+      }
+    } catch (e) {
+      debugPrint('Authentication error: $e');
+      if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Biometric authentication failed')),
+          );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -29,13 +91,24 @@ class _SignInPageState extends State<SignInPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _submit({String? email, String? password}) async {
+    final String finalEmail;
+    final String finalPassword;
+
+    if (email != null && password != null) {
+      finalEmail = email;
+      finalPassword = password;
+    } else {
+      if (!_formKey.currentState!.validate()) return;
+      finalEmail = _emailController.text.trim();
+      finalPassword = _passwordController.text.trim();
+    }
+
     setState(() => _isSubmitting = true);
 
     final result = await AuthService.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
+      email: finalEmail,
+      password: finalPassword,
     );
 
     if (!mounted) return;
@@ -47,7 +120,7 @@ class _SignInPageState extends State<SignInPage> {
         data['access_token'],
         data['refresh_token'],
         name: data['full_name'] ?? 'User',
-        email: _emailController.text.trim(),
+        email: finalEmail,
       );
       
       if (!mounted) return;
@@ -251,6 +324,31 @@ class _SignInPageState extends State<SignInPage> {
                               .animate()
                               .fadeIn(delay: 800.ms)
                               .scale(duration: 400.ms, curve: Curves.easeOut),
+                          
+                          if (_canCheckBiometrics) ...[
+                            const SizedBox(height: 20),
+                            Center(
+                              child: InkWell(
+                                onTap: _authenticate,
+                                borderRadius: BorderRadius.circular(30),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlue.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.primaryBlue.withOpacity(0.5),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.fingerprint,
+                                    size: 32,
+                                    color: AppColors.primaryBlue,
+                                  ),
+                                ),
+                              ),
+                            ).animate().fadeIn(delay: 900.ms).scale(),
+                          ],
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,

@@ -1,6 +1,7 @@
 import '../app_modules/imports_module.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
   static const String _accessTokenKey = 'access_token';
@@ -8,6 +9,13 @@ class AuthService {
 
   static const String _userNameKey = 'user_name';
   static const String _userEmailKey = 'user_email';
+
+  // Biometric Constants
+  static const String _biometricEnabledKey = 'biometric_enabled';
+  static const String _biometricEmailKey = 'biometric_email';
+  static const String _biometricPasswordKey = 'biometric_password';
+  
+  static const _secureStorage = FlutterSecureStorage();
 
   static Future<void> saveTokens(String access, String refresh, {String? name, String? email}) async {
     final prefs = await SharedPreferences.getInstance();
@@ -317,5 +325,38 @@ class AuthService {
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }
+  }
+
+  // --- Biometric Authentication Helpers ---
+
+  static Future<void> setBiometricEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_biometricEnabledKey, enabled);
+    if (!enabled) {
+      // If disabling, clear stored credentials for security
+      await clearBiometricCredentials();
+    }
+  }
+
+  static Future<bool> isBiometricEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_biometricEnabledKey) ?? false;
+  }
+
+  static Future<void> saveCredentialsForBiometric(String email, String password) async {
+    await _secureStorage.write(key: _biometricEmailKey, value: email);
+    await _secureStorage.write(key: _biometricPasswordKey, value: password);
+    await setBiometricEnabled(true);
+  }
+
+  static Future<Map<String, String?>> getBiometricCredentials() async {
+    final email = await _secureStorage.read(key: _biometricEmailKey);
+    final password = await _secureStorage.read(key: _biometricPasswordKey);
+    return {'email': email, 'password': password};
+  }
+
+  static Future<void> clearBiometricCredentials() async {
+    await _secureStorage.delete(key: _biometricEmailKey);
+    await _secureStorage.delete(key: _biometricPasswordKey);
   }
 }
