@@ -40,6 +40,7 @@ def init_db():
         # Import all models here to ensure they are registered
         from app.models.request_log import RequestLog
         from app.models.user_list import UserList
+        from app.models.otp import PasswordResetOTP
         
         # Create all tables
         Base.metadata.create_all(bind=engine)

@@ -18,23 +18,24 @@ class EmailService:
     )
 
     @staticmethod
-    async def send_password_reset_email(email: EmailStr, new_password: str):
+    async def send_otp_email(email: EmailStr, otp: str):
         """
-        Send an email with the new password.
+        Send an email with the OTP code.
         """
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                <h2 style="color: #00D4FF;">SmartConverter Password Reset</h2>
+                <h2 style="color: #00D4FF;">SmartConverter Verification</h2>
                 <p>Hello,</p>
-                <p>Your password has been successfully reset.</p>
-                <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <p style="margin: 0; font-size: 14px;">Your New Password:</p>
-                    <p style="margin: 10px 0 0 0; font-size: 24px; font-weight: bold; color: #7C3AED; letter-spacing: 2px;">
-                        {new_password}
+                <p>You requested a password reset. Use the code below to verify your identity.</p>
+                <div style="background-color: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; font-size: 14px;">Verification Code:</p>
+                    <p style="margin: 10px 0 0 0; font-size: 32px; font-weight: bold; color: #7C3AED; letter-spacing: 5px;">
+                        {otp}
                     </p>
                 </div>
-                <p>Please log in with this password and change it immediately from your profile.</p>
+                <p style="color: #666; font-size: 12px;">This code expires in 3 minutes.</p>
+                <p>If you didn't request this, you can safely ignore this email.</p>
                 <br>
                 <p>Best regards,</p>
                 <p><strong>SmartConverter Team</strong></p>
@@ -43,7 +44,7 @@ class EmailService:
         """
 
         message = MessageSchema(
-            subject="SmartConverter - New Password",
+            subject="SmartConverter - Password Reset Code",
             recipients=[email],
             body=html,
             subtype=MessageType.html

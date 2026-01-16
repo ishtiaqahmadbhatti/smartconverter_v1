@@ -3,6 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../app_constants/app_colors.dart';
 import '../app_services/auth_service.dart';
 import 'sign_up_page.dart';
+import '../app_services/auth_service.dart';
+import 'sign_up_page.dart';
+import 'verify_otp_page.dart';
+import 'package:provider/provider.dart';
+import '../app_providers/subscription_provider.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -28,8 +33,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _isSubmitting = true);
     
     try {
-      final result = await AuthService.forgotPassword(
+      final deviceId = await Provider.of<SubscriptionProvider>(context, listen: false).getDeviceId();
+      final result = await AuthService.sendOtp(
         email: _emailController.text.trim(),
+        deviceId: deviceId,
       );
       
       if (!mounted) return;
@@ -37,26 +44,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       setState(() => _isSubmitting = false);
       
       if (result['success']) {
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.backgroundCard,
-            title: const Text('Check your Email', style: TextStyle(color: AppColors.textPrimary)),
-            content: Text(
-              'We have sent a new password to ${_emailController.text}.\n\nPlease check your inbox (and spam folder).',
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop(); // Close dialog
-                  Navigator.of(context).pop(); // Go back to login
-                },
-                child: const Text('OK', style: TextStyle(color: AppColors.primaryBlue)),
-              ),
-            ],
+        // Navigate to OTP Verification Page
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VerifyOtpPage(email: _emailController.text.trim()),
           ),
         );
       } else {
@@ -118,7 +110,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reset Password'),
+        title: const Text('Forgot Password'),
         backgroundColor: Colors.transparent,
       ),
       body: Container(
@@ -186,12 +178,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   ),
                                 ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3, curve: Curves.easeOutCubic),
                                 
-                                const Text(
-                                  'Enter your email to receive a new password',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                                  child: Text(
+                                    'Please enter your registered email address. We will send a secure 6-digit OTP to verify your identity and reset your password',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ).animate().fadeIn(delay: 500.ms),
                               ],
@@ -270,7 +265,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                       ),
                                     )
                                   : const Text(
-                                      'RESET PASSWORD',
+                                      'FORGOT PASSWORD',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

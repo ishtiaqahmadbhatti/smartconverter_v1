@@ -174,8 +174,10 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> forgotPassword({
+  // 1. Send OTP
+  static Future<Map<String, dynamic>> sendOtp({
     required String email,
+    String? deviceId,
   }) async {
     final baseUrl = await ApiConfig.baseUrl;
     final url = Uri.parse('$baseUrl${ApiConfig.forgotPasswordEndpoint}');
@@ -186,13 +188,84 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
+          'device_id': deviceId,
         }),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': data['message'] ?? 'Password reset email sent'};
+        return {'success': true, 'message': data['message'] ?? 'Verification code sent'};
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to send verification code'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // 2. Verify OTP
+  static Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.verifyOtpEndpoint}');
+
+    try {
+      final response = await post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp_code': otp,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true, 
+          'message': data['message'] ?? 'Verified',
+          'reset_token': data['reset_token'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Verification failed'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // 3. Reset Password
+  static Future<Map<String, dynamic>> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.resetPasswordEndpoint}');
+
+    try {
+      final response = await post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'reset_token': resetToken,
+          'new_password': newPassword,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Password reset successfully'};
       } else {
         return {
           'success': false,

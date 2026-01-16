@@ -149,6 +149,20 @@ class ChangePassword(BaseModel):
 class ForgotPassword(BaseModel):
     """Schema for forgot password request."""
     email: EmailStr
+    device_id: Optional[str] = None
+
+
+class VerifyOTP(BaseModel):
+    """Schema for verifying OTP."""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
+
+
+class ResetPasswordConfirm(BaseModel):
+    """Schema for resetting password with token."""
+    reset_token: str
+    new_password: str = Field(..., min_length=8, max_length=100)
+
 
 
 class UserListResponse(UserListBase):

@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user_list import UserList
 from app.models.schemas import (
-    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword, ForgotPassword
+    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword, ForgotPassword, VerifyOTP, ResetPasswordConfirm
 )
 from app.services.auth_service import (
     authenticate_user, create_token_pair, 
@@ -16,6 +16,11 @@ from app.services.auth_service import (
 from app.services.email_service import EmailService
 import secrets
 import string
+import random
+import datetime
+from app.models.otp import PasswordResetOTP
+from jose import jwt
+from datetime import timedelta
 from app.services.user_list_service import UserListService
 from app.api.v1.dependencies import get_current_user, get_current_active_user
 # from authlib.integrations.starlette_client import OAuth
@@ -138,36 +143,123 @@ async def forgot_password(
     db: Session = Depends(get_db)
 ):
     """
-    Reset user password and send it via email.
+    Generate 6-digit OTP and send via email.
     """
     user = get_user_by_email(db, data.email)
     if not user:
-        # Per user request: Explicitly inform if email does not exist
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found with this email address."
         )
     
-    # Generate new random password (8 chars, alphanumeric)
-    alphabet = string.ascii_letters + string.digits
-    new_password = ''.join(secrets.choice(alphabet) for i in range(8))
+    # Generate 6-digit OTP
+    otp_code = str(random.randint(100000, 999999))
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=3)
     
-    # Update DB
-    user.password = get_password_hash(new_password)
-    db.add(user)
+    # Get user full name (handle None values gracefully)
+    first_name = user.first_name if user.first_name else ""
+    last_name = user.last_name if user.last_name else ""
+    full_name = f"{first_name} {last_name}".strip()
+    
+    # Save to DB
+    otp_record = PasswordResetOTP(
+        email=data.email,
+        otp_code=otp_code,
+        full_name=full_name,
+        device_id=data.device_id,
+        expires_at=expires_at,
+        is_used=False
+    )
+    db.add(otp_record)
     db.commit()
     
     # Send Email
-    email_sent = await EmailService.send_password_reset_email(data.email, new_password)
+    # Note: We need to update EmailService to handle OTP templates, 
+    # but for now we'll use the existing method or update it shortly.
+    # Assuming EmailService has send_otp_email method, or we adapt existing.
+    # Let's assume we'll use send_otp_email (I will update EmailService next).
+    email_sent = await EmailService.send_otp_email(data.email, otp_code)
     
     if not email_sent:
-        # If email fails (e.g. bad config), we might want to log it. 
-        # For now, we return success to the user but they won't get the email.
-        # In a real app we might alert admins.
-        print(f"FAILED TO SEND EMAIL. New Password for {data.email}: {new_password}")
-        return {"message": "Password reset, but failed to send email. Check server logs."}
+        print(f"FAILED TO SEND OTP. OTP for {data.email}: {otp_code}")
+        # In production, we might want to return an error, but for debugging/dev
+        # we allow it so developers can see the OTP in console.
+        return {"message": "OTP generated. Check console if email fails."}
         
-    return {"message": "Password reset email sent successfully."}
+    return {"message": "Verification code sent to your email."}
+
+
+@router.post("/verify-otp", status_code=status.HTTP_200_OK)
+async def verify_otp(
+    data: VerifyOTP,
+    db: Session = Depends(get_db)
+):
+    """Verify OTP and return a reset token."""
+    # Find active, unused OTP
+    otp_record = db.query(PasswordResetOTP).filter(
+        PasswordResetOTP.email == data.email,
+        PasswordResetOTP.otp_code == data.otp_code,
+        PasswordResetOTP.is_used == False,
+        PasswordResetOTP.expires_at > datetime.datetime.utcnow()
+    ).order_by(PasswordResetOTP.created_at.desc()).first()
+    
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code"
+        )
+        
+    # Mark as used (optional here, or wait until password reset. 
+    # Better to mark verifying as success, but strictly speaking 'used' comes when resetting.
+    # However, to prevent re-generation of tokens, we can mark it used.
+    # Or just return a token. Let's return a token.
+    
+    # Create specific reset token
+    reset_token_expires = timedelta(minutes=10)
+    reset_token = jwt.encode(
+        {"sub": data.email, "scope": "reset_password", "exp": datetime.datetime.utcnow() + reset_token_expires},
+        settings.secret_key,
+        algorithm=settings.algorithm
+    )
+    
+    return {"message": "OTP Verified", "reset_token": reset_token}
+
+
+@router.post("/reset-password-confirm", status_code=status.HTTP_200_OK)
+async def reset_password_confirm(
+    data: ResetPasswordConfirm,
+    db: Session = Depends(get_db)
+):
+    """Reset password using the reset token."""
+    try:
+        payload = jwt.decode(data.reset_token, settings.secret_key, algorithms=[settings.algorithm])
+        email = payload.get("sub")
+        scope = payload.get("scope")
+        if not email or scope != "reset_password":
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+        
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Update Password
+    user.password = get_password_hash(data.new_password)
+    db.add(user)
+    
+    # Mark OTPs as used (clean up all active OTPs for this user to be safe)
+    # This acts as invalidating previous codes.
+    db.query(PasswordResetOTP).filter(
+        PasswordResetOTP.email == email,
+        PasswordResetOTP.is_used == False
+    ).update({"is_used": True})
+    
+    db.commit()
+    
+    return {"message": "Password has been reset successfully."}
 
 # Update user, Admin endpoints etc are disabled as they rely on old User model
 # ...

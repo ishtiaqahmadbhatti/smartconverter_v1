@@ -61,7 +61,9 @@ class ApiConfig {
   static const String loginUserListEndpoint = '/api/v1/auth/login-userlist';
   static const String registerEndpoint = '/api/v1/auth/register-userlist';
   static const String changePasswordEndpoint = '/api/v1/auth/change-password';
-  static const String forgotPasswordEndpoint = '/api/v1/auth/forgot-password';
+  static const String forgotPasswordEndpoint = '/api/v1/auth/forgot-password'; // Send OTP
+  static const String verifyOtpEndpoint = '/api/v1/auth/verify-otp';
+  static const String resetPasswordEndpoint = '/api/v1/auth/reset-password-confirm';
 
   // Subscription & Guest
   static const String guestRegisterEndpoint = '/api/v1/guest/register';
