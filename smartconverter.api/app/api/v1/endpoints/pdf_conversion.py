@@ -1,11 +1,16 @@
 import os
 import re
 from typing import List, Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.core.database import get_db
 from app.services.file_service import FileService
 from app.services.pdf_conversion_service import PDFConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.api.v1.dependencies import get_current_user, get_user_id
+from app.services.user_list_service import UserListService
 from app.core.config import settings
 from app.core.exceptions import (
     FileProcessingError, 
@@ -34,12 +39,29 @@ class PDFConversionResponse(BaseModel):
 # AI: Convert PDF to JSON
 @router.post("/pdf-to-json", response_model=PDFConversionResponse)
 async def convert_pdf_to_json(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI: Convert PDF to JSON with structured data extraction."""
     input_path = None
     output_path = None
+    
+    # Get user_id from token or device_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-json",
+        input_filename=file.filename,
+        input_file_size=getattr(file, 'size', None),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only PDF files allowed
@@ -59,6 +81,14 @@ async def convert_pdf_to_json(
         # Convert PDF to JSON
         result_path = PDFConversionService.pdf_to_json(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to JSON successfully",
@@ -67,12 +97,14 @@ async def convert_pdf_to_json(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -88,12 +120,29 @@ async def convert_pdf_to_json(
 # AI: Convert PDF to Markdown
 @router.post("/pdf-to-markdown", response_model=PDFConversionResponse)
 async def convert_pdf_to_markdown(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI: Convert PDF to Markdown format."""
     input_path = None
     output_path = None
+    
+    # Get user_id from token or device_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-markdown",
+        input_filename=file.filename,
+        input_file_size=getattr(file, 'size', None),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only PDF files allowed
@@ -113,6 +162,14 @@ async def convert_pdf_to_markdown(
         # Convert PDF to Markdown
         result_path = PDFConversionService.pdf_to_markdown(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to Markdown successfully",
@@ -121,12 +178,14 @@ async def convert_pdf_to_markdown(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

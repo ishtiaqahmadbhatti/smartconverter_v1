@@ -1,8 +1,13 @@
 import os
 import shutil
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
 from fastapi.responses import FileResponse
 from typing import Optional
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
+from app.services.conversion_log_service import ConversionLogService
+
 from app.models.schemas import ConversionResponse
 from app.services.video_conversion_service import VideoConversionService
 from app.core.exceptions import (
@@ -41,14 +46,30 @@ def _determine_output_filename(original_filename: str, provided_filename: Option
 
 @router.post("/mov-to-mp4", response_model=ConversionResponse)
 async def convert_mov_to_mp4(
+    request: Request,
     file: UploadFile = File(...),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
-    # current_user: User = Depends(get_current_active_user) # Removed to match other endpoints authentication pattern if inconsistent, but usually safer to keep. User didn't strictly ask to remove auth, but consistent with other files. Keeping it commented out if not requested.
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MOV file to MP4 format."""
     input_path = None
     output_path = None
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Log start
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mov-to-mp4",
+        input_filename=file.filename,
+        input_file_size=getattr(file, 'size', None),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -60,15 +81,20 @@ async def convert_mov_to_mp4(
         # Determine output filename
         output_filename = _determine_output_filename(file.filename, filename, "mp4")
         
-        # Convert MOV to MP4
+        # Convert
         temp_output_path = VideoConversionService.mov_to_mp4(input_path, quality)
+        
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename
+        )
         
         # Move to final location with correct filename
         final_output_path = os.path.join(settings.output_dir, output_filename)
         
-        # If the service already saved it to final_output_path (unlikely given service logic uses generic naming), we are good. 
-        # But service typically uses os.path.splitext(input_filename)[0] + output_extension
-        # We need to ensure it moves to our desired filename.
         if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
@@ -82,12 +108,14 @@ async def convert_mov_to_mp4(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

@@ -188,19 +188,16 @@ def refresh_access_token(refresh_token: str, db: Session) -> Optional[Dict[str, 
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[UserList]:
     """Authenticate a user with email and password."""
-    user = db.query(UserList).filter(UserList.email == email).first()
-    if not user:
-        return None
-    if not user.password:
-        return None
-    if not verify_password(password, user.password):
-        return None
-    return user
+    # Use UserListService for consistent logic and subscription attachment
+    from app.services.user_list_service import UserListService
+    return UserListService.authenticate(db, email, password)
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[UserList]:
     """Get user by email."""
-    return db.query(UserList).filter(UserList.email == email).first()
+    # Use UserListService for consistent logic and subscription attachment
+    from app.services.user_list_service import UserListService
+    return UserListService.get_user_by_email(db, email)
 
 
 def get_user_by_username(db: Session, username: str) -> Optional[UserList]:

@@ -18,7 +18,8 @@ def upgrade_subscription(
     Upgrade user subscription plan.
     Requires authentication.
     """
-    if current_user.is_premium and current_user.subscription_plan == plan.plan_id:
+    # Access via enriched properties from service
+    if getattr(current_user, "is_premium", False) and getattr(current_user, "subscription_plan", "free") == plan.plan_id:
         return current_user
         
     updated_user = UserListService.upgrade_subscription(db, current_user.id, plan.plan_id)

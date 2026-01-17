@@ -18,7 +18,9 @@ class FileService:
         file_size = file.file.tell()
         file.file.seek(0)  # Reset to beginning
         
-        if file_size > settings.max_file_size:
+        # if file_size > settings.max_file_size:
+
+        if settings.max_file_size > 0 and file_size > settings.max_file_size:
             raise FileSizeExceededError(
                 f"File size {file_size} exceeds maximum allowed size {settings.max_file_size}"
             )

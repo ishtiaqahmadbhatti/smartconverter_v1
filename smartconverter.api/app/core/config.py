@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     output_dir: str = "outputs"
     
     # File upload limits
-    max_file_size: int = 50 * 1024 * 1024  # 50MB
+    # max_file_size: int = 50 * 1024 * 1024  # 50MB
+    max_file_size: int = 0  # 0 means unlimited
     
     # OCR Settings
     tesseract_path: Optional[str] = None

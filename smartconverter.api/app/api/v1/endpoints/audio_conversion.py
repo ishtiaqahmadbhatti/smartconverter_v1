@@ -1,8 +1,12 @@
 import os
 import shutil
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
+from app.services.conversion_log_service import ConversionLogService
 
 from app.core.config import settings
 from app.models.schemas import ConversionResponse
@@ -38,14 +42,31 @@ def _determine_output_filename(original_filename: str, provided_filename: Option
 
 @router.post("/mp4-to-mp3", response_model=ConversionResponse)
 async def convert_mp4_to_mp3(
+    request: Request,
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MP4 file to MP3 format."""
     input_path = None
     output_path = None
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Log start
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mp4-to-mp3",
+        input_filename=file.filename,
+        input_file_size=getattr(file, 'size', None),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # MP4 is video, but we allow it here for audio extraction
@@ -54,6 +75,14 @@ async def convert_mp4_to_mp3(
         
         output_filename = _determine_output_filename(file.filename, filename, "mp3")
         temp_output_path = AudioConversionService.mp4_to_mp3(input_path, bitrate, quality)
+        
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename
+        )
         
         # Move/Rename to final filename in output directory
         final_output_path = os.path.join(settings.output_dir, output_filename)

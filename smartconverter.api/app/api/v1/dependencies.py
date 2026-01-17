@@ -1,6 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from typing import Optional
 from app.core.database import get_db
 from app.models.user_list import UserList
 from app.services.auth_service import verify_token, get_user_by_email
@@ -48,3 +49,30 @@ async def get_current_premium_user(current_user: UserList = Depends(get_current_
             detail="Premium access required"
         )
     return current_user
+
+
+async def get_user_id(request: Request, db: Session) -> Optional[int]:
+    """Helper to get user_id from token or device_id header."""
+    from app.services.user_list_service import UserListService
+    # 1. Try Token
+    try:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            from app.services.auth_service import verify_token
+            token_data = verify_token(token, None)
+            if token_data:
+                user = UserListService.get_user_by_email(db, token_data.email)
+                if user:
+                    return user.id
+    except:
+        pass
+
+    # 2. Try Device ID
+    device_id = request.headers.get("x-device-id")
+    if device_id:
+        user = UserListService.get_user_by_device_id(db, device_id)
+        if user:
+            return user.id
+            
+    return None
