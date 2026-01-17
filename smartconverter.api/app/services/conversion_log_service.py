@@ -53,11 +53,13 @@ class ConversionLogService:
         status: str,
         output_filename: Optional[str] = None,
         output_file_size: Optional[int] = None,
+        output_file_type: Optional[str] = None,
         error_message: Optional[str] = None
     ) -> Optional[UserConversionDetails]:
         """
         Update an existing log entry with final status and results.
         """
+        from app.core.config import settings
         db_log = db.query(UserConversionDetails).filter(UserConversionDetails.id == log_id).first()
         if not db_log:
             return None
@@ -65,9 +67,24 @@ class ConversionLogService:
         db_log.status = status
         if output_filename:
             db_log.output_filename = output_filename
+            
+            # If output_file_type not provided, try to get from filename
+            if not output_file_type and "." in output_filename:
+                db_log.output_file_type = output_filename.split(".")[-1].lower()
+            else:
+                db_log.output_file_type = output_file_type
+
             # Get size if not provided
-            if not output_file_size and os.path.exists(output_filename):
-                db_log.output_file_size = os.path.getsize(output_filename)
+            if not output_file_size:
+                # Check both current directory and settings.output_dir
+                possible_paths = [
+                    output_filename,
+                    os.path.join(settings.output_dir, output_filename)
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        db_log.output_file_size = os.path.getsize(path)
+                        break
             else:
                 db_log.output_file_size = output_file_size
         

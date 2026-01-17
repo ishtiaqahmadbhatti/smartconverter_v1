@@ -97,10 +97,58 @@ class ImageFormatConversionResult {
 class ConversionService {
   static final ConversionService _instance = ConversionService._internal();
   factory ConversionService() => _instance;
-  ConversionService._internal();
+  
+  ConversionService._internal() {
+    _debugLog('🏗️ ConversionService: Initializing singleton...');
+    
+    // 1. Request Interceptor (Headers)
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          _debugLog('🌐 Interceptor: Requesting ${options.path}');
+          
+          // Set custom User-Agent to verify interceptor is running
+          options.headers['user-agent'] = 'SmartConverter-Mobile-Dio';
+          
+          // Add Device ID header if available
+          if (_deviceId != null) {
+            options.headers['x-device-id'] = _deviceId;
+            _debugLog('🌐 Interceptor: Added x-device-id: $_deviceId');
+          }
+
+          // Add Authorization header if available
+          final token = await AuthService.getAccessToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+            _debugLog('🌐 Interceptor: Added Authorization header');
+          }
+          
+          return handler.next(options);
+        },
+        onError: (error, handler) {
+          _debugLog('❌ API Error: ${error.message}');
+          if (error.response != null) {
+            _debugLog('Response data: ${error.response?.data}');
+            _debugLog('Response status: ${error.response?.statusCode}');
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+
+    // 2. Log Interceptor
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (object) => _debugLog('API: $object'),
+      ),
+    );
+  }
 
   final Dio _dio = Dio();
   String? _baseUrl;
+  String? _deviceId;
 
   static const Duration _heavyConnectTimeout = Duration(minutes: 2);
   static const Duration _heavyReceiveTimeout = Duration(minutes: 5);
@@ -121,28 +169,25 @@ class ConversionService {
     _dio.options.connectTimeout = ApiConfig.connectTimeout;
     _dio.options.receiveTimeout = ApiConfig.receiveTimeout;
 
-    // Add interceptors for logging and error handling
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (object) => _debugLog('API: $object'),
-      ),
-    );
+    // Pre-fetch Device ID
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        _deviceId = androidInfo.id;
+        _debugLog('📱 Device ID fetched (Android): $_deviceId');
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        _deviceId = iosInfo.identifierForVendor;
+        _debugLog('📱 Device ID fetched (iOS): $_deviceId');
+      }
+    } catch (e) {
+      _debugLog('❌ Error pre-fetching device-id: $e');
+    }
 
-    // Add error interceptor
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onError: (error, handler) {
-          _debugLog('API Error: ${error.message}');
-          if (error.response != null) {
-            _debugLog('Response data: ${error.response?.data}');
-            _debugLog('Response status: ${error.response?.statusCode}');
-          }
-          handler.next(error);
-        },
-      ),
-    );
+    if (_deviceId != null) {
+      _dio.options.headers['x-device-id'] = _deviceId;
+    }
   }
 
   // Test API connection

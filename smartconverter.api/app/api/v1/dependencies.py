@@ -54,25 +54,53 @@ async def get_current_premium_user(current_user: UserList = Depends(get_current_
 async def get_user_id(request: Request, db: Session) -> Optional[int]:
     """Helper to get user_id from token or device_id header."""
     from app.services.user_list_service import UserListService
+    
+    # Debug: Print all headers to see what's coming in
+    headers = dict(request.headers)
+    with open("debug_logs.txt", "a") as f:
+        f.write(f"\n--- Request at {request.url.path} ---\n")
+        f.write(f"Headers: {headers}\n")
+    
+    print(f"DEBUG: Request Headers: {headers}")
+    
     # 1. Try Token
     try:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
+        # Case-insensitive header check
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
             token = auth_header.split(" ")[1]
             from app.services.auth_service import verify_token
-            token_data = verify_token(token, None)
-            if token_data:
-                user = UserListService.get_user_by_email(db, token_data.email)
-                if user:
-                    return user.id
-    except:
-        pass
+            try:
+                token_data = verify_token(token, None)
+                if token_data and token_data.email:
+                    user = UserListService.get_user_by_email(db, token_data.email)
+                    if user:
+                        print(f"DEBUG: Found user by token: {user.id}")
+                        return user.id
+            except Exception as e:
+                print(f"DEBUG: Token verification failed: {e}")
+    except Exception as e:
+        print(f"DEBUG: Error processing auth header: {e}")
 
-    # 2. Try Device ID
-    device_id = request.headers.get("x-device-id")
+    # 2. Try Device ID (check multiple possible header names)
+    # Try to get device ID from custom header
+    device_id = request.headers.get("x-device-id") or request.headers.get("X-Device-Id") or request.headers.get("device-id")
+    with open("debug_logs.txt", "a") as f:
+        f.write(f"Extracted device_id: {device_id}\n")
+    print(f"DEBUG: Extracted device_id: {device_id}")
+    
     if device_id:
-        user = UserListService.get_user_by_device_id(db, device_id)
-        if user:
-            return user.id
+        try:
+            user = UserListService.get_user_by_device_id(db, device_id)
+            if user:
+                with open("debug_logs.txt", "a") as f:
+                    f.write(f"Found user by device_id: {user.id}\n")
+                print(f"DEBUG: Found user by device_id: {user.id}")
+                return user.id
+            else:
+                print(f"DEBUG: No user found in DB for device_id: '{device_id}'")
+        except Exception as e:
+            print(f"DEBUG: Error in get_user_by_device_id service: {e}")
             
+    print("DEBUG: No user_id could be identified for this request")
     return None

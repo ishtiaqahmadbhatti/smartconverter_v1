@@ -53,6 +53,12 @@ async def convert_mp4_to_mp3(
     input_path = None
     output_path = None
     
+    # Init logs detail
+    # Get size reliably
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
     # Get user_id
     user_id = await get_user_id(request, db)
     
@@ -62,7 +68,8 @@ async def convert_mp4_to_mp3(
         user_id=user_id,
         conversion_type="mp4-to-mp3",
         input_filename=file.filename,
-        input_file_size=getattr(file, 'size', None),
+        input_file_size=input_size,
+        input_file_type="mp4",
         ip_address=request.client.host,
         user_agent=request.headers.get("user-agent"),
         api_endpoint=request.url.path
@@ -81,7 +88,8 @@ async def convert_mp4_to_mp3(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=output_filename
+            output_filename=output_filename,
+            output_file_type="mp3"
         )
         
         # Move/Rename to final filename in output directory

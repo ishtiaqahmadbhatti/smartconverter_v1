@@ -48,6 +48,12 @@ async def convert_pdf_to_json(
     input_path = None
     output_path = None
     
+    # Init logs detail
+    # Get size reliably
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
     # Get user_id from token or device_id
     user_id = await get_user_id(request, db)
     
@@ -57,11 +63,13 @@ async def convert_pdf_to_json(
         user_id=user_id,
         conversion_type="pdf-to-json",
         input_filename=file.filename,
-        input_file_size=getattr(file, 'size', None),
+        input_file_size=input_size,
+        input_file_type="pdf",
         ip_address=request.client.host,
         user_agent=request.headers.get("user-agent"),
         api_endpoint=request.url.path
     )
+
     
     try:
         # Validate file - only PDF files allowed
@@ -86,8 +94,10 @@ async def convert_pdf_to_json(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=final_filename
+            output_filename=final_filename,
+            output_file_type="json"
         )
+
         
         return PDFConversionResponse(
             success=True,
@@ -129,6 +139,12 @@ async def convert_pdf_to_markdown(
     input_path = None
     output_path = None
     
+    # Init logs detail
+    # Get size reliably
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
     # Get user_id from token or device_id
     user_id = await get_user_id(request, db)
     
@@ -138,11 +154,13 @@ async def convert_pdf_to_markdown(
         user_id=user_id,
         conversion_type="pdf-to-markdown",
         input_filename=file.filename,
-        input_file_size=getattr(file, 'size', None),
+        input_file_size=input_size,
+        input_file_type="pdf",
         ip_address=request.client.host,
         user_agent=request.headers.get("user-agent"),
         api_endpoint=request.url.path
     )
+
     
     try:
         # Validate file - only PDF files allowed
@@ -167,7 +185,8 @@ async def convert_pdf_to_markdown(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=final_filename
+            output_filename=final_filename,
+            output_file_type="md"
         )
         
         return PDFConversionResponse(
@@ -201,12 +220,36 @@ async def convert_pdf_to_markdown(
 # AI: Convert PDF to CSV
 @router.post("/pdf-to-csv-ai", response_model=PDFConversionResponse)
 async def convert_pdf_to_csv(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI: Convert PDF to CSV format (extract tabular data)."""
     input_path = None
     output_path = None
+    
+    # Init logs detail
+    # Get size reliably
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id from token or device_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -225,6 +268,15 @@ async def convert_pdf_to_csv(
 
         # Convert PDF to CSV
         result_path = PDFConversionService.pdf_to_csv(input_path, output_path)
+        
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="csv"
+        )
         
         return PDFConversionResponse(
             success=True,
