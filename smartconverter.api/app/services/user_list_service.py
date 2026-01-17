@@ -72,19 +72,20 @@ class UserListService:
         
         # Check if we have a guest user with this device_id
         if user.device_id:
-            existing_guest = db.query(UserList).filter(UserList.device_id == user.device_id).first()
+            existing_user = db.query(UserList).filter(UserList.device_id == user.device_id).first()
             
-            if existing_guest:
+            # Only upgrade if it's a guest (no email)
+            if existing_user and existing_user.email is None:
                 # Update existing guest to registered user
-                existing_guest.email = user.email
-                existing_guest.password = get_password_hash(user.password) if user.password else None
-                existing_guest.first_name = user.first_name
-                existing_guest.last_name = user.last_name
-                existing_guest.gender = user.gender
-                existing_guest.phone_number = user.phone_number
+                existing_user.email = user.email
+                existing_user.password = get_password_hash(user.password) if user.password else None
+                existing_user.first_name = user.first_name
+                existing_user.last_name = user.last_name
+                existing_user.gender = user.gender
+                existing_user.phone_number = user.phone_number
                 
                 # Update subscription explicitly
-                sub = db.query(UserSubscriptionDetails).filter(UserSubscriptionDetails.user_id == existing_guest.id).first()
+                sub = db.query(UserSubscriptionDetails).filter(UserSubscriptionDetails.user_id == existing_user.id).first()
                 if sub:
                     if user.is_premium is not None:
                         sub.is_premium = user.is_premium
@@ -101,10 +102,10 @@ class UserListService:
                     )
                     db.add(new_sub)
                 
-                db.add(existing_guest)
+                db.add(existing_user)
                 db.commit()
-                db.refresh(existing_guest)
-                return UserListService._attach_subscription_info(db, existing_guest)
+                db.refresh(existing_user)
+                return UserListService._attach_subscription_info(db, existing_user)
 
         # Normal creation if no guest found
         db_user = UserList(
