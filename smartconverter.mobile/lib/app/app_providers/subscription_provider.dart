@@ -9,6 +9,10 @@ class SubscriptionProvider extends ChangeNotifier {
   DateTime? _expiryDate;
   String _userName = 'Guest User';
   String _userEmail = 'Sign in to sync your data';
+  String _firstName = '';
+  String _lastName = '';
+  String _phone = '';
+  String _gender = '';
 
   bool get isPremium => _isPremium;
   bool get isGuest => _isGuest;
@@ -17,9 +21,13 @@ class SubscriptionProvider extends ChangeNotifier {
   DateTime? get expiryDate => _expiryDate;
   String get userName => _userName;
   String get userEmail => _userEmail;
+  String get firstName => _firstName;
+  String get lastName => _lastName;
+  String get phone => _phone;
+  String get gender => _gender;
   String? get profileImageUrl => _profileImageUrl;
 
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin(); 
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   String? _profileImageUrl;
 
@@ -37,14 +45,14 @@ class SubscriptionProvider extends ChangeNotifier {
 
     // Check if user is logged in
     final isLoggedIn = await AuthService.isLoggedIn();
-    
+
     if (isLoggedIn) {
       _isGuest = false;
       final name = await AuthService.getUserName();
       final email = await AuthService.getUserEmail();
       _userName = name ?? 'User';
       _userEmail = email ?? '';
-      
+
       final result = await SubscriptionService.getSubscriptionStatus();
       if (result['success']) {
         final data = result['data'];
@@ -60,7 +68,7 @@ class SubscriptionProvider extends ChangeNotifier {
       _isPremium = false;
       _currentPlan = 'free';
       _profileImageUrl = null;
-      
+
       // Start guest session if needed (register device)
       await _registerGuestIfNeeded();
     }
@@ -102,7 +110,9 @@ class SubscriptionProvider extends ChangeNotifier {
   void _updateStateFromData(Map<String, dynamic> data) {
     // If we are in Guest mode, but the returned data belongs to a registered user (has email),
     // we should treat it as a Free Guest user to respect the "Logout" action.
-    if (_isGuest && data['email'] != null && data['email'].toString().isNotEmpty) {
+    if (_isGuest &&
+        data['email'] != null &&
+        data['email'].toString().isNotEmpty) {
       _isPremium = false;
       _currentPlan = 'free';
       _expiryDate = null;
@@ -114,22 +124,33 @@ class SubscriptionProvider extends ChangeNotifier {
       } else {
         _expiryDate = null;
       }
-      
+
       // Update profile image if available
       if (data.containsKey('profile_image_url')) {
         _profileImageUrl = data['profile_image_url'];
       }
+
+      _firstName = data['first_name'] ?? '';
+      _lastName = data['last_name'] ?? '';
+      _phone = data['phone_number'] ?? '';
+      _gender = data['gender'] ?? '';
+
+      if (_firstName.isNotEmpty || _lastName.isNotEmpty) {
+        _userName = '$_firstName $_lastName'.trim();
+      }
     }
-    
+
     // Check expiry
-    if (_isPremium && _expiryDate != null && _expiryDate!.isBefore(DateTime.now())) {
+    if (_isPremium &&
+        _expiryDate != null &&
+        _expiryDate!.isBefore(DateTime.now())) {
       _isPremium = false;
       _currentPlan = 'free';
     }
-    
+
     // Update AdMob status
     AdMobService.adsEnabled = !_isPremium;
-    
+
     notifyListeners();
   }
 
@@ -142,11 +163,11 @@ class SubscriptionProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await SubscriptionService.upgradeSubscription(planId);
-    
+
     if (result['success']) {
       final data = result['data'];
       _updateStateFromData(data);
-       _isLoading = false;
+      _isLoading = false;
       notifyListeners();
       return true;
     } else {
@@ -164,7 +185,7 @@ class SubscriptionProvider extends ChangeNotifier {
     _profileImageUrl = url;
     notifyListeners();
   }
-  
+
   // Method to refresh status manually (e.g. after login)
   Future<void> refresh() async {
     await checkStatus();

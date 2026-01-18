@@ -68,6 +68,7 @@ class ApiConfig {
       '/api/v1/auth/reset-password-confirm';
   static const String uploadProfileImageEndpoint =
       '/api/v1/auth/upload-profile-image';
+  static const String updateProfileEndpoint = '/api/v1/auth/update-profile';
 
   // Subscription & Guest
   static const String guestRegisterEndpoint = '/api/v1/guest/register';
@@ -78,6 +79,7 @@ class ApiConfig {
 
   // History Endpoints
   static const String getHistoryEndpoint = '/api/v1/history';
+  static const String getHistoryStatsEndpoint = '/api/v1/history/stats';
   static const String deleteHistoryEndpoint =
       '/api/v1/history/'; // Needs ID suffix
   static const String clearHistoryEndpoint = '/api/v1/history/clear';

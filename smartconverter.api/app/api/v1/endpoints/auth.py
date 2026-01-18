@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.user_list import UserList
 from app.models.schemas import (
-    UserLogin, Token, UserListCreate, UserListResponse, ChangePassword, ForgotPassword, VerifyOTP, ResetPasswordConfirm
+    UserLogin, Token, UserListCreate, UserListResponse, UserListUpdate, ChangePassword, ForgotPassword, VerifyOTP, ResetPasswordConfirm
 )
 from app.services.auth_service import (
     authenticate_user, create_token_pair, 
@@ -113,6 +113,16 @@ async def logout_user(token: str = Depends(OAuth2PasswordBearer(tokenUrl="auth/l
 async def get_current_user_info(current_user: UserList = Depends(get_current_active_user)):
     """Get current user information."""
     return current_user
+
+
+@router.put("/update-profile", response_model=UserListResponse)
+async def update_profile(
+    user_update: UserListUpdate,
+    current_user: UserList = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user profile information."""
+    return UserListService.update_user(db, user_id=current_user.id, user_update=user_update)
 
 
 @router.post("/change-password", status_code=status.HTTP_200_OK)

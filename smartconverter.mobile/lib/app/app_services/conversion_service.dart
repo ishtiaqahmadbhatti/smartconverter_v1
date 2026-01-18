@@ -233,6 +233,19 @@ class ConversionService {
     }
   }
 
+  Future<UsageStats?> getUserStats() async {
+    try {
+      Response response = await _dio.get(ApiConfig.getHistoryStatsEndpoint);
+      if (response.statusCode == 200) {
+        return UsageStats.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      _debugLog('Error fetching user stats: $e');
+      return null;
+    }
+  }
+
   Future<bool> deleteHistoryItem(int id) async {
     try {
       Response response = await _dio.delete(

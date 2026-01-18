@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../app_modules/imports_module.dart';
 import 'package:intl/intl.dart';
 
@@ -536,7 +535,7 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
               if (fileSize != null)
                 Text(
-                  _formatBytes(fileSize),
+                  FileManager.formatBytes(fileSize),
                   style: const TextStyle(
                     fontSize: 10,
                     color: AppColors.textSecondary,
@@ -547,15 +546,6 @@ class _HistoryPageState extends State<HistoryPage> {
         ),
       ],
     );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    final digitGroups = (log(bytes) / log(1024)).floor();
-    final clampedGroups = digitGroups.clamp(0, units.length - 1);
-    final value = bytes / pow(1024, clampedGroups);
-    return '${value.toStringAsFixed(value >= 10 || clampedGroups == 0 ? 0 : 1)} ${units[clampedGroups]}';
   }
 
   IconData _getIconForType(String type) {

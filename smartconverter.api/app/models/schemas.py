@@ -217,3 +217,10 @@ class HistoryListResponse(BaseModel):
     success: bool
     data: List[HistoryItem]
     count: int
+
+class UserStatsResponse(BaseModel):
+    """Schema for user usage statistics."""
+    success: bool
+    files_converted: int
+    data_processed_bytes: int
+    days_active: int

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
-from app.models.schemas import HistoryListResponse, HistoryItem
+from app.models.schemas import HistoryListResponse, HistoryItem, UserStatsResponse
 from app.services.conversion_log_service import ConversionLogService
 from app.api.v1.dependencies import get_user_id
 
@@ -65,3 +65,21 @@ async def get_history(
         data=history_items,
         count=total_count
     )
+
+@router.get("/stats", response_model=UserStatsResponse)
+async def get_user_stats(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Fetch usage statistics for the current user."""
+    user_id = await get_user_id(request, db)
+    if not user_id:
+        return UserStatsResponse(
+            success=True,
+            files_converted=0,
+            data_processed_bytes=0,
+            days_active=0
+        )
+    
+    stats = ConversionLogService.get_user_stats(db, user_id)
+    return UserStatsResponse(success=True, **stats)

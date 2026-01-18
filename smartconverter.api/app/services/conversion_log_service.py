@@ -167,3 +167,38 @@ class ConversionLogService:
         ).delete()
         db.commit()
         return count
+
+    @staticmethod
+    def get_user_stats(db: Session, user_id: int) -> dict:
+        """
+        Calculate usage statistics for a user.
+        """
+        from sqlalchemy import func, cast, Date
+        
+        # Count successful conversions
+        files_converted = db.query(UserConversionDetails).filter(
+            UserConversionDetails.user_id == user_id,
+            UserConversionDetails.status == "success"
+        ).count()
+
+        # Sum total data processed (input + output files)
+        total_input_size = db.query(func.sum(UserConversionDetails.input_file_size)).filter(
+            UserConversionDetails.user_id == user_id
+        ).scalar() or 0
+        
+        total_output_size = db.query(func.sum(UserConversionDetails.output_file_size)).filter(
+            UserConversionDetails.user_id == user_id
+        ).scalar() or 0
+        
+        data_processed_bytes = total_input_size + total_output_size
+
+        # Days active: Number of distinct dates in created_at
+        days_active = db.query(func.count(func.distinct(cast(UserConversionDetails.created_at, Date)))).filter(
+            UserConversionDetails.user_id == user_id
+        ).scalar() or 0
+
+        return {
+            "files_converted": files_converted,
+            "data_processed_bytes": data_processed_bytes,
+            "days_active": days_active
+        }

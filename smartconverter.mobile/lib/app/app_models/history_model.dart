@@ -95,3 +95,26 @@ class HistoryListResponse {
     );
   }
 }
+
+class UsageStats {
+  final bool success;
+  final int filesConverted;
+  final int dataProcessedBytes;
+  final int daysActive;
+
+  UsageStats({
+    required this.success,
+    required this.filesConverted,
+    required this.dataProcessedBytes,
+    required this.daysActive,
+  });
+
+  factory UsageStats.fromJson(Map<String, dynamic> json) {
+    return UsageStats(
+      success: json['success'] ?? false,
+      filesConverted: json['files_converted'] ?? 0,
+      dataProcessedBytes: json['data_processed_bytes'] ?? 0,
+      daysActive: json['days_active'] ?? 0,
+    );
+  }
+}

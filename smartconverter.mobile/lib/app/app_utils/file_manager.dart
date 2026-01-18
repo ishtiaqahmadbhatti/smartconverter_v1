@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../app_modules/imports_module.dart';
 
 /// Utility class for managing file organization in SmartConverter
@@ -94,7 +95,8 @@ class FileManager {
   static const String _csvCsvToJsonSubFolder = 'csv-to-json';
   static const String _csvJsonObjectsToCsvSubFolder = 'json-object-to-csv';
 
-  static const String _officeDocumentsConversionsFolder = 'OfficeDocumentsConversion';
+  static const String _officeDocumentsConversionsFolder =
+      'OfficeDocumentsConversion';
   static const String _officePdfToCsvSubFolder = 'pdf-to-csv';
   static const String _officePdfToExcelSubFolder = 'pdf-to-excel';
   static const String _officePdfToWordSubFolder = 'pdf-to-word';
@@ -118,7 +120,8 @@ class FileManager {
   static const String _officeXmlToExcelSubFolder = 'xml-to-excel';
   static const String _officeJsonToExcelSubFolder = 'json-to-excel';
   static const String _officeExcelToJsonSubFolder = 'excel-to-json';
-  static const String _officeJsonObjectsToExcelSubFolder = 'json-objects-to-excel';
+  static const String _officeJsonObjectsToExcelSubFolder =
+      'json-objects-to-excel';
   static const String _officeBsonToExcelSubFolder = 'bson-to-excel';
   static const String _officeSrtToExcelSubFolder = 'srt-to-excel';
   static const String _officeSrtToXlsxSubFolder = 'srt-to-xlsx';
@@ -128,7 +131,8 @@ class FileManager {
   static const String _officeXlsToSrtSubFolder = 'xls-to-srt';
 
   static const String _jsonToCsvSubFolder = 'json-to-csv';
-  static const String _csvToJsonSubFolderLegacy = 'csv-to-json'; // Renamed to avoid conflict if any, utilizing consistent naming
+  static const String _csvToJsonSubFolderLegacy =
+      'csv-to-json'; // Renamed to avoid conflict if any, utilizing consistent naming
 
   static const String _bsonToCsvSubFolder = 'bson-to-csv';
   static const String _srtToCsvSubFolder = 'srt-to-csv';
@@ -140,7 +144,7 @@ class FileManager {
       // 1. Try to use Public Documents folder first (Visible to all file managers)
       // This is the ideal location for "View Folder" actions to work correctly.
       final publicDocs = Directory('/storage/emulated/0/Documents');
-      
+
       try {
         if (!await publicDocs.exists()) {
           await publicDocs.create(recursive: true);
@@ -152,7 +156,9 @@ class FileManager {
 
       // 2. Fallback: App-specific external storage
       // Note: Sub-directories here are often HIDDEN from third-party explorers on Android 11+.
-      final externalDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
+      final externalDirs = await getExternalStorageDirectories(
+        type: StorageDirectory.documents,
+      );
       if (externalDirs != null && externalDirs.isNotEmpty) {
         return externalDirs.first;
       }
@@ -184,13 +190,17 @@ class FileManager {
     );
 
     if (!await smartConverterDir.exists()) {
-      print('DEBUG: Creating SmartConverter directory at ${smartConverterDir.path}');
+      print(
+        'DEBUG: Creating SmartConverter directory at ${smartConverterDir.path}',
+      );
       await smartConverterDir.create(recursive: true);
     }
 
     try {
       final canRead = await Directory(smartConverterDir.path).exists();
-      print('DEBUG: SmartConverter dir accessibility - Path: ${smartConverterDir.path}');
+      print(
+        'DEBUG: SmartConverter dir accessibility - Path: ${smartConverterDir.path}',
+      );
       print('DEBUG: SmartConverter dir accessibility - Exists: $canRead');
     } catch (e) {
       print('DEBUG: Error checking SmartConverter dir accessibility: $e');
@@ -248,37 +258,68 @@ class FileManager {
     return dir;
   }
 
-  static Future<Directory> getOfficePdfToCsvDirectory() => _getOfficeSubDir(_officePdfToCsvSubFolder);
-  static Future<Directory> getOfficePdfToExcelDirectory() => _getOfficeSubDir(_officePdfToExcelSubFolder);
-  static Future<Directory> getOfficePdfToWordDirectory() => _getOfficeSubDir(_officePdfToWordSubFolder);
-  static Future<Directory> getOfficeWordToPdfDirectory() => _getOfficeSubDir(_officeWordToPdfSubFolder);
-  static Future<Directory> getOfficeWordToHtmlDirectory() => _getOfficeSubDir(_officeWordToHtmlSubFolder);
-  static Future<Directory> getOfficeWordToTextDirectory() => _getOfficeSubDir(_officeWordToTextSubFolder);
-  static Future<Directory> getOfficePowerPointToPdfDirectory() => _getOfficeSubDir(_officePowerPointToPdfSubFolder);
-  static Future<Directory> getOfficePowerPointToHtmlDirectory() => _getOfficeSubDir(_officePowerPointToHtmlSubFolder);
-  static Future<Directory> getOfficePowerPointToTextDirectory() => _getOfficeSubDir(_officePowerPointToTextSubFolder);
-  static Future<Directory> getOfficeExcelToPdfDirectory() => _getOfficeSubDir(_officeExcelToPdfSubFolder);
-  static Future<Directory> getOfficeExcelToXpsDirectory() => _getOfficeSubDir(_officeExcelToXpsSubFolder);
-  static Future<Directory> getOfficeExcelToHtmlDirectory() => _getOfficeSubDir(_officeExcelToHtmlSubFolder);
-  static Future<Directory> getOfficeExcelToCsvDirectory() => _getOfficeSubDir(_officeExcelToCsvSubFolder);
-  static Future<Directory> getOfficeExcelToOdsDirectory() => _getOfficeSubDir(_officeExcelToOdsSubFolder);
-  static Future<Directory> getOfficeExcelToXmlDirectory() => _getOfficeSubDir(_officeExcelToXmlSubFolder);
-  static Future<Directory> getOfficeOdsToCsvDirectory() => _getOfficeSubDir(_officeOdsToCsvSubFolder);
-  static Future<Directory> getOfficeOdsToPdfDirectory() => _getOfficeSubDir(_officeOdsToPdfSubFolder);
-  static Future<Directory> getOfficeOdsToExcelDirectory() => _getOfficeSubDir(_officeOdsToExcelSubFolder);
-  static Future<Directory> getOfficeCsvToExcelDirectory() => _getOfficeSubDir(_officeCsvToExcelSubFolder);
-  static Future<Directory> getOfficeXmlToCsvDirectory() => _getOfficeSubDir(_officeXmlToCsvSubFolder);
-  static Future<Directory> getOfficeXmlToExcelDirectory() => _getOfficeSubDir(_officeXmlToExcelSubFolder);
-  static Future<Directory> getOfficeJsonToExcelDirectory() => _getOfficeSubDir(_officeJsonToExcelSubFolder);
-  static Future<Directory> getOfficeExcelToJsonDirectory() => _getOfficeSubDir(_officeExcelToJsonSubFolder);
-  static Future<Directory> getOfficeJsonObjectsToExcelDirectory() => _getOfficeSubDir(_officeJsonObjectsToExcelSubFolder);
-  static Future<Directory> getOfficeBsonToExcelDirectory() => _getOfficeSubDir(_officeBsonToExcelSubFolder);
-  static Future<Directory> getOfficeSrtToExcelDirectory() => _getOfficeSubDir(_officeSrtToExcelSubFolder);
-  static Future<Directory> getOfficeSrtToXlsxDirectory() => _getOfficeSubDir(_officeSrtToXlsxSubFolder);
-  static Future<Directory> getOfficeSrtToXlsDirectory() => _getOfficeSubDir(_officeSrtToXlsSubFolder);
-  static Future<Directory> getOfficeExcelToSrtDirectory() => _getOfficeSubDir(_officeExcelToSrtSubFolder);
-  static Future<Directory> getOfficeXlsxToSrtDirectory() => _getOfficeSubDir(_officeXlsxToSrtSubFolder);
-  static Future<Directory> getOfficeXlsToSrtDirectory() => _getOfficeSubDir(_officeXlsToSrtSubFolder);
+  static Future<Directory> getOfficePdfToCsvDirectory() =>
+      _getOfficeSubDir(_officePdfToCsvSubFolder);
+  static Future<Directory> getOfficePdfToExcelDirectory() =>
+      _getOfficeSubDir(_officePdfToExcelSubFolder);
+  static Future<Directory> getOfficePdfToWordDirectory() =>
+      _getOfficeSubDir(_officePdfToWordSubFolder);
+  static Future<Directory> getOfficeWordToPdfDirectory() =>
+      _getOfficeSubDir(_officeWordToPdfSubFolder);
+  static Future<Directory> getOfficeWordToHtmlDirectory() =>
+      _getOfficeSubDir(_officeWordToHtmlSubFolder);
+  static Future<Directory> getOfficeWordToTextDirectory() =>
+      _getOfficeSubDir(_officeWordToTextSubFolder);
+  static Future<Directory> getOfficePowerPointToPdfDirectory() =>
+      _getOfficeSubDir(_officePowerPointToPdfSubFolder);
+  static Future<Directory> getOfficePowerPointToHtmlDirectory() =>
+      _getOfficeSubDir(_officePowerPointToHtmlSubFolder);
+  static Future<Directory> getOfficePowerPointToTextDirectory() =>
+      _getOfficeSubDir(_officePowerPointToTextSubFolder);
+  static Future<Directory> getOfficeExcelToPdfDirectory() =>
+      _getOfficeSubDir(_officeExcelToPdfSubFolder);
+  static Future<Directory> getOfficeExcelToXpsDirectory() =>
+      _getOfficeSubDir(_officeExcelToXpsSubFolder);
+  static Future<Directory> getOfficeExcelToHtmlDirectory() =>
+      _getOfficeSubDir(_officeExcelToHtmlSubFolder);
+  static Future<Directory> getOfficeExcelToCsvDirectory() =>
+      _getOfficeSubDir(_officeExcelToCsvSubFolder);
+  static Future<Directory> getOfficeExcelToOdsDirectory() =>
+      _getOfficeSubDir(_officeExcelToOdsSubFolder);
+  static Future<Directory> getOfficeExcelToXmlDirectory() =>
+      _getOfficeSubDir(_officeExcelToXmlSubFolder);
+  static Future<Directory> getOfficeOdsToCsvDirectory() =>
+      _getOfficeSubDir(_officeOdsToCsvSubFolder);
+  static Future<Directory> getOfficeOdsToPdfDirectory() =>
+      _getOfficeSubDir(_officeOdsToPdfSubFolder);
+  static Future<Directory> getOfficeOdsToExcelDirectory() =>
+      _getOfficeSubDir(_officeOdsToExcelSubFolder);
+  static Future<Directory> getOfficeCsvToExcelDirectory() =>
+      _getOfficeSubDir(_officeCsvToExcelSubFolder);
+  static Future<Directory> getOfficeXmlToCsvDirectory() =>
+      _getOfficeSubDir(_officeXmlToCsvSubFolder);
+  static Future<Directory> getOfficeXmlToExcelDirectory() =>
+      _getOfficeSubDir(_officeXmlToExcelSubFolder);
+  static Future<Directory> getOfficeJsonToExcelDirectory() =>
+      _getOfficeSubDir(_officeJsonToExcelSubFolder);
+  static Future<Directory> getOfficeExcelToJsonDirectory() =>
+      _getOfficeSubDir(_officeExcelToJsonSubFolder);
+  static Future<Directory> getOfficeJsonObjectsToExcelDirectory() =>
+      _getOfficeSubDir(_officeJsonObjectsToExcelSubFolder);
+  static Future<Directory> getOfficeBsonToExcelDirectory() =>
+      _getOfficeSubDir(_officeBsonToExcelSubFolder);
+  static Future<Directory> getOfficeSrtToExcelDirectory() =>
+      _getOfficeSubDir(_officeSrtToExcelSubFolder);
+  static Future<Directory> getOfficeSrtToXlsxDirectory() =>
+      _getOfficeSubDir(_officeSrtToXlsxSubFolder);
+  static Future<Directory> getOfficeSrtToXlsDirectory() =>
+      _getOfficeSubDir(_officeSrtToXlsSubFolder);
+  static Future<Directory> getOfficeExcelToSrtDirectory() =>
+      _getOfficeSubDir(_officeExcelToSrtSubFolder);
+  static Future<Directory> getOfficeXlsxToSrtDirectory() =>
+      _getOfficeSubDir(_officeXlsxToSrtSubFolder);
+  static Future<Directory> getOfficeXlsToSrtDirectory() =>
+      _getOfficeSubDir(_officeXlsToSrtSubFolder);
 
   /// Get directory for HTML Table to CSV
   static Future<Directory> getHtmlTableToCsvDirectory() async {
@@ -376,10 +417,6 @@ class FileManager {
     return dir;
   }
 
-
-
-
-
   /// Get directory for JSON to CSV (JSON Category)
   static Future<Directory> getJsonToCsvDirectory() async {
     final jsonDir = await getJsonConversionsDirectory();
@@ -395,8 +432,6 @@ class FileManager {
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
-
-
 
   /// Get directory for BSON to CSV
   static Future<Directory> getBsonToCsvDirectory() async {
@@ -425,7 +460,9 @@ class FileManager {
   /// Get directory for JSON PDF to JSON outputs (under JSONConversion)
   static Future<Directory> getJsonPdfToJsonDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonPdfToJsonSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonPdfToJsonSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -437,7 +474,9 @@ class FileManager {
   /// Get directory for JSON PNG to JSON outputs (under JSONConversion)
   static Future<Directory> getJsonPngToJsonDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonPngToJsonSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonPngToJsonSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -449,7 +488,9 @@ class FileManager {
   /// Get directory for JSON JPG to JSON outputs (under JSONConversion)
   static Future<Directory> getJsonJpgToJsonDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonJpgToJsonSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonJpgToJsonSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -461,7 +502,9 @@ class FileManager {
   /// Get directory for JSON XML to JSON outputs (under JSONConversion)
   static Future<Directory> getJsonXmlToJsonDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonXmlToJsonSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonXmlToJsonSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -473,7 +516,9 @@ class FileManager {
   /// Get directory for JSON to XML outputs (under JSONConversion)
   static Future<Directory> getJsonJsonToXmlDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToXmlSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonJsonToXmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -485,7 +530,9 @@ class FileManager {
   /// Get directory for JSON to CSV outputs (under JSONConversion)
   static Future<Directory> getJsonJsonToCsvDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToCsvSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonJsonToCsvSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -497,7 +544,9 @@ class FileManager {
   /// Get directory for JSON to Excel outputs (under JSONConversion)
   static Future<Directory> getJsonJsonToExcelDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonJsonToExcelSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonJsonToExcelSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -545,7 +594,9 @@ class FileManager {
   /// Get directory for JSON Objects to CSV outputs (under JSONConversion)
   static Future<Directory> getJsonObjectsToCsvDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonObjectsToCsvSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonObjectsToCsvSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -557,7 +608,9 @@ class FileManager {
   /// Get directory for JSON Objects to Excel outputs (under JSONConversion)
   static Future<Directory> getJsonObjectsToExcelDirectory() async {
     final jsonConversionsDir = await getJsonConversionsDirectory();
-    final dir = Directory('${jsonConversionsDir.path}/$_jsonObjectsToExcelSubFolder');
+    final dir = Directory(
+      '${jsonConversionsDir.path}/$_jsonObjectsToExcelSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -575,7 +628,6 @@ class FileManager {
     }
     return dir;
   }
-
 
   /// Get or create a tool-specific directory
   static Future<Directory> getToolDirectory(String toolName) async {
@@ -818,16 +870,26 @@ class FileManager {
   static const String _compressVideoSubFolder = 'compress-video';
   static const String _videoInfoSubFolder = 'get-video-info';
 
-  static Future<Directory> getMovToMp4Directory() => _getVideoSubDir(_movToMp4SubFolder);
-  static Future<Directory> getMkvToMp4Directory() => _getVideoSubDir(_mkvToMp4SubFolder);
-  static Future<Directory> getAviToMp4Directory() => _getVideoSubDir(_aviToMp4SubFolder);
-  static Future<Directory> getMp4ToMp3VideoDirectory() => _getVideoSubDir(_mp4ToMp3VideoSubFolder);
-  static Future<Directory> getConvertVideoFormatDirectory() => _getVideoSubDir(_convertVideoFormatSubFolder);
-  static Future<Directory> getVideoToAudioDirectory() => _getVideoSubDir(_videoToAudioSubFolder);
-  static Future<Directory> getExtractAudioDirectory() => _getVideoSubDir(_extractAudioSubFolder);
-  static Future<Directory> getResizeVideoDirectory() => _getVideoSubDir(_resizeVideoSubFolder);
-  static Future<Directory> getCompressVideoDirectory() => _getVideoSubDir(_compressVideoSubFolder);
-  static Future<Directory> getGetVideoInfoDirectory() => _getVideoSubDir(_videoInfoSubFolder);
+  static Future<Directory> getMovToMp4Directory() =>
+      _getVideoSubDir(_movToMp4SubFolder);
+  static Future<Directory> getMkvToMp4Directory() =>
+      _getVideoSubDir(_mkvToMp4SubFolder);
+  static Future<Directory> getAviToMp4Directory() =>
+      _getVideoSubDir(_aviToMp4SubFolder);
+  static Future<Directory> getMp4ToMp3VideoDirectory() =>
+      _getVideoSubDir(_mp4ToMp3VideoSubFolder);
+  static Future<Directory> getConvertVideoFormatDirectory() =>
+      _getVideoSubDir(_convertVideoFormatSubFolder);
+  static Future<Directory> getVideoToAudioDirectory() =>
+      _getVideoSubDir(_videoToAudioSubFolder);
+  static Future<Directory> getExtractAudioDirectory() =>
+      _getVideoSubDir(_extractAudioSubFolder);
+  static Future<Directory> getResizeVideoDirectory() =>
+      _getVideoSubDir(_resizeVideoSubFolder);
+  static Future<Directory> getCompressVideoDirectory() =>
+      _getVideoSubDir(_compressVideoSubFolder);
+  static Future<Directory> getGetVideoInfoDirectory() =>
+      _getVideoSubDir(_videoInfoSubFolder);
 
   /// Get directory for Audio Conversions folder
   static Future<Directory> getAudioConversionsDirectory() async {
@@ -842,8 +904,6 @@ class FileManager {
 
     return audioConversionsDir;
   }
-
-
 
   /// Get directory for Video to Audio conversion (from Audio category)
   static Future<Directory> getAudioVideoToAudioDirectory() async {
@@ -869,7 +929,8 @@ class FileManager {
   static const String _normalizeAudioSubFolder = 'normalize-audio';
   static const String _trimAudioSubFolder = 'trim-audio';
   static const String _getAudioInfoSubFolder = 'get-audio-info';
-  static const String _supportedAudioFormatsSubFolder = 'supported-audio-formats';
+  static const String _supportedAudioFormatsSubFolder =
+      'supported-audio-formats';
 
   static Future<Directory> _getAudioSubDir(String subFolder) async {
     final root = await getAudioConversionsDirectory();
@@ -878,17 +939,26 @@ class FileManager {
     return dir;
   }
 
-  static Future<Directory> getMp4ToMp3AudioDirectory() => _getAudioSubDir(_mp4ToMp3AudioSubFolder);
-  static Future<Directory> getWavToMp3Directory() => _getAudioSubDir(_wavToMp3SubFolder);
-  static Future<Directory> getFlacToMp3Directory() => _getAudioSubDir(_flacToMp3SubFolder);
-  static Future<Directory> getMp3ToWavDirectory() => _getAudioSubDir(_mp3ToWavSubFolder);
-  static Future<Directory> getFlacToWavDirectory() => _getAudioSubDir(_flacToWavSubFolder);
-  static Future<Directory> getWavToFlacDirectory() => _getAudioSubDir(_wavToFlacSubFolder);
-  static Future<Directory> getConvertAudioFormatDirectory() => _getAudioSubDir(_convertAudioFormatSubFolder);
-  static Future<Directory> getNormalizeAudioDirectory() => _getAudioSubDir(_normalizeAudioSubFolder);
-  static Future<Directory> getTrimAudioDirectory() => _getAudioSubDir(_trimAudioSubFolder);
-  static Future<Directory> getGetAudioInfoDirectory() => _getAudioSubDir(_getAudioInfoSubFolder);
-
+  static Future<Directory> getMp4ToMp3AudioDirectory() =>
+      _getAudioSubDir(_mp4ToMp3AudioSubFolder);
+  static Future<Directory> getWavToMp3Directory() =>
+      _getAudioSubDir(_wavToMp3SubFolder);
+  static Future<Directory> getFlacToMp3Directory() =>
+      _getAudioSubDir(_flacToMp3SubFolder);
+  static Future<Directory> getMp3ToWavDirectory() =>
+      _getAudioSubDir(_mp3ToWavSubFolder);
+  static Future<Directory> getFlacToWavDirectory() =>
+      _getAudioSubDir(_flacToWavSubFolder);
+  static Future<Directory> getWavToFlacDirectory() =>
+      _getAudioSubDir(_wavToFlacSubFolder);
+  static Future<Directory> getConvertAudioFormatDirectory() =>
+      _getAudioSubDir(_convertAudioFormatSubFolder);
+  static Future<Directory> getNormalizeAudioDirectory() =>
+      _getAudioSubDir(_normalizeAudioSubFolder);
+  static Future<Directory> getTrimAudioDirectory() =>
+      _getAudioSubDir(_trimAudioSubFolder);
+  static Future<Directory> getGetAudioInfoDirectory() =>
+      _getAudioSubDir(_getAudioInfoSubFolder);
 
   /// Generate a timestamp-based filename
   static String generateTimestampFilename(String prefix, String extension) {
@@ -988,7 +1058,9 @@ class FileManager {
   /// Get directory for PowerPoint to Text outputs (under TextConversion)
   static Future<Directory> getPowerpointToTextDirectory() async {
     final textConversionsDir = await getTextConversionsDirectory();
-    final dir = Directory('${textConversionsDir.path}/$_powerpointToTextSubFolder');
+    final dir = Directory(
+      '${textConversionsDir.path}/$_powerpointToTextSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -998,7 +1070,9 @@ class FileManager {
   /// Get directory for PDF to Text outputs (under TextConversion)
   static Future<Directory> getPdfToTextTextDirectory() async {
     final textConversionsDir = await getTextConversionsDirectory();
-    final dir = Directory('${textConversionsDir.path}/$_pdfToTextTextSubFolder');
+    final dir = Directory(
+      '${textConversionsDir.path}/$_pdfToTextTextSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1123,7 +1197,9 @@ class FileManager {
   /// Get directory for Word to HTML outputs (under WebsiteConversion)
   static Future<Directory> getWordToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_wordToHtmlSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_wordToHtmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1133,7 +1209,9 @@ class FileManager {
   /// Get directory for PowerPoint to HTML outputs (under WebsiteConversion)
   static Future<Directory> getPowerPointToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_powerPointToHtmlSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_powerPointToHtmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1143,7 +1221,9 @@ class FileManager {
   /// Get directory for Markdown to HTML outputs (under WebsiteConversion)
   static Future<Directory> getMarkdownToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_markdownToHtmlSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_markdownToHtmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1153,7 +1233,9 @@ class FileManager {
   /// Get directory for Website to JPG outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToJpgDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteToJpgSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteToJpgSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1175,7 +1257,9 @@ class FileManager {
   /// Get directory for HTML to PDF outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteHtmlToPdfDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteHtmlToPdfSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteHtmlToPdfSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1187,7 +1271,9 @@ class FileManager {
   /// Get directory for HTML to CSV outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteHtmlToCsvDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteHtmlToCsvSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteHtmlToCsvSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1199,7 +1285,9 @@ class FileManager {
   /// Get directory for Excel to HTML outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteExcelToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteExcelToHtmlSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteExcelToHtmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1211,7 +1299,9 @@ class FileManager {
   /// Get directory for PDF to HTML outputs (under WebsiteConversion)
   static Future<Directory> getWebsitePdfToHtmlDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websitePdfToHtmlSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websitePdfToHtmlSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1221,7 +1311,9 @@ class FileManager {
   /// Get directory for Website to PNG outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToPngDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteToPngSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteToPngSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1241,7 +1333,9 @@ class FileManager {
   /// Get directory for Website to PDF outputs (under WebsiteConversion)
   static Future<Directory> getWebsiteToPdfDirectory() async {
     final websiteConversionsDir = await getWebsiteConversionsDirectory();
-    final dir = Directory('${websiteConversionsDir.path}/$_websiteToPdfSubFolder');
+    final dir = Directory(
+      '${websiteConversionsDir.path}/$_websiteToPdfSubFolder',
+    );
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -1372,7 +1466,7 @@ class FileManager {
     return dir;
   }
 
-   /// Get directory for Scanned PDF to Text
+  /// Get directory for Scanned PDF to Text
   static Future<Directory> getOcrScannedPdfToTextDirectory() async {
     final ocrDir = await getOcrConversionsDirectory();
     final dir = Directory('${ocrDir.path}/$_ocrScannedPdfToTextSubFolder');
@@ -1381,9 +1475,10 @@ class FileManager {
   }
 
   // Deprecated usage mapping to new OCR structure
-  static Future<Directory> getImageToTextDirectory() => getOcrImageToTextDirectory();
-  static Future<Directory> getPdfToPdfDirectory() => getOcrPdfImageToPdfTextDirectory(); // Mapping to most likely candidate
-
+  static Future<Directory> getImageToTextDirectory() =>
+      getOcrImageToTextDirectory();
+  static Future<Directory> getPdfToPdfDirectory() =>
+      getOcrPdfImageToPdfTextDirectory(); // Mapping to most likely candidate
 
   /// Get directory for markdown to PDF outputs
   static Future<Directory> getMarkdownToPdfDirectory() async {
@@ -1503,7 +1598,6 @@ class FileManager {
 
   /// Get directory for PDF to Word outputs
 
-
   /// Get directory for PDF to Excel outputs
   static Future<Directory> getPdfToExcelDirectory() async {
     final pdfConversionsDir = await getPdfConversionsDirectory();
@@ -1607,8 +1701,6 @@ class FileManager {
     return getImageCategoryDirectory(_imagePdfToSvgSubFolder);
   }
 
-
-
   static const String _jsonFormattedSubFolder = 'json-formatted';
 
   static Future<Directory> getJsonFormattedDirectory() async {
@@ -1628,6 +1720,7 @@ class FileManager {
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
+
   static const String _aiPngToJsonSubFolder = 'png-to-json';
 
   static const String _xmlConversionsFolder = 'XMLConversion';
@@ -1714,7 +1807,7 @@ class FileManager {
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }
-  
+
   static const String _csvToXml = 'csv-to-xml';
 
   /// Get directory for CSV to XML outputs (XML Category)
@@ -1725,8 +1818,8 @@ class FileManager {
     return dir;
   }
 
-
-  static Future<Directory> getAiConvertJpgToJsonDirectory() async { // Fix analyzer
+  static Future<Directory> getAiConvertJpgToJsonDirectory() async {
+    // Fix analyzer
     final jsonDir = await getJsonConversionsDirectory();
     final dir = Directory('${jsonDir.path}/$_aiJpgToJsonSubFolder');
     if (!await dir.exists()) await dir.create(recursive: true);
@@ -1781,23 +1874,52 @@ class FileManager {
     return dir;
   }
 
-  static Future<Directory> getAzw3ToPdfDirectory() => _getEbookSubDir(_azw3ToPdfSubFolder);
-  static Future<Directory> getAzwToEpubDirectory() => _getEbookSubDir(_azwToEpubSubFolder);
-  static Future<Directory> getAzwToMobiDirectory() => _getEbookSubDir(_azwToMobiSubFolder);
-  static Future<Directory> getAzwToPdfDirectory() => _getEbookSubDir(_azwToPdfSubFolder);
-  static Future<Directory> getEpubToAzwDirectory() => _getEbookSubDir(_epubToAzwSubFolder);
-  static Future<Directory> getEpubToMobiDirectory() => _getEbookSubDir(_epubToMobiSubFolder);
-  static Future<Directory> getEpubToPdfDirectory() => _getEbookSubDir(_epubToPdfSubFolder);
-  static Future<Directory> getFb2ToPdfDirectory() => _getEbookSubDir(_fb2ToPdfSubFolder);
-  static Future<Directory> getFbzToPdfDirectory() => _getEbookSubDir(_fbzToPdfSubFolder);
-  static Future<Directory> getMarkdownToEpubDirectory() => _getEbookSubDir(_markdownToEpubSubFolder);
-  static Future<Directory> getMobiToAzwDirectory() => _getEbookSubDir(_mobiToAzwSubFolder);
-  static Future<Directory> getMobiToEpubDirectory() => _getEbookSubDir(_mobiToEpubSubFolder);
-  static Future<Directory> getMobiToPdfDirectory() => _getEbookSubDir(_mobiToPdfSubFolder);
-  static Future<Directory> getPdfToAzw3Directory() => _getEbookSubDir(_pdfToAzw3SubFolder);
-  static Future<Directory> getPdfToAzwDirectory() => _getEbookSubDir(_pdfToAzwSubFolder);
-  static Future<Directory> getPdfToEpubDirectory() => _getEbookSubDir(_pdfToEpubSubFolder);
-  static Future<Directory> getPdfToFb2Directory() => _getEbookSubDir(_pdfToFb2SubFolder);
-  static Future<Directory> getPdfToFbzDirectory() => _getEbookSubDir(_pdfToFbzSubFolder);
-  static Future<Directory> getPdfToMobiDirectory() => _getEbookSubDir(_pdfToMobiSubFolder);
+  static Future<Directory> getAzw3ToPdfDirectory() =>
+      _getEbookSubDir(_azw3ToPdfSubFolder);
+  static Future<Directory> getAzwToEpubDirectory() =>
+      _getEbookSubDir(_azwToEpubSubFolder);
+  static Future<Directory> getAzwToMobiDirectory() =>
+      _getEbookSubDir(_azwToMobiSubFolder);
+  static Future<Directory> getAzwToPdfDirectory() =>
+      _getEbookSubDir(_azwToPdfSubFolder);
+  static Future<Directory> getEpubToAzwDirectory() =>
+      _getEbookSubDir(_epubToAzwSubFolder);
+  static Future<Directory> getEpubToMobiDirectory() =>
+      _getEbookSubDir(_epubToMobiSubFolder);
+  static Future<Directory> getEpubToPdfDirectory() =>
+      _getEbookSubDir(_epubToPdfSubFolder);
+  static Future<Directory> getFb2ToPdfDirectory() =>
+      _getEbookSubDir(_fb2ToPdfSubFolder);
+  static Future<Directory> getFbzToPdfDirectory() =>
+      _getEbookSubDir(_fbzToPdfSubFolder);
+  static Future<Directory> getMarkdownToEpubDirectory() =>
+      _getEbookSubDir(_markdownToEpubSubFolder);
+  static Future<Directory> getMobiToAzwDirectory() =>
+      _getEbookSubDir(_mobiToAzwSubFolder);
+  static Future<Directory> getMobiToEpubDirectory() =>
+      _getEbookSubDir(_mobiToEpubSubFolder);
+  static Future<Directory> getMobiToPdfDirectory() =>
+      _getEbookSubDir(_mobiToPdfSubFolder);
+  static Future<Directory> getPdfToAzw3Directory() =>
+      _getEbookSubDir(_pdfToAzw3SubFolder);
+  static Future<Directory> getPdfToAzwDirectory() =>
+      _getEbookSubDir(_pdfToAzwSubFolder);
+  static Future<Directory> getPdfToEpubDirectory() =>
+      _getEbookSubDir(_pdfToEpubSubFolder);
+  static Future<Directory> getPdfToFb2Directory() =>
+      _getEbookSubDir(_pdfToFb2SubFolder);
+  static Future<Directory> getPdfToFbzDirectory() =>
+      _getEbookSubDir(_pdfToFbzSubFolder);
+  static Future<Directory> getPdfToMobiDirectory() =>
+      _getEbookSubDir(_pdfToMobiSubFolder);
+
+  /// Formats bytes into human readable string
+  static String formatBytes(int bytes, {int decimals = 2}) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    var i = (log(bytes) / log(1024)).floor();
+    return ((bytes / pow(1024, i)).toStringAsFixed(decimals)) +
+        ' ' +
+        suffixes[i];
+  }
 }

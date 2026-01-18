@@ -14,10 +14,15 @@ class AuthService {
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _biometricEmailKey = 'biometric_email';
   static const String _biometricPasswordKey = 'biometric_password';
-  
+
   static const _secureStorage = FlutterSecureStorage();
 
-  static Future<void> saveTokens(String access, String refresh, {String? name, String? email}) async {
+  static Future<void> saveTokens(
+    String access,
+    String refresh, {
+    String? name,
+    String? email,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, access);
     await prefs.setString(_refreshTokenKey, refresh);
@@ -52,6 +57,7 @@ class AuthService {
     final token = await getAccessToken();
     return token != null;
   }
+
   static Future<Map<String, dynamic>> register({
     required String firstName,
     required String lastName,
@@ -87,7 +93,7 @@ class AuthService {
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Registration failed'
+          'message': data['detail'] ?? 'Registration failed',
         };
       }
     } catch (e) {
@@ -106,10 +112,7 @@ class AuthService {
       final response = await post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       final data = jsonDecode(response.body);
@@ -134,10 +137,7 @@ class AuthService {
           errorMessage = detail.toString();
         }
 
-        return {
-          'success': false,
-          'message': errorMessage
-        };
+        return {'success': false, 'message': errorMessage};
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
@@ -172,11 +172,66 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': data['message'] ?? 'Password changed successfully'};
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Password changed successfully',
+        };
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Failed to change password'
+          'message': data['detail'] ?? 'Failed to change password',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    String? gender,
+  }) async {
+    final baseUrl = await ApiConfig.baseUrl;
+    final url = Uri.parse('$baseUrl${ApiConfig.updateProfileEndpoint}');
+    final token = await getAccessToken();
+
+    if (token == null) {
+      return {'success': false, 'message': 'Not logged in'};
+    }
+
+    try {
+      final response = await put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          if (firstName != null) 'first_name': firstName,
+          if (lastName != null) 'last_name': lastName,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone_number': phone,
+          if (gender != null) 'gender': gender,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // Update local stored name if changed
+        if (firstName != null || lastName != null) {
+          final fullName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userNameKey, fullName);
+        }
+        return {'success': true, 'data': data};
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to update profile',
         };
       }
     } catch (e) {
@@ -196,20 +251,20 @@ class AuthService {
       final response = await post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'device_id': deviceId,
-        }),
+        body: jsonEncode({'email': email, 'device_id': deviceId}),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': data['message'] ?? 'Verification code sent'};
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Verification code sent',
+        };
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Failed to send verification code'
+          'message': data['detail'] ?? 'Failed to send verification code',
         };
       }
     } catch (e) {
@@ -229,24 +284,21 @@ class AuthService {
       final response = await post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp_code': otp,
-        }),
+        body: jsonEncode({'email': email, 'otp_code': otp}),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         return {
-          'success': true, 
+          'success': true,
           'message': data['message'] ?? 'Verified',
           'reset_token': data['reset_token'],
         };
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Verification failed'
+          'message': data['detail'] ?? 'Verification failed',
         };
       }
     } catch (e) {
@@ -267,11 +319,10 @@ class AuthService {
     try {
       final request = http.MultipartRequest('POST', url);
       request.headers['Authorization'] = 'Bearer $token';
-      
-      request.files.add(await http.MultipartFile.fromPath(
-        'file',
-        imageFile.path,
-      ));
+
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -279,14 +330,14 @@ class AuthService {
 
       if (response.statusCode == 200) {
         return {
-          'success': true, 
+          'success': true,
           'message': 'Profile image uploaded successfully',
-          'data': data
+          'data': data,
         };
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Failed to upload image'
+          'message': data['detail'] ?? 'Failed to upload image',
         };
       }
     } catch (e) {
@@ -315,11 +366,14 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'message': data['message'] ?? 'Password reset successfully'};
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Password reset successfully',
+        };
       } else {
         return {
           'success': false,
-          'message': data['detail'] ?? 'Failed to reset password'
+          'message': data['detail'] ?? 'Failed to reset password',
         };
       }
     } catch (e) {
@@ -343,7 +397,10 @@ class AuthService {
     return prefs.getBool(_biometricEnabledKey) ?? false;
   }
 
-  static Future<void> saveCredentialsForBiometric(String email, String password) async {
+  static Future<void> saveCredentialsForBiometric(
+    String email,
+    String password,
+  ) async {
     await _secureStorage.write(key: _biometricEmailKey, value: email);
     await _secureStorage.write(key: _biometricPasswordKey, value: password);
     await setBiometricEnabled(true);

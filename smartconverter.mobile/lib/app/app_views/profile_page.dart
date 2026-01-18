@@ -1,18 +1,18 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:local_auth/local_auth.dart';
 import '../app_constants/app_colors.dart';
 import '../app_constants/api_config.dart';
 import 'change_password_page.dart';
 import 'subscription_page.dart';
+import 'edit_profile_page.dart';
 import '../app_services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../app_providers/subscription_provider.dart';
-import 'sign_in_page.dart';
 import 'main_navigation.dart';
+import '../app_services/conversion_service.dart';
+import '../app_models/history_model.dart';
+import '../app_utils/file_manager.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -22,12 +22,12 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  File? _profileImage;
-  final ImagePicker _picker = ImagePicker();
-
-
   bool _isBiometricEnabled = false;
   final LocalAuthentication auth = LocalAuthentication();
+
+  UsageStats? _stats;
+  bool _isStatsLoading = true;
+  final ConversionService _conversionService = ConversionService();
 
   @override
   void initState() {
@@ -35,7 +35,19 @@ class _ProfilePageState extends State<ProfilePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SubscriptionProvider>(context, listen: false).checkStatus();
       _checkBiometricStatus();
+      _fetchStats();
     });
+  }
+
+  Future<void> _fetchStats() async {
+    if (mounted) setState(() => _isStatsLoading = true);
+    final stats = await _conversionService.getUserStats();
+    if (mounted) {
+      setState(() {
+        _stats = stats;
+        _isStatsLoading = false;
+      });
+    }
   }
 
   Future<void> _checkBiometricStatus() async {
@@ -52,14 +64,17 @@ class _ProfilePageState extends State<ProfilePage> {
         // or just rely on current valid session + user knowing the password.
         // For better security, let's just save valid email/pass.
         // We need the email from SubscriptionProvider
-        final email = Provider.of<SubscriptionProvider>(context, listen: false).userEmail;
+        final email = Provider.of<SubscriptionProvider>(
+          context,
+          listen: false,
+        ).userEmail;
         await AuthService.saveCredentialsForBiometric(email, password);
         await AuthService.setBiometricEnabled(true);
         setState(() => _isBiometricEnabled = true);
         if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(content: Text('Biometric login enabled')),
-             );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Biometric login enabled')),
+          );
         }
       }
     } else {
@@ -75,7 +90,10 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundCard,
-        title: const Text('Confirm Password', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text(
+          'Confirm Password',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -97,251 +115,30 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, password),
-            child: const Text('Enable', style: TextStyle(color: AppColors.primaryBlue)),
+            child: const Text(
+              'Enable',
+              style: TextStyle(color: AppColors.primaryBlue),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (pickedFile != null) {
-        // Crop the image
-        await _cropImage(File(pickedFile.path));
-      }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to pick image')),
-        );
-      }
-    }
-  }
-
-  Future<void> _cropImage(File imageFile) async {
-    try {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: imageFile.path,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: AppColors.backgroundCard,
-            toolbarWidgetColor: AppColors.textPrimary,
-            backgroundColor: AppColors.backgroundCard,
-            activeControlsWidgetColor: AppColors.primaryBlue,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-            hideBottomControls: false,
-          ),
-          IOSUiSettings(
-            title: 'Crop Image',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        if (mounted) {
-          _showConfirmationDialog(File(croppedFile.path));
-        }
-      }
-    } catch (e) {
-      debugPrint('Error cropping image: $e');
-    }
-  }
-
-  void _showConfirmationDialog(File imageFile) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundCard,
-        title: const Text('Update Profile Photo', style: TextStyle(color: AppColors.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipOval(
-              child: Image.file(
-                imageFile,
-                width: 150,
-                height: 150,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Do you want to set this as your profile picture?',
-              style: TextStyle(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              _uploadImage(imageFile);
-            },
-            child: const Text('Update', style: TextStyle(color: AppColors.primaryBlue)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _uploadImage(File imageFile) async {
-    setState(() {
-      _profileImage = imageFile;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Uploading image...')),
-      );
-    }
-
-    final result = await AuthService.uploadProfileImage(imageFile);
-
-    if (mounted) {
-      if (result['success']) {
-        final data = result['data'];
-        final profileImageUrl = data['profile_image_url'];
-
-        if (profileImageUrl != null) {
-          Provider.of<SubscriptionProvider>(context, listen: false).updateProfileImage(profileImageUrl);
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile image updated successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Failed to upload image')),
-        );
-      }
-    }
-  }
-
-  void _showImageSourcePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: AppColors.backgroundCard,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Profile Photo',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildSourceItem(
-                  icon: Icons.camera_alt_rounded,
-                  label: 'Camera',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-                _buildSourceItem(
-                  icon: Icons.photo_library_rounded,
-                  label: 'Gallery',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-                if (_profileImage != null)
-                  _buildSourceItem(
-                    icon: Icons.delete_rounded,
-                    label: 'Remove',
-                    onTap: () {
-                      Navigator.pop(context);
-                      setState(() => _profileImage = null);
-                    },
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourceItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.primaryBlue, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
   @override
   Widget build(BuildContext context) {
     return _buildBody()
-          .animate()
-          .fadeIn(duration: 800.ms)
-          .slideY(begin: 0.1, duration: 800.ms);
+        .animate()
+        .fadeIn(duration: 800.ms)
+        .slideY(begin: 0.1, duration: 800.ms);
   }
-
 
   Widget _buildBody() {
     return SingleChildScrollView(
@@ -359,10 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
             builder: (context, subscription, _) {
               if (subscription.isGuest) return const SizedBox.shrink();
               return Column(
-                children: [
-                   _buildLogoutButton(),
-                   const SizedBox(height: 24),
-                ],
+                children: [_buildLogoutButton(), const SizedBox(height: 24)],
               );
             },
           ),
@@ -394,7 +188,10 @@ class _ProfilePageState extends State<ProfilePage> {
             context: context,
             builder: (context) => AlertDialog(
               backgroundColor: AppColors.backgroundCard,
-              title: const Text('Log Out', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text(
+                'Log Out',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               content: const Text(
                 'Are you sure you want to log out?',
                 style: TextStyle(color: AppColors.textSecondary),
@@ -402,36 +199,42 @@ class _ProfilePageState extends State<ProfilePage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Log Out', style: TextStyle(color: AppColors.error)),
+                  child: const Text(
+                    'Log Out',
+                    style: TextStyle(color: AppColors.error),
+                  ),
                 ),
               ],
             ),
           );
 
           if (confirm == true) {
-             await AuthService.clearTokens();
-             if (!mounted) return;
-             
-             // Update subscription provider
-             Provider.of<SubscriptionProvider>(context, listen: false).refresh();
-             
-             ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(
-                 content: Text('Signed out successfully'),
-                 backgroundColor: Colors.green,
-               ),
-             );
-             
-             // Redirect to Home Page (Index 0)
-             try {
-               MainNavigation.of(context).setSelectedIndex(0);
-             } catch (e) {
-               debugPrint('Navigation error: $e');
-             }
+            await AuthService.clearTokens();
+            if (!mounted) return;
+
+            // Update subscription provider
+            Provider.of<SubscriptionProvider>(context, listen: false).refresh();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Signed out successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            // Redirect to Home Page (Index 0)
+            try {
+              MainNavigation.of(context).setSelectedIndex(0);
+            } catch (e) {
+              debugPrint('Navigation error: $e');
+            }
           }
         },
         icon: const Icon(Icons.logout, color: AppColors.textPrimary),
@@ -488,89 +291,58 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppColors.primaryGradient,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryBlue.withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: AppColors.primaryGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryBlue.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(50),
-                        child: _profileImage != null
-                            ? Image.file(
-                                _profileImage!,
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(50),
+                  child: subscription.profileImageUrl != null
+                      ? FutureBuilder<String>(
+                          future: ApiConfig
+                              .baseUrl, // We need base URL to construct full path
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              // Handle relative path
+                              final fullUrl =
+                                  subscription.profileImageUrl!.startsWith(
+                                    'http',
+                                  )
+                                  ? subscription.profileImageUrl!
+                                  : '${snapshot.data}/${subscription.profileImageUrl!}';
+                              return Image.network(
+                                fullUrl,
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                              )
-                            : (subscription.profileImageUrl != null
-                                ? FutureBuilder<String>(
-                                    future: ApiConfig.baseUrl, // We need base URL to construct full path
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasData) {
-                                        // Handle relative path
-                                        final fullUrl = subscription.profileImageUrl!.startsWith('http') 
-                                            ? subscription.profileImageUrl!
-                                            : '${snapshot.data}/${subscription.profileImageUrl!}';
-                                        return Image.network(
-                                          fullUrl,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.person,
-                                              size: 50,
-                                              color: AppColors.textPrimary,
-                                            );
-                                          },
-                                        );
-                                      }
-                                      return const CircularProgressIndicator();
-                                    },
-                                  )
-                                : const Icon(
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
                                     Icons.person,
                                     size: 50,
                                     color: AppColors.textPrimary,
-                                  )),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _showImageSourcePicker,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppColors.secondaryGradient,
-                            border: Border.all(
-                              color: AppColors.backgroundCard,
-                              width: 3,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 16,
-                            color: AppColors.textPrimary,
-                          ),
+                                  );
+                                },
+                              );
+                            }
+                            return const CircularProgressIndicator();
+                          },
+                        )
+                      : const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: AppColors.textPrimary,
                         ),
-                      ),
-                    ),
-                ],
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -589,42 +361,63 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 8),
               if (!subscription.isGuest)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    gradient: isPremium 
+                    gradient: isPremium
                         ? const LinearGradient(
-                            colors: [Color(0xFFFFC107), Color(0xFFFF9800)], // Gold to Orange
+                            colors: [
+                              Color(0xFFFFC107),
+                              Color(0xFFFF9800),
+                            ], // Gold to Orange
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
                         : LinearGradient(
-                            colors: [AppColors.textSecondary.withOpacity(0.2), AppColors.textSecondary.withOpacity(0.1)],
+                            colors: [
+                              AppColors.textSecondary.withOpacity(0.2),
+                              AppColors.textSecondary.withOpacity(0.1),
+                            ],
                           ),
                     borderRadius: BorderRadius.circular(30),
-                    boxShadow: isPremium 
+                    boxShadow: isPremium
                         ? [
                             BoxShadow(
                               color: const Color(0xFFFF9800).withOpacity(0.4),
                               blurRadius: 12,
                               spreadRadius: 2,
-                            )
+                            ),
                           ]
                         : null,
-                    border: isPremium 
-                        ? Border.all(color: Colors.white.withOpacity(0.5), width: 1)
-                        : Border.all(color: AppColors.textSecondary.withOpacity(0.3), width: 1),
+                    border: isPremium
+                        ? Border.all(
+                            color: Colors.white.withOpacity(0.5),
+                            width: 1,
+                          )
+                        : Border.all(
+                            color: AppColors.textSecondary.withOpacity(0.3),
+                            width: 1,
+                          ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isPremium) ...[
-                        const Icon(Icons.workspace_premium, color: Colors.white, size: 16),
+                        const Icon(
+                          Icons.workspace_premium,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                       ],
                       Text(
                         isPremium ? 'PREMIUM MEMBER' : 'FREE ACCOUNT',
                         style: TextStyle(
-                          color: isPremium ? Colors.white : AppColors.textSecondary,
+                          color: isPremium
+                              ? Colors.white
+                              : AppColors.textSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
@@ -642,66 +435,72 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildStatsSection() {
     return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.analytics_outlined,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Usage Statistics',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.analytics_outlined,
+                color: AppColors.textPrimary,
+                size: 20,
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    '156',
-                    'Files Converted',
-                    Icons.file_copy_outlined,
-                    AppColors.primaryBlue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    '2.3GB',
-                    'Data Processed',
-                    Icons.storage_outlined,
-                    AppColors.secondaryGreen,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    '28',
-                    'Days Active',
-                    Icons.calendar_today_outlined,
-                    AppColors.primaryPurple,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 12),
+            const Text(
+              'Usage Statistics',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
-        );
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                _isStatsLoading
+                    ? '...'
+                    : (_stats?.filesConverted.toString() ?? '0'),
+                'Files Converted',
+                Icons.file_copy_outlined,
+                AppColors.primaryBlue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                _isStatsLoading
+                    ? '...'
+                    : FileManager.formatBytes(_stats?.dataProcessedBytes ?? 0),
+                'Data Processed',
+                Icons.storage_outlined,
+                AppColors.secondaryGreen,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                _isStatsLoading
+                    ? '...'
+                    : (_stats?.daysActive.toString() ?? '0'),
+                'Days Active',
+                Icons.calendar_today_outlined,
+                AppColors.primaryPurple,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildStatCard(
@@ -758,88 +557,91 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildAccountSection() {
     return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.secondaryGradient,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.account_circle_outlined,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Account Settings',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppColors.secondaryGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.account_circle_outlined,
+                color: AppColors.textPrimary,
+                size: 20,
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildSettingsCard([
-              _buildSettingItem(
-                'Personal Information',
-                'Update your profile details',
-                Icons.person_outline,
-                () => _showEditProfileDialog(),
+            const SizedBox(width: 12),
+            const Text(
+              'Account Settings',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              _buildSettingItem(
-                'Change Password',
-                'Update your account password',
-                Icons.lock_outline,
-                () => _showChangePasswordPage(),
-              ),
-              SwitchListTile(
-                value: _isBiometricEnabled,
-                onChanged: _toggleBiometric,
-                title: const Text(
-                  'Biometric Login',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: const Text(
-                  'Use fingerprint/face ID to sign in',
-                  style: TextStyle(
-                     color: AppColors.textSecondary,
-                     fontSize: 12,
-                  ),
-                ),
-                secondary: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.fingerprint, color: AppColors.primaryBlue, size: 20),
-                ),
-                activeColor: AppColors.primaryBlue,
-                activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              ),
-              _buildSettingItem(
-                'Subscription',
-                'Manage your subscription plan',
-                Icons.card_membership_outlined,
-                () => _showSubscriptionPage(),
-              ),
-            ]),
+            ),
           ],
-        );
+        ),
+        const SizedBox(height: 16),
+        _buildSettingsCard([
+          _buildSettingItem(
+            'Personal Information',
+            'Update your profile details',
+            Icons.person_outline,
+            () => _showEditProfileDialog(),
+          ),
+          _buildSettingItem(
+            'Change Password',
+            'Update your account password',
+            Icons.lock_outline,
+            () => _showChangePasswordPage(),
+          ),
+          SwitchListTile(
+            value: _isBiometricEnabled,
+            onChanged: _toggleBiometric,
+            title: const Text(
+              'Biometric Login',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: const Text(
+              'Use fingerprint/face ID to sign in',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            secondary: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.fingerprint,
+                color: AppColors.primaryBlue,
+                size: 20,
+              ),
+            ),
+            activeColor: AppColors.primaryBlue,
+            activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
+          ),
+          _buildSettingItem(
+            'Subscription',
+            'Manage your subscription plan',
+            Icons.card_membership_outlined,
+            () => _showSubscriptionPage(),
+          ),
+        ]),
+      ],
+    );
   }
-
 
   Widget _buildSettingsCard(List<Widget> items) {
     return Container(
@@ -934,41 +736,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showEditProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundCard,
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: const Text(
-          'Profile editing feature coming soon!',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppColors.primaryBlue),
-            ),
-          ),
-        ],
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const EditProfilePage()));
   }
 
   void _showChangePasswordPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ChangePasswordPage()));
   }
 
   void _showSubscriptionPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SubscriptionPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SubscriptionPage()));
   }
-
 }
