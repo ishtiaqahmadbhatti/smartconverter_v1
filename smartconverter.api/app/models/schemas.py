@@ -192,3 +192,28 @@ class SubscriptionUpgrade(BaseModel):
     plan_id: str # monthly, yearly
 
 
+
+class HistoryItem(BaseModel):
+    """Schema for a single history entry."""
+    id: int
+    created_at: datetime
+    conversion_type: str
+    input_filename: str
+    input_file_size: Optional[int] = None
+    input_file_type: Optional[str] = None
+    output_filename: Optional[str] = None
+    output_file_size: Optional[int] = None
+    output_file_type: Optional[str] = None
+    status: str
+    error_message: Optional[str] = None
+    download_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class HistoryListResponse(BaseModel):
+    """Schema for history list response."""
+    success: bool
+    data: List[HistoryItem]
+    count: int

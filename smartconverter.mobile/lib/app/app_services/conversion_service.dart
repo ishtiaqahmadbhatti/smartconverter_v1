@@ -97,19 +97,19 @@ class ImageFormatConversionResult {
 class ConversionService {
   static final ConversionService _instance = ConversionService._internal();
   factory ConversionService() => _instance;
-  
+
   ConversionService._internal() {
     _debugLog('🏗️ ConversionService: Initializing singleton...');
-    
+
     // 1. Request Interceptor (Headers)
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           _debugLog('🌐 Interceptor: Requesting ${options.path}');
-          
+
           // Set custom User-Agent to verify interceptor is running
           options.headers['user-agent'] = 'SmartConverter-Mobile-Dio';
-          
+
           // Add Device ID header if available
           if (_deviceId != null) {
             options.headers['x-device-id'] = _deviceId;
@@ -122,7 +122,7 @@ class ConversionService {
             options.headers['Authorization'] = 'Bearer $token';
             _debugLog('🌐 Interceptor: Added Authorization header');
           }
-          
+
           return handler.next(options);
         },
         onError: (error, handler) {
@@ -201,6 +201,65 @@ class ConversionService {
     }
   }
 
+  // History Methods
+  Future<HistoryListResponse?> getHistory({
+    int skip = 0,
+    int limit = 50,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {'skip': skip, 'limit': limit};
+
+      if (fromDate != null) {
+        queryParams['from_date'] = fromDate.toIso8601String();
+      }
+      if (toDate != null) {
+        queryParams['to_date'] = toDate.toIso8601String();
+      }
+
+      Response response = await _dio.get(
+        ApiConfig.getHistoryEndpoint,
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        return HistoryListResponse.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      _debugLog('Error fetching history: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteHistoryItem(int id) async {
+    try {
+      Response response = await _dio.delete(
+        '${ApiConfig.deleteHistoryEndpoint}$id',
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      _debugLog('Error deleting history item: $e');
+      return false;
+    }
+  }
+
+  Future<bool> clearHistory() async {
+    try {
+      Response response = await _dio.delete(ApiConfig.clearHistoryEndpoint);
+      return response.statusCode == 200;
+    } catch (e) {
+      _debugLog('Error clearing history: $e');
+      return false;
+    }
+  }
+
+  Future<File?> downloadHistoryItem(HistoryItem item) async {
+    if (item.downloadUrl == null || item.outputFilename == null) return null;
+    return await _tryDownloadFile(item.outputFilename!, item.downloadUrl!);
+  }
+
   // PDF to Word conversion
   Future<ImageToPdfResult?> convertPdfToWord(
     File pdfFile, {
@@ -248,11 +307,15 @@ class ConversionService {
           downloadUrl,
           toolName: 'PdfToWord',
           fileExtension: 'docx',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -280,7 +343,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_document.pdf';
-        
+
         final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
@@ -322,7 +385,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_presentation.pdf';
-        
+
         final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
@@ -364,7 +427,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_spreadsheet.pdf';
-        
+
         final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
@@ -406,7 +469,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_spreadsheet.xps';
-        
+
         final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
@@ -448,7 +511,7 @@ class ConversionService {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
         String fileName =
             response.data['output_filename'] ?? 'converted_spreadsheet.ods';
-        
+
         final downloadedFile = await _tryDownloadFile(
           fileName,
           downloadUrl,
@@ -470,10 +533,6 @@ class ConversionService {
       throw Exception('Excel to ODS conversion failed: $e');
     }
   }
-
-
-
-
 
   // Image to PDF conversion
   Future<File?> convertImageToPdf(List<File> imageFiles) async {
@@ -535,7 +594,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pngFile.path)}.pdf';
 
         final file = await _tryDownloadFile(
@@ -581,7 +641,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jpgFile.path)}.pdf';
 
         final file = await _tryDownloadFile(
@@ -676,11 +737,15 @@ class ConversionService {
           fileName,
           downloadUrl,
           fileExtension: 'txt',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -710,7 +775,8 @@ class ConversionService {
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final downloadUrl = response.data['download_url'];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pngFile.path)}.json';
 
         final file = await _tryDownloadFile(
@@ -756,7 +822,8 @@ class ConversionService {
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final downloadUrl = response.data['download_url'];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jpgFile.path)}.json';
 
         final file = await _tryDownloadFile(
@@ -797,10 +864,7 @@ class ConversionService {
           'filename': outputFilename,
       });
 
-      final response = await _dio.post(
-        apiEndpoint,
-        data: formData,
-      );
+      final response = await _dio.post(apiEndpoint, data: formData);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -808,7 +872,8 @@ class ConversionService {
         String downloadUrl = '';
 
         if (data is Map<String, dynamic>) {
-          fileName = data['output_filename'] ?? 'converted_file.$targetExtension';
+          fileName =
+              data['output_filename'] ?? 'converted_file.$targetExtension';
           downloadUrl = data['download_url'] ?? '';
         } else {
           throw Exception('Invalid server response format');
@@ -914,7 +979,9 @@ class ConversionService {
         String downloadUrl = '';
 
         if (data is Map<String, dynamic>) {
-          fileName = data['output_filename'] ?? 'compressed_${basename(imageFile.path)}';
+          fileName =
+              data['output_filename'] ??
+              'compressed_${basename(imageFile.path)}';
           downloadUrl = data['download_url'] ?? '';
         } else {
           throw Exception('Invalid server response format');
@@ -971,7 +1038,8 @@ class ConversionService {
         String downloadUrl = '';
 
         if (data is Map<String, dynamic>) {
-          fileName = data['output_filename'] ?? 'resized_${basename(imageFile.path)}';
+          fileName =
+              data['output_filename'] ?? 'resized_${basename(imageFile.path)}';
           downloadUrl = data['download_url'] ?? '';
         } else {
           throw Exception('Invalid server response format');
@@ -1026,7 +1094,8 @@ class ConversionService {
         String downloadUrl = '';
 
         if (data is Map<String, dynamic>) {
-          fileName = data['output_filename'] ?? 'quality_${basename(imageFile.path)}';
+          fileName =
+              data['output_filename'] ?? 'quality_${basename(imageFile.path)}';
           downloadUrl = data['download_url'] ?? '';
         } else {
           throw Exception('Invalid server response format');
@@ -1056,7 +1125,7 @@ class ConversionService {
   // Convert SRT to CSV (Subtitle Conversion)
   Future<ImageToPdfResult?> convertSrtToCsv(
     File srtFile, {
-      String? outputFilename,
+    String? outputFilename,
   }) async {
     try {
       if (!srtFile.existsSync()) {
@@ -1095,19 +1164,21 @@ class ConversionService {
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
       throw Exception('Failed to convert SRT to CSV: $e');
     }
   }
-
-
 
   // Convert HTML/URL/File to PDF
   Future<ImageToPdfResult?> convertHtmlToPdf({
@@ -1167,11 +1238,15 @@ class ConversionService {
           fileName,
           downloadUrl,
           fileExtension: 'pdf',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -1205,11 +1280,11 @@ class ConversionService {
         final ext = extension(htmlFile.path).toLowerCase();
         // Allow .html and .htm files
         if (ext != '.html' && ext != '.htm') {
-             // throw Exception('Only .html or .htm files are supported');
+          // throw Exception('Only .html or .htm files are supported');
         }
         map['file'] = await MultipartFile.fromFile(
-            htmlFile.path,
-            filename: basename(htmlFile.path),
+          htmlFile.path,
+          filename: basename(htmlFile.path),
         );
       }
 
@@ -1234,11 +1309,15 @@ class ConversionService {
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -1258,7 +1337,7 @@ class ConversionService {
       final ext = extension(excelFile.path).toLowerCase();
       // Allow .xls and .xlsx files
       if (ext != '.xls' && ext != '.xlsx') {
-         // throw Exception('Only .xls or .xlsx files are supported');
+        // throw Exception('Only .xls or .xlsx files are supported');
       }
 
       final file = await MultipartFile.fromFile(
@@ -1293,11 +1372,15 @@ class ConversionService {
           downloadUrl,
           toolName: 'ExcelToHtml',
           fileExtension: 'html',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -1339,7 +1422,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(wordFile.path)}.html';
 
         return await _tryDownloadFile(
@@ -1347,11 +1431,15 @@ class ConversionService {
           downloadUrl,
           toolName: 'WordToHtml',
           fileExtension: 'html',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -1392,7 +1480,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pptFile.path)}.html';
 
         return await _tryDownloadFile(
@@ -1400,11 +1489,15 @@ class ConversionService {
           downloadUrl,
           toolName: 'PowerPointToHtml',
           fileExtension: 'html',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -1445,7 +1538,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(mdFile.path)}.html';
 
         return await _tryDownloadFile(
@@ -1453,11 +1547,15 @@ class ConversionService {
           downloadUrl,
           toolName: 'MarkdownToHtml',
           fileExtension: 'html',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -1489,7 +1587,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             'website_to_jpg_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -1534,7 +1633,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             'html_to_jpg_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -1576,7 +1676,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             'website_to_png_${DateTime.now().millisecondsSinceEpoch}.png';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -1614,7 +1715,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             'website_to_pdf_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -1659,7 +1761,8 @@ class ConversionService {
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             'html_to_png_${DateTime.now().millisecondsSinceEpoch}.png';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -1747,10 +1850,8 @@ class ConversionService {
 
       final files = await Future.wait(
         pdfFiles.map(
-          (file) => MultipartFile.fromFile(
-            file.path,
-            filename: basename(file.path),
-          ),
+          (file) =>
+              MultipartFile.fromFile(file.path, filename: basename(file.path)),
         ),
       );
 
@@ -1782,7 +1883,7 @@ class ConversionService {
           toolName: 'MergePdf',
           fileExtension: 'pdf',
         );
-        
+
         if (file == null) {
           return null;
         }
@@ -2015,8 +2116,6 @@ class ConversionService {
       throw Exception('Failed to convert OXPS to PDF: $e');
     }
   }
-
-
 
   // Convert PDF to JPG (multiple images)
   Future<PdfToImagesResult?> convertPdfToJpg(
@@ -2254,301 +2353,297 @@ class ConversionService {
     }
   }
 
-Future<ImageToPdfResult?> convertPngToJson(
-  File imageFile, {
-  String? outputFilename,
-}) async {
-  try {
-    if (!imageFile.existsSync()) {
-      throw Exception('Image file does not exist');
-    }
-
-    final ext = extension(imageFile.path).toLowerCase();
-    if (ext != '.png') {
-      throw Exception('Only PNG files are supported');
-    }
-
-    final file = await MultipartFile.fromFile(
-      imageFile.path,
-      filename: basename(imageFile.path),
-    );
-
-    FormData formData = FormData.fromMap({
-      'file': file,
-      if (outputFilename != null && outputFilename.isNotEmpty)
-        'filename': outputFilename,
-    });
-
-    _debugLog('📤 Uploading image file for JSON conversion...');
-
-    Response response = await _dio.post(
-      ApiConfig.pngToJsonEndpoint,
-      data: formData,
-    );
-
-    if (response.statusCode == 200) {
-      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      String fileName =
-          response.data['output_filename'] ??
-          '${basenameWithoutExtension(imageFile.path)}.json';
-
-      _debugLog('✅ Image converted to JSON successfully!');
-      _debugLog('📥 Downloading JSON: $fileName');
-
-      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-      if (downloadedFile == null) {
-        return null;
+  Future<ImageToPdfResult?> convertPngToJson(
+    File imageFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist');
       }
 
-      return ImageToPdfResult(
-        file: downloadedFile,
-        fileName: fileName,
-        downloadUrl: downloadUrl,
-      );
-    }
-
-    return null;
-  } catch (e) {
-    throw Exception('Failed to convert image to JSON: $e');
-  }
-}
-
-Future<ImageToPdfResult?> convertJpgToJson(
-  File imageFile, {
-  String? outputFilename,
-}) async {
-  try {
-    if (!imageFile.existsSync()) {
-      throw Exception('Image file does not exist');
-    }
-
-    final ext = extension(imageFile.path).toLowerCase();
-    if (!['.jpg', '.jpeg'].contains(ext)) {
-      throw Exception('Only JPG/JPEG files are supported');
-    }
-
-    final file = await MultipartFile.fromFile(
-      imageFile.path,
-      filename: basename(imageFile.path),
-    );
-
-    FormData formData = FormData.fromMap({
-      'file': file,
-      if (outputFilename != null && outputFilename.isNotEmpty)
-        'filename': outputFilename,
-    });
-
-    _debugLog('📤 Uploading JPG file for JSON conversion...');
-
-    Response response = await _dio.post(
-      ApiConfig.jpgToJsonEndpoint,
-      data: formData,
-    );
-
-    if (response.statusCode == 200) {
-      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      String fileName =
-          response.data['output_filename'] ??
-          '${basenameWithoutExtension(imageFile.path)}.json';
-
-      _debugLog('✅ JPG converted to JSON successfully!');
-      _debugLog('📥 Downloading JSON: $fileName');
-
-      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-      if (downloadedFile == null) {
-        return null;
+      final ext = extension(imageFile.path).toLowerCase();
+      if (ext != '.png') {
+        throw Exception('Only PNG files are supported');
       }
 
-      return ImageToPdfResult(
-        file: downloadedFile,
-        fileName: fileName,
-        downloadUrl: downloadUrl,
+      final file = await MultipartFile.fromFile(
+        imageFile.path,
+        filename: basename(imageFile.path),
       );
-    }
 
-    return null;
-  } catch (e) {
-    throw Exception('Failed to convert JPG to JSON: $e');
-  }
-}
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
 
-Future<ImageToPdfResult?> convertXmlToJson(
-  File xmlFile, {
-  String? outputFilename,
-}) async {
-  try {
-    if (!xmlFile.existsSync()) {
-      throw Exception('XML file does not exist');
-    }
+      _debugLog('📤 Uploading image file for JSON conversion...');
 
-    final ext = extension(xmlFile.path).toLowerCase();
-    if (ext != '.xml') {
-      throw Exception('Only XML files are supported');
-    }
+      Response response = await _dio.post(
+        ApiConfig.pngToJsonEndpoint,
+        data: formData,
+      );
 
-    final file = await MultipartFile.fromFile(
-      xmlFile.path,
-      filename: basename(xmlFile.path),
-    );
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${basenameWithoutExtension(imageFile.path)}.json';
 
-    FormData formData = FormData.fromMap({
-      'file': file,
-      if (outputFilename != null && outputFilename.isNotEmpty)
-        'filename': outputFilename,
-    });
+        _debugLog('✅ Image converted to JSON successfully!');
+        _debugLog('📥 Downloading JSON: $fileName');
 
-    _debugLog('📤 Uploading XML file for JSON conversion...');
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
 
-    Response response = await _dio.post(
-      ApiConfig.xmlToJsonEndpoint,
-      data: formData,
-    );
-
-    if (response.statusCode == 200) {
-      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      String fileName =
-          response.data['output_filename'] ??
-          '${basenameWithoutExtension(xmlFile.path)}.json';
-
-      _debugLog('✅ XML converted to JSON successfully!');
-      _debugLog('📥 Downloading JSON: $fileName');
-
-      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-      if (downloadedFile == null) {
-        return null;
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
       }
 
-      return ImageToPdfResult(
-        file: downloadedFile,
-        fileName: fileName,
-        downloadUrl: downloadUrl,
-      );
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert image to JSON: $e');
     }
-
-    return null;
-  } catch (e) {
-    throw Exception('Failed to convert XML to JSON: $e');
   }
-}
 
-
-
-Future<ImageToPdfResult?> convertJsonToCsv(
-  File jsonFile, {
-  String? outputFilename,
-  String? delimiter,
-}) async {
-  try {
-    if (!jsonFile.existsSync()) {
-      throw Exception('JSON file does not exist');
-    }
-
-    final ext = extension(jsonFile.path).toLowerCase();
-    if (ext != '.json') {
-      throw Exception('Only JSON files are supported');
-    }
-
-    final file = await MultipartFile.fromFile(
-      jsonFile.path,
-      filename: basename(jsonFile.path),
-    );
-
-    FormData formData = FormData.fromMap({
-      'file': file,
-      if (delimiter != null && delimiter.isNotEmpty) 'delimiter': delimiter,
-      if (outputFilename != null && outputFilename.isNotEmpty)
-        'filename': outputFilename,
-    });
-
-    _debugLog('📤 Uploading JSON file for CSV conversion...');
-
-    Response response = await _dio.post(
-      ApiConfig.jsonToCsvEndpoint,
-      data: formData,
-    );
-
-    if (response.statusCode == 200) {
-      String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      String fileName =
-          response.data['output_filename'] ??
-          '${basenameWithoutExtension(jsonFile.path)}.csv';
-
-      _debugLog('✅ JSON converted to CSV successfully!');
-      _debugLog('📥 Downloading CSV: $fileName');
-
-      final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
-      if (downloadedFile == null) {
-        return null;
+  Future<ImageToPdfResult?> convertJpgToJson(
+    File imageFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!imageFile.existsSync()) {
+        throw Exception('Image file does not exist');
       }
 
-      return ImageToPdfResult(
-        file: downloadedFile,
-        fileName: fileName,
-        downloadUrl: downloadUrl,
+      final ext = extension(imageFile.path).toLowerCase();
+      if (!['.jpg', '.jpeg'].contains(ext)) {
+        throw Exception('Only JPG/JPEG files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        imageFile.path,
+        filename: basename(imageFile.path),
       );
-    }
 
-    return null;
-  } catch (e) {
-    throw Exception('Failed to convert JSON to CSV: $e');
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JPG file for JSON conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jpgToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${basenameWithoutExtension(imageFile.path)}.json';
+
+        _debugLog('✅ JPG converted to JSON successfully!');
+        _debugLog('📥 Downloading JSON: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JPG to JSON: $e');
+    }
   }
-}
 
-Future<ImageToPdfResult?> convertJsonToExcel(
-  File jsonFile, {
-  String? outputFilename,
-}) async {
-  try {
-    if (!jsonFile.existsSync()) {
-      throw Exception('JSON file does not exist');
+  Future<ImageToPdfResult?> convertXmlToJson(
+    File xmlFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!xmlFile.existsSync()) {
+        throw Exception('XML file does not exist');
+      }
+
+      final ext = extension(xmlFile.path).toLowerCase();
+      if (ext != '.xml') {
+        throw Exception('Only XML files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        xmlFile.path,
+        filename: basename(xmlFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading XML file for JSON conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.xmlToJsonEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${basenameWithoutExtension(xmlFile.path)}.json';
+
+        _debugLog('✅ XML converted to JSON successfully!');
+        _debugLog('📥 Downloading JSON: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert XML to JSON: $e');
     }
+  }
 
-    final ext = extension(jsonFile.path).toLowerCase();
-    if (ext != '.json') {
-      throw Exception('Only JSON files are supported');
+  Future<ImageToPdfResult?> convertJsonToCsv(
+    File jsonFile, {
+    String? outputFilename,
+    String? delimiter,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
+
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
+        throw Exception('Only JSON files are supported');
+      }
+
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: basename(jsonFile.path),
+      );
+
+      FormData formData = FormData.fromMap({
+        'file': file,
+        if (delimiter != null && delimiter.isNotEmpty) 'delimiter': delimiter,
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'filename': outputFilename,
+      });
+
+      _debugLog('📤 Uploading JSON file for CSV conversion...');
+
+      Response response = await _dio.post(
+        ApiConfig.jsonToCsvEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        String downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        String fileName =
+            response.data['output_filename'] ??
+            '${basenameWithoutExtension(jsonFile.path)}.csv';
+
+        _debugLog('✅ JSON converted to CSV successfully!');
+        _debugLog('📥 Downloading CSV: $fileName');
+
+        final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
+        if (downloadedFile == null) {
+          return null;
+        }
+
+        return ImageToPdfResult(
+          file: downloadedFile,
+          fileName: fileName,
+          downloadUrl: downloadUrl,
+        );
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON to CSV: $e');
     }
+  }
 
-    final file = await MultipartFile.fromFile(
-      jsonFile.path,
-      filename: basename(jsonFile.path),
-    );
+  Future<ImageToPdfResult?> convertJsonToExcel(
+    File jsonFile, {
+    String? outputFilename,
+  }) async {
+    try {
+      if (!jsonFile.existsSync()) {
+        throw Exception('JSON file does not exist');
+      }
 
-    final formData = FormData.fromMap({
-      'file': file,
-      if (outputFilename != null) 'filename': outputFilename,
-    });
+      final ext = extension(jsonFile.path).toLowerCase();
+      if (ext != '.json') {
+        throw Exception('Only JSON files are supported');
+      }
 
-    final response = await _dio.post(
-      ApiConfig.jsonToExcelEndpoint,
-      data: formData,
-    );
+      final file = await MultipartFile.fromFile(
+        jsonFile.path,
+        filename: basename(jsonFile.path),
+      );
 
-    if (response.statusCode == 200) {
-      final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-      final outputName = response.data['output_filename'] ??
-          (outputFilename != null && outputFilename.isNotEmpty
-              ? (outputFilename.toLowerCase().endsWith('.xlsx')
-                  ? outputFilename
-                  : '$outputFilename.xlsx')
-              : 'converted.xlsx');
+      final formData = FormData.fromMap({
+        'file': file,
+        if (outputFilename != null) 'filename': outputFilename,
+      });
+
+      final response = await _dio.post(
+        ApiConfig.jsonToExcelEndpoint,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final downloadUrl = response.data[ApiConfig.downloadUrlKey];
+        final outputName =
+            response.data['output_filename'] ??
+            (outputFilename != null && outputFilename.isNotEmpty
+                ? (outputFilename.toLowerCase().endsWith('.xlsx')
+                      ? outputFilename
+                      : '$outputFilename.xlsx')
+                : 'converted.xlsx');
 
         if (downloadUrl != null) {
-          final resultFile =
-              await _downloadFile(downloadUrl, outputName);
+          final resultFile = await _downloadFile(downloadUrl, outputName);
           return ImageToPdfResult(
             file: resultFile,
             fileName: outputName,
             downloadUrl: downloadUrl,
           );
-                }
+        }
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to convert JSON to Excel: $e');
     }
-    return null;
-  } catch (e) {
-    throw Exception('Failed to convert JSON to Excel: $e');
   }
-}
-
-
 
   Future<ImageToPdfResult?> convertExcelToJson(
     File excelFile, {
@@ -2581,22 +2676,22 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final outputName = response.data['output_filename'] ??
+        final outputName =
+            response.data['output_filename'] ??
             (outputFilename != null && outputFilename.isNotEmpty
                 ? (outputFilename.toLowerCase().endsWith('.json')
-                    ? outputFilename
-                    : '$outputFilename.json')
+                      ? outputFilename
+                      : '$outputFilename.json')
                 : 'converted.json');
 
         if (downloadUrl != null) {
-          final resultFile =
-              await _downloadFile(downloadUrl, outputName);
+          final resultFile = await _downloadFile(downloadUrl, outputName);
           return ImageToPdfResult(
             file: resultFile,
             fileName: outputName,
             downloadUrl: downloadUrl,
           );
-                }
+        }
       }
       return null;
     } catch (e) {
@@ -2637,11 +2732,12 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final outputName = response.data['output_filename'] ??
+        final outputName =
+            response.data['output_filename'] ??
             (outputFilename != null && outputFilename.isNotEmpty
                 ? (outputFilename.toLowerCase().endsWith('.json')
-                    ? outputFilename
-                    : '$outputFilename.json')
+                      ? outputFilename
+                      : '$outputFilename.json')
                 : 'converted.json');
 
         if (downloadUrl != null) {
@@ -2651,7 +2747,7 @@ Future<ImageToPdfResult?> convertJsonToExcel(
             fileName: outputName,
             downloadUrl: downloadUrl,
           );
-                }
+        }
       }
       return null;
     } catch (e) {
@@ -2840,7 +2936,6 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       throw Exception('Failed to convert PDF to Text: $e');
     }
   }
-
 
   // Convert PowerPoint (PPT/PPTX) to Text
   Future<ImageToPdfResult?> convertPowerpointToText(
@@ -3035,7 +3130,8 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(srtFile.path)}.vtt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -3087,7 +3183,8 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(vttFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -3139,7 +3236,8 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(csvFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -3191,7 +3289,8 @@ Future<ImageToPdfResult?> convertJsonToExcel(
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ??
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(excelFile.path)}.srt';
 
         final downloadedFile = await _tryDownloadFile(fileName, downloadUrl);
@@ -3918,8 +4017,6 @@ Future<ImageToPdfResult?> convertJsonToExcel(
       );
       result = await _createSuccessPlaceholderFile(fileName);
     }
-
-
 
     return result;
   }
@@ -4755,11 +4852,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'srt',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -4813,11 +4914,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'yaml',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -4874,11 +4979,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -4886,8 +4995,6 @@ async def download_file(filename: str):
       throw Exception('Failed to convert JSON objects to CSV: $e');
     }
   }
-
-
 
   // Convert YAML to JSON
   Future<ImageToPdfResult?> convertYamlToJson(
@@ -4935,11 +5042,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'json',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -4996,11 +5107,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'json',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
 
       return null;
@@ -5010,10 +5125,7 @@ async def download_file(filename: str):
   }
 
   // Format JSON Text (direct input)
-  Future<String?> formatJsonText(
-    String jsonText, {
-    int indent = 2,
-  }) async {
+  Future<String?> formatJsonText(String jsonText, {int indent = 2}) async {
     try {
       if (jsonText.trim().isEmpty) {
         throw Exception('JSON text is empty');
@@ -5039,11 +5151,12 @@ async def download_file(filename: str):
       _debugLog('Response received: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        String formattedJson = response.data['converted_data']?.toString() ?? '';
-        
+        String formattedJson =
+            response.data['converted_data']?.toString() ?? '';
+
         _debugLog('✅ JSON text formatted successfully!');
         _debugLog('Formatted length: ${formattedJson.length}');
-        
+
         return formattedJson;
       }
 
@@ -5071,9 +5184,7 @@ async def download_file(filename: str):
         filename: basename(jsonFile.path),
       );
 
-      FormData formData = FormData.fromMap({
-        'file': file,
-      });
+      FormData formData = FormData.fromMap({'file': file});
 
       _debugLog('📤 Uploading JSON file for validation...');
 
@@ -5084,10 +5195,10 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final result = response.data as Map<String, dynamic>;
-        
+
         _debugLog('✅ JSON validation complete!');
         _debugLog('Valid: ${result['valid']}');
-        
+
         return result;
       }
 
@@ -5104,9 +5215,7 @@ async def download_file(filename: str):
         throw Exception('JSON text is empty');
       }
 
-      FormData formData = FormData.fromMap({
-        'json_text': jsonText.trim(),
-      });
+      FormData formData = FormData.fromMap({'json_text': jsonText.trim()});
 
       _debugLog('📤 Sending JSON text for validation...');
 
@@ -5117,10 +5226,10 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final result = response.data as Map<String, dynamic>;
-        
+
         _debugLog('✅ JSON validation complete!');
         _debugLog('Valid: ${result['valid']}');
-        
+
         return result;
       }
 
@@ -5130,7 +5239,6 @@ async def download_file(filename: str):
       throw Exception('Failed to validate JSON text: $e');
     }
   }
-
 
   // Convert XML to CSV
   Future<ImageToPdfResult?> convertXmlToCsv(
@@ -5166,18 +5274,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(xmlFile.path)}.csv';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5219,18 +5332,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(xmlFile.path)}.xlsx';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'xlsx',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5263,8 +5381,12 @@ async def download_file(filename: str):
         'file': file,
         if (outputFilename != null && outputFilename.isNotEmpty)
           'filename': outputFilename,
-        'root_name': rootName?.trim().isNotEmpty == true ? rootName!.trim() : 'data',
-        'record_name': recordName?.trim().isNotEmpty == true ? recordName!.trim() : 'record',
+        'root_name': rootName?.trim().isNotEmpty == true
+            ? rootName!.trim()
+            : 'data',
+        'record_name': recordName?.trim().isNotEmpty == true
+            ? recordName!.trim()
+            : 'record',
       });
 
       _debugLog('📤 Uploading CSV file for XML conversion...');
@@ -5276,18 +5398,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(csvFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'xml',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5320,8 +5447,12 @@ async def download_file(filename: str):
         'file': file,
         if (outputFilename != null && outputFilename.isNotEmpty)
           'filename': outputFilename,
-        'root_name': rootName?.trim().isNotEmpty == true ? rootName!.trim() : 'data',
-        'record_name': recordName?.trim().isNotEmpty == true ? recordName!.trim() : 'record',
+        'root_name': rootName?.trim().isNotEmpty == true
+            ? rootName!.trim()
+            : 'data',
+        'record_name': recordName?.trim().isNotEmpty == true
+            ? recordName!.trim()
+            : 'record',
       });
 
       _debugLog('📤 Uploading Excel file for XML conversion...');
@@ -5333,18 +5464,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(excelFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'xml',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5376,7 +5512,9 @@ async def download_file(filename: str):
         'file': file,
         if (outputFilename != null && outputFilename.isNotEmpty)
           'filename': outputFilename,
-        'root_element': rootElement?.trim().isNotEmpty == true ? rootElement!.trim() : 'root',
+        'root_element': rootElement?.trim().isNotEmpty == true
+            ? rootElement!.trim()
+            : 'root',
       });
 
       _debugLog('📤 Uploading JSON file for XML conversion...');
@@ -5388,18 +5526,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jsonFile.path)}.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'xml',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5441,18 +5584,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(xmlFile.path)}_fixed.xml';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'xml',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5508,17 +5656,17 @@ async def download_file(filename: str):
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is Map<String, dynamic>) {
-           return data;
+          return data;
         }
       }
       return null;
     } catch (e) {
       if (e is DioException && e.response?.statusCode == 500) {
-          // Pass through the 500 error body if it contains detailed validation errors
-          final data = e.response?.data;
-          if (data is Map<String, dynamic>) {
-              return data;
-          }
+        // Pass through the 500 error body if it contains detailed validation errors
+        final data = e.response?.data;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
       }
       throw Exception('Failed to validate XML: $e');
     }
@@ -5560,7 +5708,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(csvFile.path)}.xlsx';
 
         _debugLog('✅ CSV successfully converted to Excel!');
@@ -5569,21 +5718,21 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'xlsx',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
       throw Exception('Failed to convert CSV to Excel: $e');
     }
   }
-
-
-
-
 
   // Convert Excel to CSV
   Future<ImageToPdfResult?> convertExcelToCsv(
@@ -5619,7 +5768,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(excelFile.path)}.csv';
 
         _debugLog('✅ Excel successfully converted to CSV!');
@@ -5628,19 +5778,21 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
       throw Exception('Failed to convert Excel to CSV: $e');
     }
   }
-
-
 
   // Convert ODS to CSV
   Future<ImageToPdfResult?> convertOdsToCsv(
@@ -5676,7 +5828,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(odsFile.path)}.csv';
 
         _debugLog('✅ ODS successfully converted to CSV!');
@@ -5685,11 +5838,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5731,7 +5888,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(odsFile.path)}.xlsx';
 
         _debugLog('✅ ODS successfully converted to Excel!');
@@ -5791,7 +5949,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(odsFile.path)}.pdf';
 
         _debugLog('✅ ODS successfully converted to PDF!');
@@ -5816,10 +5975,6 @@ async def download_file(filename: str):
       throw Exception('Failed to convert ODS to PDF: $e');
     }
   }
-
-
-
-
 
   // Convert BSON to CSV
   Future<ImageToPdfResult?> convertBsonToCsv(
@@ -5855,7 +6010,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         String downloadUrl = response.data['download_url'];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(bsonFile.path)}.csv';
 
         _debugLog('✅ BSON successfully converted to CSV!');
@@ -5864,11 +6020,15 @@ async def download_file(filename: str):
           fileName,
           downloadUrl,
           fileExtension: 'csv',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -5911,7 +6071,8 @@ async def download_file(filename: str):
       // Office endpoints usually strictly match statusCode 200 and return download_url directly
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(bsonFile.path)}.xlsx';
 
         _debugLog('✅ BSON successfully converted to Excel!');
@@ -5936,7 +6097,6 @@ async def download_file(filename: str):
       throw Exception('Failed to convert BSON to Excel: $e');
     }
   }
-
 
   // Convert Json Objects to Excel
   Future<ImageToPdfResult?> convertJsonObjectsToExcel(
@@ -5972,7 +6132,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jsonFile.path)}.xlsx';
 
         _debugLog('✅ JSON objects successfully converted to Excel!');
@@ -6032,7 +6193,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(srtFile.path)}.xlsx';
 
         _debugLog('✅ SRT successfully converted to Excel!');
@@ -6089,25 +6251,23 @@ async def download_file(filename: str):
 
       _debugLog('📤 Uploading EBook file for conversion...');
 
-      Response response = await _dio.post(
-        endpoint,
-        data: formData,
-      );
+      Response response = await _dio.post(endpoint, data: formData);
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(inputFile.path)}.$outputExt';
 
         _debugLog('✅ EBook conversion successful!');
         _debugLog('📥 Downloading EBook: $fileName');
 
         final downloadedFile = await _tryDownloadFile(
-          fileName, 
-          downloadUrl, 
-          fileExtension: outputExt
+          fileName,
+          downloadUrl,
+          fileExtension: outputExt,
         );
-        
+
         if (downloadedFile == null) {
           return null;
         }
@@ -6158,7 +6318,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(srtFile.path)}.xls';
 
         _debugLog('✅ SRT successfully converted to XLS!');
@@ -6218,7 +6379,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(srtFile.path)}.xlsx';
 
         _debugLog('✅ SRT successfully converted to XLSX!');
@@ -6278,7 +6440,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(xlsFile.path)}.srt';
 
         _debugLog('✅ XLS successfully converted to SRT!');
@@ -6338,7 +6501,8 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         String downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        String fileName = response.data['output_filename'] ??
+        String fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(xlsxFile.path)}.srt';
 
         _debugLog('✅ XLSX successfully converted to SRT!');
@@ -6375,7 +6539,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!pngFile.existsSync()) throw Exception('PNG file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         pngFile.path,
         filename: basename(pngFile.path),
@@ -6397,18 +6561,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pngFile.path)}.txt';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'txt',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -6423,7 +6592,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!jpgFile.existsSync()) throw Exception('JPG file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         jpgFile.path,
         filename: basename(jpgFile.path),
@@ -6445,18 +6614,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jpgFile.path)}.txt';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'txt',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -6471,7 +6645,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!pngFile.existsSync()) throw Exception('PNG file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         pngFile.path,
         filename: basename(pngFile.path),
@@ -6493,18 +6667,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pngFile.path)}.pdf';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'pdf',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -6519,7 +6698,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!jpgFile.existsSync()) throw Exception('JPG file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         jpgFile.path,
         filename: basename(jpgFile.path),
@@ -6541,18 +6720,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(jpgFile.path)}.pdf';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'pdf',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -6567,7 +6751,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!pdfFile.existsSync()) throw Exception('PDF file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         pdfFile.path,
         filename: basename(pdfFile.path),
@@ -6589,18 +6773,23 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pdfFile.path)}.txt';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'txt',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
@@ -6615,7 +6804,7 @@ async def download_file(filename: str):
   }) async {
     try {
       if (!pdfFile.existsSync()) throw Exception('PDF file does not exist');
-      
+
       final file = await MultipartFile.fromFile(
         pdfFile.path,
         filename: basename(pdfFile.path),
@@ -6637,28 +6826,27 @@ async def download_file(filename: str):
 
       if (response.statusCode == 200) {
         final downloadUrl = response.data[ApiConfig.downloadUrlKey];
-        final fileName = response.data['output_filename'] ?? 
+        final fileName =
+            response.data['output_filename'] ??
             '${basenameWithoutExtension(pdfFile.path)}_ocr.pdf';
 
         return await _tryDownloadFile(
           fileName,
           downloadUrl,
           fileExtension: 'pdf',
-        ).then((file) => file != null ? ImageToPdfResult(
-          file: file,
-          fileName: fileName,
-          downloadUrl: downloadUrl,
-        ) : null);
+        ).then(
+          (file) => file != null
+              ? ImageToPdfResult(
+                  file: file,
+                  fileName: fileName,
+                  downloadUrl: downloadUrl,
+                )
+              : null,
+        );
       }
       return null;
     } catch (e) {
       throw Exception('Failed to convert PDF Image to PDF Text (OCR): $e');
     }
   }
-
-
-
-
-
-
 }

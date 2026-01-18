@@ -53,3 +53,298 @@ Found existing user: 1
 
 --- Request at /api/v1/pdfconversiontools/pdf-to-json ---
 Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '402166', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODY1NjkwMCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODY1NTEwMH0.eAcSSjsqbI4AChEAXYyy-p5wW8r54G49rVbuAPzRFro', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2194955271'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'host': '127.0.0.1:8000', 'user-agent': 'curl/8.16.0', 'accept': 'application/json'}
+Extracted device_id: None
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/7 ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0MjUxMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0MDcxMn0.9w82FcX5WH_anid9p7z6ogbHijYlSRZxviIhooPHKQk', 'host': '192.168.8.100:8000'}
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/5 ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'host': '127.0.0.1:8000', 'user-agent': 'curl/8.16.0', 'accept': 'application/json'}
+Extracted device_id: None
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/audioconversiontools/mp4-to-mp3 ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '627586', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1581451486'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLnBsYXlzdG9yZWNvbnNvbGVAZ21haWwuY29tIiwidXNlcl9pZCI6MSwicm9sZSI6InVzZXIiLCJleHAiOjE3Njg3NDI4MTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njg3NDEwMTJ9.mBmMGmM6hBkzXzK-SMNdLmWtM39aDA4__vTzi1kI7yA', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0NjcxOCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0NDkxOH0.bF__70DNMbxE_PYaRb-ZIYmlo_87XnbSmGbRD5IJ1hk', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '994538', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0NjcxOCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0NDkxOH0.bF__70DNMbxE_PYaRb-ZIYmlo_87XnbSmGbRD5IJ1hk', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2026385448'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0NjcxOCwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0NDkxOH0.bF__70DNMbxE_PYaRb-ZIYmlo_87XnbSmGbRD5IJ1hk', 'host': '192.168.8.100:8000'}
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc0NzgzMSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc0NjAzMX0.gOBQ7WjLfF22MGhMO4iuX0jGe_3ZcKSkClJH-TM7qfk', 'host': '192.168.8.100:8000'}
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Creating new guest user
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+Extracted device_id: BE2A.250530.026.D1
+Found user by device_id: 3
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3026503916'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1Nzg4OSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1NjA4OX0.SUQ72LgPKrqcADtbCeHOnNp9K80pBiWvrHbXwyzbJ30', 'host': '10.0.2.2:8000'}
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2657847036'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3388297202'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3129003622'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1444954858'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2462798248'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3339400938'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1407471295'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2900137481'}
+
+--- Request at /api/v1/pdfconversiontools/pdf-to-json ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '53602', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'content-type': 'multipart/form-data; boundary=--dio-boundary-0355714516'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc1OTY2MywidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc1Nzg2M30.XrB29LDd5x1uGfPtQtQQZ-wNuhhVJnTJGlD0ILk8c1M', 'host': '10.0.2.2:8000'}
