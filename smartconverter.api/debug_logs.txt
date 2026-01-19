@@ -393,3 +393,17 @@ Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 
 
 --- Request at /api/v1/history/ ---
 Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc2MjgzMSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc2MTAzMX0.NgUPw1GRclU6nETVzN2FxpEKbY9a57ELZwcDrd8MkJQ', 'host': '10.0.2.2:8000'}
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Guest Registration ---
+Device ID: BE2A.250530.026.D1
+Found existing user: 3
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc2NTUzNSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc2MzczNX0.IF63pO0R0R6vwvqFvD9Fq1IiuIalOItoZIEzv2KL2Ro', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLmFobWFkLmRldm9wc0BnbWFpbC5jb20iLCJ1c2VyX2lkIjozLCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODc2NTUzNSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2ODc2MzczNX0.IF63pO0R0R6vwvqFvD9Fq1IiuIalOItoZIEzv2KL2Ro', 'host': '10.0.2.2:8000'}

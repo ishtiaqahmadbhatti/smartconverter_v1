@@ -556,90 +556,106 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAccountSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: AppColors.secondaryGradient,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.account_circle_outlined,
-                color: AppColors.textPrimary,
-                size: 20,
-              ),
+    return Consumer<SubscriptionProvider>(
+      builder: (context, subscription, child) {
+        // Build list of settings based on login status
+        final List<Widget> settingItems = [];
+
+        // Only show these options for logged-in users
+        if (!subscription.isGuest) {
+          settingItems.addAll([
+            _buildSettingItem(
+              'Personal Information',
+              'Update your profile details',
+              Icons.person_outline,
+              () => _showEditProfileDialog(),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Account Settings',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            _buildSettingItem(
+              'Change Password',
+              'Update your account password',
+              Icons.lock_outline,
+              () => _showChangePasswordPage(),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildSettingsCard([
-          _buildSettingItem(
-            'Personal Information',
-            'Update your profile details',
-            Icons.person_outline,
-            () => _showEditProfileDialog(),
-          ),
-          _buildSettingItem(
-            'Change Password',
-            'Update your account password',
-            Icons.lock_outline,
-            () => _showChangePasswordPage(),
-          ),
-          SwitchListTile(
-            value: _isBiometricEnabled,
-            onChanged: _toggleBiometric,
-            title: const Text(
-              'Biometric Login',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            SwitchListTile(
+              value: _isBiometricEnabled,
+              onChanged: _toggleBiometric,
+              title: const Text(
+                'Biometric Login',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            subtitle: const Text(
-              'Use fingerprint/face ID to sign in',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-            ),
-            secondary: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
+              subtitle: const Text(
+                'Use fingerprint/face ID to sign in',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
-              child: const Icon(
-                Icons.fingerprint,
-                color: AppColors.primaryBlue,
-                size: 20,
+              secondary: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.fingerprint,
+                  color: AppColors.primaryBlue,
+                  size: 20,
+                ),
+              ),
+              activeColor: AppColors.primaryBlue,
+              activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
               ),
             ),
-            activeColor: AppColors.primaryBlue,
-            activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 4,
-            ),
-          ),
+          ]);
+        }
+
+        // Subscription is always visible
+        settingItems.add(
           _buildSettingItem(
             'Subscription',
             'Manage your subscription plan',
             Icons.card_membership_outlined,
             () => _showSubscriptionPage(),
           ),
-        ]),
-      ],
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.secondaryGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.account_circle_outlined,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Account Settings',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSettingsCard(settingItems),
+          ],
+        );
+      },
     );
   }
 
