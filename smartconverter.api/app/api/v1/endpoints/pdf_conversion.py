@@ -307,12 +307,35 @@ async def convert_pdf_to_csv(
 # AI: Convert PDF to Excel
 @router.post("/pdf-to-excel-ai", response_model=PDFConversionResponse)
 async def convert_pdf_to_excel(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI: Convert PDF to Excel format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -332,6 +355,15 @@ async def convert_pdf_to_excel(
         # Convert PDF to Excel
         result_path = PDFConversionService.pdf_to_excel(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="xlsx"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to Excel successfully",
@@ -340,12 +372,14 @@ async def convert_pdf_to_excel(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -361,12 +395,35 @@ async def convert_pdf_to_excel(
 # Convert HTML to PDF
 @router.post("/html-to-pdf", response_model=PDFConversionResponse)
 async def convert_html_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -386,6 +443,15 @@ async def convert_html_to_pdf(
         # Convert HTML to PDF
         result_path = PDFConversionService.html_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="HTML converted to PDF successfully",
@@ -394,12 +460,14 @@ async def convert_html_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -414,10 +482,35 @@ async def convert_html_to_pdf(
 
 # Convert Word to PDF
 @router.post("/word-to-pdf", response_model=PDFConversionResponse)
-async def convert_word_to_pdf(file: UploadFile = File(...)):
+async def convert_word_to_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Convert Word document to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="word-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="docx",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -430,6 +523,15 @@ async def convert_word_to_pdf(file: UploadFile = File(...)):
         output_path = FileService.get_output_path(input_path, "_converted.pdf")
         result_path = PDFConversionService.word_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Word document converted to PDF successfully",
@@ -438,12 +540,14 @@ async def convert_word_to_pdf(file: UploadFile = File(...)):
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -458,10 +562,35 @@ async def convert_word_to_pdf(file: UploadFile = File(...)):
 
 # Convert PowerPoint to PDF
 @router.post("/powerpoint-to-pdf", response_model=PDFConversionResponse)
-async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
+async def convert_powerpoint_to_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Convert PowerPoint to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="powerpoint-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pptx",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -474,6 +603,15 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
         output_path = FileService.get_output_path(input_path, "_converted.pdf")
         result_path = PDFConversionService.powerpoint_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PowerPoint converted to PDF successfully",
@@ -482,12 +620,14 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -503,12 +643,35 @@ async def convert_powerpoint_to_pdf(file: UploadFile = File(...)):
 # Convert OXPS to PDF
 @router.post("/oxps-to-pdf", response_model=PDFConversionResponse)
 async def convert_oxps_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert OXPS to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="oxps-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="oxps",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -527,6 +690,15 @@ async def convert_oxps_to_pdf(
         # Convert OXPS to PDF
         result_path = PDFConversionService.oxps_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="OXPS converted to PDF successfully",
@@ -535,12 +707,14 @@ async def convert_oxps_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -556,13 +730,36 @@ async def convert_oxps_to_pdf(
 # Convert JPG to PDF
 @router.post("/jpg-to-pdf", response_model=PDFConversionResponse)
 async def convert_jpg_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JPG image to PDF."""
     input_path = None
     output_path = None
     final_filename = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="jpg-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="jpg",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only accept JPG/JPEG files
@@ -587,6 +784,15 @@ async def convert_jpg_to_pdf(
         # Convert JPG to PDF
         result_path = PDFConversionService.image_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="JPG image converted to PDF successfully",
@@ -595,12 +801,14 @@ async def convert_jpg_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -616,13 +824,36 @@ async def convert_jpg_to_pdf(
 # Convert PNG to PDF
 @router.post("/png-to-pdf", response_model=PDFConversionResponse)
 async def convert_png_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PNG image to PDF."""
     input_path = None
     output_path = None
     final_filename = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="png-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="png",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only accept PNG files
@@ -647,6 +878,15 @@ async def convert_png_to_pdf(
         # Convert PNG to PDF
         result_path = PDFConversionService.image_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PNG image converted to PDF successfully",
@@ -655,12 +895,14 @@ async def convert_png_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -676,13 +918,36 @@ async def convert_png_to_pdf(
 # Convert Markdown to PDF
 @router.post("/markdown-to-pdf", response_model=PDFConversionResponse)
 async def convert_markdown_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Markdown to PDF."""
     input_path = None
     output_path = None
     final_filename = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="markdown-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="md",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only Markdown files allowed
@@ -707,6 +972,15 @@ async def convert_markdown_to_pdf(
         # Convert Markdown to PDF
         result_path = PDFConversionService.markdown_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Markdown converted to PDF successfully",
@@ -715,12 +989,14 @@ async def convert_markdown_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -735,10 +1011,35 @@ async def convert_markdown_to_pdf(
 
 # Convert Excel to PDF
 @router.post("/excel-to-pdf", response_model=PDFConversionResponse)
-async def convert_excel_to_pdf(file: UploadFile = File(...)):
+async def convert_excel_to_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Convert Excel to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -751,6 +1052,15 @@ async def convert_excel_to_pdf(file: UploadFile = File(...)):
         output_path = FileService.get_output_path(input_path, "_converted.pdf")
         result_path = PDFConversionService.excel_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Excel converted to PDF successfully",
@@ -759,12 +1069,14 @@ async def convert_excel_to_pdf(file: UploadFile = File(...)):
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -779,10 +1091,35 @@ async def convert_excel_to_pdf(file: UploadFile = File(...)):
 
 # Convert Excel to XPS
 @router.post("/excel-to-xps", response_model=PDFConversionResponse)
-async def convert_excel_to_xps(file: UploadFile = File(...)):
+async def convert_excel_to_xps(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Convert Excel to XPS."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-xps",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -795,6 +1132,15 @@ async def convert_excel_to_xps(file: UploadFile = File(...)):
         output_path = FileService.get_output_path(input_path, "_converted.xps")
         result_path = PDFConversionService.excel_to_xps(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="xps"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Excel converted to XPS successfully",
@@ -803,12 +1149,14 @@ async def convert_excel_to_xps(file: UploadFile = File(...)):
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -823,10 +1171,35 @@ async def convert_excel_to_xps(file: UploadFile = File(...)):
 
 # Convert OpenOffice Calc ODS to PDF
 @router.post("/ods-to-pdf", response_model=PDFConversionResponse)
-async def convert_ods_to_pdf(file: UploadFile = File(...)):
+async def convert_ods_to_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Convert OpenOffice Calc ODS to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ods-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="ods",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -839,6 +1212,15 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
         output_path = FileService.get_output_path(input_path, "_converted.pdf")
         result_path = PDFConversionService.ods_to_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="ODS converted to PDF successfully",
@@ -847,12 +1229,14 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -868,12 +1252,35 @@ async def convert_ods_to_pdf(file: UploadFile = File(...)):
 # Convert PDF to CSV
 @router.post("/pdf-to-csv", response_model=PDFConversionResponse)
 async def convert_pdf_to_csv_extract(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to CSV (extract tabular data)."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -893,6 +1300,15 @@ async def convert_pdf_to_csv_extract(
         # Convert PDF to CSV
         result_path = PDFConversionService.pdf_to_csv_extract(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="csv"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to CSV successfully",
@@ -901,12 +1317,14 @@ async def convert_pdf_to_csv_extract(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -922,12 +1340,35 @@ async def convert_pdf_to_csv_extract(
 # Convert PDF to Excel
 @router.post("/pdf-to-excel", response_model=PDFConversionResponse)
 async def convert_pdf_to_excel_extract(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to Excel (extract tabular data)."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -947,6 +1388,15 @@ async def convert_pdf_to_excel_extract(
         # Convert PDF to Excel
         result_path = PDFConversionService.pdf_to_excel_extract(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="xlsx"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to Excel successfully",
@@ -955,12 +1405,14 @@ async def convert_pdf_to_excel_extract(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -976,12 +1428,35 @@ async def convert_pdf_to_excel_extract(
 # Convert PDF to Word
 @router.post("/pdf-to-word", response_model=PDFConversionResponse)
 async def convert_pdf_to_word_extract(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to Word document."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-word",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -1001,6 +1476,15 @@ async def convert_pdf_to_word_extract(
         # Convert PDF to Word
         result_path = PDFConversionService.pdf_to_word_extract(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(result_path),
+            output_file_type="docx"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to Word successfully",
@@ -1009,12 +1493,14 @@ async def convert_pdf_to_word_extract(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1030,8 +1516,10 @@ async def convert_pdf_to_word_extract(
 # Convert PDF to JPG
 @router.post("/pdf-to-jpg", response_model=PDFConversionResponse)
 async def convert_pdf_to_jpg(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Convert PDF pages to JPG images.
@@ -1041,6 +1529,27 @@ async def convert_pdf_to_jpg(
     - Each image is named: `<base_name>_page_1.jpg`, `<base_name>_page_2.jpg`, ...
     """
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-jpg",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only PDF allowed
@@ -1090,6 +1599,15 @@ async def convert_pdf_to_jpg(
                 new_path = src_path
             renamed_files.append(new_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=folder_name,
+            output_file_type="jpg"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message=f"PDF converted to {len(renamed_files)} JPG images",
@@ -1101,12 +1619,14 @@ async def convert_pdf_to_jpg(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1122,8 +1642,10 @@ async def convert_pdf_to_jpg(
 # Convert PDF to PNG
 @router.post("/pdf-to-png", response_model=PDFConversionResponse)
 async def convert_pdf_to_png(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF pages to PNG images.
 
@@ -1132,6 +1654,27 @@ async def convert_pdf_to_png(
     - Each image is named: `<base_name>_page_1.png`, `<base_name>_page_2.png`, ...
     """
     input_path = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-png",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Validate file - only PDF allowed
@@ -1181,6 +1724,15 @@ async def convert_pdf_to_png(
                 new_path = src_path
             renamed_files.append(new_path)
 
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=folder_name,
+            output_file_type="png"
+        )
+
         return PDFConversionResponse(
             success=True,
             message=f"PDF converted to {len(renamed_files)} PNG images",
@@ -1192,12 +1744,14 @@ async def convert_pdf_to_png(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1213,11 +1767,34 @@ async def convert_pdf_to_png(
 # Convert PDF to TIFF
 @router.post("/pdf-to-tiff", response_model=PDFConversionResponse)
 async def convert_pdf_to_tiff(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF pages to TIFF images."""
     input_path = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-tiff",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Validate file - only PDF allowed
@@ -1265,6 +1842,15 @@ async def convert_pdf_to_tiff(
                 new_path = src_path
             renamed_files.append(new_path)
 
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=folder_name,
+            output_file_type="tiff"
+        )
+
         return PDFConversionResponse(
             success=True,
             message=f"PDF converted to {len(renamed_files)} TIFF images",
@@ -1274,12 +1860,14 @@ async def convert_pdf_to_tiff(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1294,11 +1882,34 @@ async def convert_pdf_to_tiff(
 # Convert PDF to SVG
 @router.post("/pdf-to-svg", response_model=PDFConversionResponse)
 async def convert_pdf_to_svg(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF pages to SVG files."""
     input_path = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-svg",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Validate file - only PDF allowed
@@ -1342,6 +1953,15 @@ async def convert_pdf_to_svg(
                 new_path = src_path
             renamed_files.append(new_path)
 
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=folder_name,
+            output_file_type="svg"
+        )
+
         return PDFConversionResponse(
             success=True,
             message=f"PDF converted to {len(renamed_files)} SVG files",
@@ -1351,12 +1971,14 @@ async def convert_pdf_to_svg(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1371,13 +1993,36 @@ async def convert_pdf_to_svg(
 # Convert PDF to HTML
 @router.post("/pdf-to-html", response_model=PDFConversionResponse)
 async def convert_pdf_to_html(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to HTML."""
     input_path = None
     output_path = None
     final_filename = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file - only PDF files allowed
@@ -1402,6 +2047,15 @@ async def convert_pdf_to_html(
         # Convert PDF to HTML
         result_path = PDFConversionService.pdf_to_html(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="html"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF converted to HTML successfully",
@@ -1410,12 +2064,14 @@ async def convert_pdf_to_html(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1431,11 +2087,34 @@ async def convert_pdf_to_html(
 # Convert PDF to Text
 @router.post("/pdf-to-text", response_model=PDFConversionResponse)
 async def convert_pdf_to_text(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to plain text."""
     input_path = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-text",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Validate file - only PDF allowed
@@ -1457,6 +2136,15 @@ async def convert_pdf_to_text(
         # Convert PDF to Text
         result_path = PDFConversionService.pdf_to_text(input_path, output_path)
 
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename or os.path.basename(result_path),
+            output_file_type="txt"
+        )
+
         return PDFConversionResponse(
             success=True,
             message="PDF converted to text successfully",
@@ -1465,12 +2153,14 @@ async def convert_pdf_to_text(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1505,14 +2195,39 @@ async def get_supported_formats():
 # PDF Merge
 @router.post("/merge", response_model=PDFConversionResponse)
 async def merge_pdfs(
+    request: Request,
     files: List[UploadFile] = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Merge multiple PDF files into one."""
     input_paths = []
     output_path = None
     final_filename = None
     original_names: List[str] = []
+    
+    # Get total size of all files
+    total_size = 0
+    for f in files:
+        f.file.seek(0, 2)
+        total_size += f.file.tell()
+        f.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-merge",
+        input_filename=f"{len(files)} files",
+        input_file_size=total_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         if not files or len(files) < 2:
@@ -1550,6 +2265,15 @@ async def merge_pdfs(
         # Merge PDFs
         result_path = PDFConversionService.merge_pdfs(input_paths, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename or os.path.basename(result_path),
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDFs merged successfully",
@@ -1560,6 +2284,7 @@ async def merge_pdfs(
     except HTTPException as e:
         raise e
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFMergeError",
             message=str(e),
@@ -1575,15 +2300,38 @@ async def merge_pdfs(
 # PDF Split
 @router.post("/split", response_model=PDFConversionResponse)
 async def split_pdf(
+    request: Request,
     file: UploadFile = File(...),
     split_type: str = Form("every_page"),
     page_ranges: Optional[str] = Form(None),
     output_prefix: Optional[str] = Form(None),
-    zip: bool = Form(False)
+    zip: bool = Form(False),
+    db: Session = Depends(get_db)
 ):
     """Split PDF into multiple files."""
     input_path = None
     final_filename = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-split",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1618,6 +2366,32 @@ async def split_pdf(
             for item in result.get("files", [])
         ]
 
+        # Calculate output file size
+        output_size = 0
+        if result.get("zip_filename"):
+            # If zip file was created, get its size
+            zip_path = os.path.join(settings.output_dir, result["zip_filename"])
+            if os.path.exists(zip_path):
+                output_size = os.path.getsize(zip_path)
+        elif folder_name:
+            # If folder output, calculate total size of all files in folder
+            folder_path = os.path.join(settings.output_dir, folder_name)
+            if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                for item in result.get("files", []):
+                    file_path = os.path.join(folder_path, item["filename"])
+                    if os.path.exists(file_path):
+                        output_size += os.path.getsize(file_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result.get("zip_filename") or folder_name,
+            output_file_size=output_size,
+            output_file_type="pdf"
+        )
+
         resp = PDFConversionResponse(
             success=True,
             message=f"PDF split into {result.get('count', 0)} files",
@@ -1628,6 +2402,7 @@ async def split_pdf(
         return resp
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFSplitError",
             message=str(e),
@@ -1641,15 +2416,38 @@ async def split_pdf(
 # PDF Compress
 @router.post("/compress", response_model=PDFConversionResponse)
 async def compress_pdf(
+    request: Request,
     file: UploadFile = File(...),
     compression_level: str = Form("medium"),
     output_filename: Optional[str] = Form(None),
     target_reduction_pct: Optional[int] = Form(None),
     max_image_dpi: Optional[int] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Compress PDF file."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-compress",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1696,7 +2494,33 @@ async def compress_pdf(
             }
         )
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
+        return PDFConversionResponse(
+            success=True,
+            message="PDF compressed successfully",
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}",
+            file_size_before=original_size,
+            file_size_after=compressed_size,
+            extracted_data={
+                "compression": {
+                    "level": compression_level,
+                    "target_reduction_pct": target_reduction_pct,
+                    "achieved_reduction_pct": achieved_reduction,
+                }
+            }
+        )
+        
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFCompressError",
             message=str(e),
@@ -1710,13 +2534,36 @@ async def compress_pdf(
 # Remove Pages
 @router.post("/remove-pages", response_model=PDFConversionResponse)
 async def remove_pages(
+    request: Request,
     file: UploadFile = File(...),
     pages_to_remove: str = Form(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Remove specific pages from PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-remove-pages",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1760,6 +2607,15 @@ async def remove_pages(
         # Remove pages
         result_path = PDFConversionService.remove_pages(input_path, output_path, pages)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message=f"Pages {pages} removed successfully",
@@ -1770,6 +2626,7 @@ async def remove_pages(
     except HTTPException as he:
         raise he
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFRemovePagesError",
             message=str(e),
@@ -1783,13 +2640,36 @@ async def remove_pages(
 # Extract Pages
 @router.post("/extract-pages", response_model=PDFConversionResponse)
 async def extract_pages(
+    request: Request,
     file: UploadFile = File(...),
     pages_to_extract: str = Form(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Extract specific pages from PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-extract-pages",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1833,6 +2713,15 @@ async def extract_pages(
         # Extract pages
         result_path = PDFConversionService.extract_pages(input_path, output_path, pages)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message=f"Pages {pages} extracted successfully",
@@ -1843,6 +2732,7 @@ async def extract_pages(
     except HTTPException as he:
         raise he
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFExtractPagesError",
             message=str(e),
@@ -1856,13 +2746,36 @@ async def extract_pages(
 # Rotate PDF
 @router.post("/rotate", response_model=PDFConversionResponse)
 async def rotate_pdf(
+    request: Request,
     file: UploadFile = File(...),
     rotation: int = Form(90),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Rotate PDF pages."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-rotate",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1878,6 +2791,15 @@ async def rotate_pdf(
 
         result_path = PDFConversionService.rotate_pdf(input_path, output_path, rotation)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message=f"PDF rotated {rotation} degrees successfully",
@@ -1886,6 +2808,7 @@ async def rotate_pdf(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFRotateError",
             message=str(e),
@@ -1899,14 +2822,37 @@ async def rotate_pdf(
 # Add Watermark
 @router.post("/add-watermark", response_model=PDFConversionResponse)
 async def add_watermark(
+    request: Request,
     file: UploadFile = File(...),
     watermark_text: str = Form(...),
     position: str = Form("center"),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Add watermark to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-watermark",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1923,6 +2869,15 @@ async def add_watermark(
 
         result_path = PDFConversionService.add_watermark(input_path, output_path, watermark_text, position)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Watermark added successfully",
@@ -1931,6 +2886,7 @@ async def add_watermark(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))        
         raise create_error_response(
             error_type="PDFWatermarkError",
             message=str(e),
@@ -1944,16 +2900,39 @@ async def add_watermark(
 # Add Page Numbers
 @router.post("/add-page-numbers", response_model=PDFConversionResponse)
 async def add_page_numbers(
+    request: Request,
     file: UploadFile = File(...),
     position: str = Form("bottom-center"),
     start_page: int = Form(1),
     format: str = Form("{page}"),
     font_size: float = Form(12.0),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Add page numbers to PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-page-numbers",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -1976,6 +2955,15 @@ async def add_page_numbers(
             font_size,
         )
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="Page numbers added successfully",
@@ -1984,6 +2972,7 @@ async def add_page_numbers(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFPageNumbersError",
             message=str(e),
@@ -1997,16 +2986,39 @@ async def add_page_numbers(
 # Crop PDF
 @router.post("/crop", response_model=PDFConversionResponse)
 async def crop_pdf(
+    request: Request,
     file: UploadFile = File(...),
     x: int = Form(0),
     y: int = Form(0),
     width: int = Form(100),
     height: int = Form(100),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Crop PDF pages."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-crop",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -2023,6 +3035,15 @@ async def crop_pdf(
 
         result_path = PDFConversionService.crop_pdf(input_path, output_path, crop_box)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF cropped successfully",
@@ -2031,6 +3052,7 @@ async def crop_pdf(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFCropError",
             message=str(e),
