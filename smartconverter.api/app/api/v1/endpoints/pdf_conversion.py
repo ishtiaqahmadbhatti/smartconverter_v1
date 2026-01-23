@@ -3066,13 +3066,36 @@ async def crop_pdf(
 # Protect PDF
 @router.post("/protect", response_model=PDFConversionResponse)
 async def protect_pdf(
+    request: Request,
     file: UploadFile = File(...),
     password: str = Form(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Protect PDF with password."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-protect",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -3087,6 +3110,15 @@ async def protect_pdf(
         )
         result_path = PDFConversionService.protect_pdf(input_path, output_path, password)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF protected successfully",
@@ -3095,6 +3127,7 @@ async def protect_pdf(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFProtectError",
             message=str(e),
@@ -3108,13 +3141,36 @@ async def protect_pdf(
 # Unlock PDF
 @router.post("/unlock", response_model=PDFConversionResponse)
 async def unlock_pdf(
+    request: Request,
     file: UploadFile = File(...),
     password: str = Form(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Remove password protection from PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-unlock",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -3129,6 +3185,15 @@ async def unlock_pdf(
         )
         result_path = PDFConversionService.unlock_pdf(input_path, output_path, password)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF unlocked successfully",
@@ -3137,6 +3202,7 @@ async def unlock_pdf(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFUnlockError",
             message=str(e),
@@ -3150,12 +3216,35 @@ async def unlock_pdf(
 # Repair PDF
 @router.post("/repair", response_model=PDFConversionResponse)
 async def repair_pdf(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Repair corrupted PDF."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-repair",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -3170,6 +3259,15 @@ async def repair_pdf(
         )
         result_path = PDFConversionService.repair_pdf(input_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="pdf"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message="PDF repaired successfully",
@@ -3178,6 +3276,7 @@ async def repair_pdf(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFRepairError",
             message=str(e),
@@ -3191,14 +3290,41 @@ async def repair_pdf(
 # Compare PDFs
 @router.post("/compare", response_model=PDFConversionResponse)
 async def compare_pdfs(
+    request: Request,
     file1: UploadFile = File(...),
     file2: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Compare two PDFs."""
     input_path1 = None
     input_path2 = None
     output_path = None
+    
+    # Get total file size
+    file1.file.seek(0, 2)
+    size1 = file1.file.tell()
+    file1.file.seek(0)
+    file2.file.seek(0, 2)
+    size2 = file2.file.tell()
+    file2.file.seek(0)
+    total_size = size1 + size2
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-compare",
+        input_filename=f"{file1.filename} vs {file2.filename}",
+        input_file_size=total_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Save uploaded files
@@ -3218,6 +3344,15 @@ async def compare_pdfs(
         )
         comparison_result = PDFConversionService.compare_pdfs(input_path1, input_path2, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="txt"
+        )
+        
         return PDFConversionResponse(
             success=True,
             message=f"PDFs compared successfully. Found {comparison_result['differences_count']} differences",
@@ -3227,6 +3362,7 @@ async def compare_pdfs(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFCompareError",
             message=str(e),
@@ -3242,11 +3378,34 @@ async def compare_pdfs(
 # Get PDF Metadata
 @router.post("/metadata")
 async def get_pdf_metadata(
+    request: Request,
     file: UploadFile = File(...),
     output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Get PDF metadata."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-metadata",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -3268,6 +3427,15 @@ async def get_pdf_metadata(
         except Exception:
             pass
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="json"
+        )
+        
         return {
             "success": True,
             "message": "PDF metadata extracted successfully",
@@ -3277,6 +3445,7 @@ async def get_pdf_metadata(
         }
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="PDFMetadataError",
             message=str(e),
