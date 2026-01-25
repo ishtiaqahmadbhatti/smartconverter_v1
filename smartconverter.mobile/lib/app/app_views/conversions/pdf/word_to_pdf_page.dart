@@ -7,8 +7,11 @@ class WordToPdfPage extends StatefulWidget {
   State<WordToPdfPage> createState() => _WordToPdfPageState();
 }
 
-class _WordToPdfPageState extends State<WordToPdfPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select a Word file to begin.');
+class _WordToPdfPageState extends State<WordToPdfPage>
+    with AdHelper, ConversionMixin {
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select a Word file to begin.',
+  );
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -37,9 +40,12 @@ class _WordToPdfPageState extends State<WordToPdfPage> with AdHelper, Conversion
   Future<Directory> get saveDirectory => FileManager.getWordToPdfDirectory();
 
   @override
-  Future<ImageToPdfResult?> performConversion(File? file, String? outputName) async {
+  Future<ImageToPdfResult?> performConversion(
+    File? file,
+    String? outputName,
+  ) async {
     if (file == null) throw Exception('File is null');
-    return await service.convertWordToPdf(file); 
+    return await service.convertWordToPdf(file, outputFilename: outputName);
   }
 
   @override
@@ -49,7 +55,10 @@ class _WordToPdfPageState extends State<WordToPdfPage> with AdHelper, Conversion
       appBar: AppBar(
         title: const Text(
           'Convert Word to PDF',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -64,7 +73,8 @@ class _WordToPdfPageState extends State<WordToPdfPage> with AdHelper, Conversion
               children: [
                 const ConversionHeaderCardWidget(
                   title: 'Word to PDF',
-                  description: 'Transform Word documents (DOC, DOCX) to PDF format.',
+                  description:
+                      'Transform Word documents (DOC, DOCX) to PDF format.',
                   iconTarget: Icons.picture_as_pdf,
                   iconSource: Icons.description,
                 ),

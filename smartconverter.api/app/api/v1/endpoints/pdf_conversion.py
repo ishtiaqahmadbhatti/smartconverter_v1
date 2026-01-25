@@ -427,7 +427,7 @@ async def convert_html_to_pdf(
     
     try:
         # Validate file
-        FileService.validate_file(file, "pdf")
+        FileService.validate_file(file, "document")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -485,6 +485,7 @@ async def convert_html_to_pdf(
 async def convert_word_to_pdf(
     request: Request,
     file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Convert Word document to PDF."""
@@ -514,13 +515,19 @@ async def convert_word_to_pdf(
     
     try:
         # Validate file
-        FileService.validate_file(file, "pdf")
+        FileService.validate_file(file, "office")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert Word to PDF
-        output_path = FileService.get_output_path(input_path, "_converted.pdf")
+        # Determine desired output filename
+        original_name = file.filename or "word_document"
+        desired_name = (output_filename or original_name).strip() or "word_document"
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
         result_path = PDFConversionService.word_to_pdf(input_path, output_path)
         
         # Update log on success
@@ -528,15 +535,15 @@ async def convert_word_to_pdf(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=os.path.basename(result_path),
+            output_filename=final_filename,
             output_file_type="pdf"
         )
         
         return PDFConversionResponse(
             success=True,
             message="Word document converted to PDF successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
@@ -565,6 +572,7 @@ async def convert_word_to_pdf(
 async def convert_powerpoint_to_pdf(
     request: Request,
     file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Convert PowerPoint to PDF."""
@@ -594,13 +602,19 @@ async def convert_powerpoint_to_pdf(
     
     try:
         # Validate file
-        FileService.validate_file(file, "pdf")
+        FileService.validate_file(file, "office")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert PowerPoint to PDF
-        output_path = FileService.get_output_path(input_path, "_converted.pdf")
+        # Determine desired output filename
+        original_name = file.filename or "powerpoint_document"
+        desired_name = (output_filename or original_name).strip() or "powerpoint_document"
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".pdf",
+        )
         result_path = PDFConversionService.powerpoint_to_pdf(input_path, output_path)
         
         # Update log on success
@@ -608,15 +622,15 @@ async def convert_powerpoint_to_pdf(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=os.path.basename(result_path),
+            output_filename=final_filename,
             output_file_type="pdf"
         )
         
         return PDFConversionResponse(
             success=True,
             message="PowerPoint converted to PDF successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:

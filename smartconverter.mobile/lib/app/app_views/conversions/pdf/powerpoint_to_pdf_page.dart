@@ -7,8 +7,11 @@ class PowerPointToPdfPage extends StatefulWidget {
   State<PowerPointToPdfPage> createState() => _PowerPointToPdfPageState();
 }
 
-class _PowerPointToPdfPageState extends State<PowerPointToPdfPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select a PowerPoint file to begin.');
+class _PowerPointToPdfPageState extends State<PowerPointToPdfPage>
+    with AdHelper, ConversionMixin {
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select a PowerPoint file to begin.',
+  );
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -34,12 +37,13 @@ class _PowerPointToPdfPageState extends State<PowerPointToPdfPage> with AdHelper
   List<String> get allowedExtensions => ['ppt', 'pptx'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPowerPointToPdfDirectory();
+  Future<Directory> get saveDirectory =>
+      FileManager.getPowerPointToPdfDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (file == null) throw Exception('File is null');
-    return service.convertPowerPointToPdf(file);
+    return service.convertPowerPointToPdf(file, outputFilename: outputName);
   }
 
   @override
@@ -49,7 +53,10 @@ class _PowerPointToPdfPageState extends State<PowerPointToPdfPage> with AdHelper
       appBar: AppBar(
         title: const Text(
           'Convert PPT to PDF',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -64,7 +71,8 @@ class _PowerPointToPdfPageState extends State<PowerPointToPdfPage> with AdHelper
               children: [
                 const ConversionHeaderCardWidget(
                   title: 'PPT to PDF',
-                  description: 'Transform PowerPoint presentations (PPT, PPTX) to PDF format.',
+                  description:
+                      'Transform PowerPoint presentations (PPT, PPTX) to PDF format.',
                   iconTarget: Icons.picture_as_pdf,
                   iconSource: Icons.slideshow,
                 ),
@@ -95,7 +103,8 @@ class _PowerPointToPdfPageState extends State<PowerPointToPdfPage> with AdHelper
                   ConversionConvertButtonWidget(
                     onConvert: convert,
                     isConverting: model.isConverting,
-                    isEnabled: true, // Button is visible, so it should be enabled
+                    isEnabled:
+                        true, // Button is visible, so it should be enabled
                     buttonText: 'Convert to PDF',
                   ),
                 ],

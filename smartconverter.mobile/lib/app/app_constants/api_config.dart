@@ -109,7 +109,7 @@ class ApiConfig {
   static const String websiteToPdfEndpoint =
       '/api/v1/websiteconversiontools/website-to-pdf';
   static const String htmlToPdfEndpoint =
-      '/api/v1/websiteconversiontools/html-to-pdf';
+      '/api/v1/pdfconversiontools/html-to-pdf';
   static const String websiteWordToHtmlEndpoint =
       '/api/v1/websiteconversiontools/word-to-html';
   static const String websitePowerPointToHtmlEndpoint =
@@ -311,12 +311,16 @@ class ApiConfig {
       '/api/v1/officedocumentsconversiontools/pdf-to-word';
   static const String officeWordToPdfEndpoint =
       '/api/v1/officedocumentsconversiontools/word-to-pdf';
+  static const String pdfWordToPdfEndpoint =
+      '/api/v1/pdfconversiontools/word-to-pdf';
   static const String officeWordToHtmlEndpoint =
       '/api/v1/officedocumentsconversiontools/word-to-html';
   static const String officeWordToTextEndpoint =
       '/api/v1/officedocumentsconversiontools/word-to-text';
   static const String officePowerPointToPdfEndpoint =
       '/api/v1/officedocumentsconversiontools/powerpoint-to-pdf';
+  static const String pdfPowerPointToPdfEndpoint =
+      '/api/v1/pdfconversiontools/powerpoint-to-pdf';
   static const String officePowerPointToHtmlEndpoint =
       '/api/v1/officedocumentsconversiontools/powerpoint-to-html';
   static const String officePowerPointToTextEndpoint =

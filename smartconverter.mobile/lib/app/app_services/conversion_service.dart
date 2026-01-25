@@ -338,17 +338,22 @@ class ConversionService {
   }
 
   // Word to PDF conversion
-  Future<ImageToPdfResult?> convertWordToPdf(File wordFile) async {
+  Future<ImageToPdfResult?> convertWordToPdf(
+    File wordFile, {
+    String? outputFilename,
+  }) async {
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           wordFile.path,
           filename: wordFile.path.split('/').last,
         ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
       });
 
       Response response = await _dio.post(
-        ApiConfig.officeWordToPdfEndpoint,
+        ApiConfig.pdfWordToPdfEndpoint,
         data: formData,
       );
 
@@ -380,17 +385,22 @@ class ConversionService {
   }
 
   // PowerPoint to PDF conversion
-  Future<ImageToPdfResult?> convertPowerPointToPdf(File pptFile) async {
+  Future<ImageToPdfResult?> convertPowerPointToPdf(
+    File pptFile, {
+    String? outputFilename,
+  }) async {
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           pptFile.path,
           filename: pptFile.path.split('/').last,
         ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
       });
 
       Response response = await _dio.post(
-        ApiConfig.officePowerPointToPdfEndpoint,
+        ApiConfig.pdfPowerPointToPdfEndpoint,
         data: formData,
       );
 
