@@ -103,6 +103,8 @@ class ApiConfig {
       '/api/v1/pdfconversiontools/jpg-to-pdf';
   static const String pngToPdfEndpoint =
       '/api/v1/pdfconversiontools/png-to-pdf';
+  static const String pdfExcelToPdfEndpoint =
+      '/api/v1/pdfconversiontools/excel-to-pdf';
   // PDF to HTML conversion endpoint
   static const String pdfToHtmlEndpoint =
       '/api/v1/pdfconversiontools/pdf-to-html';

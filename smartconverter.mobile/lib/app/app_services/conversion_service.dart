@@ -432,17 +432,22 @@ class ConversionService {
   }
 
   // Excel to PDF conversion
-  Future<ImageToPdfResult?> convertExcelToPdf(File excelFile) async {
+  Future<ImageToPdfResult?> convertExcelToPdf(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           excelFile.path,
           filename: excelFile.path.split('/').last,
         ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
       });
 
       Response response = await _dio.post(
-        ApiConfig.officeExcelToPdfEndpoint,
+        ApiConfig.pdfExcelToPdfEndpoint,
         data: formData,
       );
 
@@ -611,7 +616,7 @@ class ConversionService {
       });
 
       final response = await _dio.post(
-        ApiConfig.imagePngToPdfEndpoint,
+        ApiConfig.pngToPdfEndpoint,
         data: formData,
       );
 
@@ -658,7 +663,7 @@ class ConversionService {
       });
 
       final response = await _dio.post(
-        ApiConfig.imageJpgToPdfEndpoint,
+        ApiConfig.jpgToPdfEndpoint,
         data: formData,
       );
 

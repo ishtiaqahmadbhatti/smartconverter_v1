@@ -7,8 +7,11 @@ class ExcelToPdfPage extends StatefulWidget {
   State<ExcelToPdfPage> createState() => _ExcelToPdfPageState();
 }
 
-class _ExcelToPdfPageState extends State<ExcelToPdfPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select an Excel file to begin.');
+class _ExcelToPdfPageState extends State<ExcelToPdfPage>
+    with AdHelper, ConversionMixin {
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select an Excel file to begin.',
+  );
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -39,7 +42,7 @@ class _ExcelToPdfPageState extends State<ExcelToPdfPage> with AdHelper, Conversi
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (file == null) throw Exception('File is null');
-    return service.convertExcelToPdf(file);
+    return service.convertExcelToPdf(file, outputFilename: outputName);
   }
 
   @override
@@ -49,7 +52,10 @@ class _ExcelToPdfPageState extends State<ExcelToPdfPage> with AdHelper, Conversi
       appBar: AppBar(
         title: const Text(
           'Convert Excel to PDF',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,

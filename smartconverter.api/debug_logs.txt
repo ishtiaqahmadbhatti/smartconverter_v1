@@ -778,3 +778,80 @@ Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-devi
 
 --- Request at /api/v1/pdfconversiontools/oxps-to-pdf ---
 Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '652166', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0MzAwNiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MTIwNn0.CzAetFiqBRmpZfYVnEB_R7aj-WKklW0iAP3fDzYVGG0', 'content-type': 'multipart/form-data; boundary=--dio-boundary-0798792702'}
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/pdfconversiontools/jpg-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '17892', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-0993200290'}
+
+--- Request at /api/v1/pdfconversiontools/png-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '104902', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3089444393'}
+
+--- Request at /api/v1/pdfconversiontools/png-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '104902', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2087675768'}
+
+--- Request at /api/v1/pdfconversiontools/png-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '110450', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1426028433'}
+
+--- Request at /api/v1/pdfconversiontools/markdown-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '8026', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM0NDk5MiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM0MzE5Mn0.k1myCeMKytDw8-K82IYC3a3z6RZSZcTjzYrV28lqTVA', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3313245472'}
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+Found existing user: 1
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+Extracted device_id: SP1A.210812.003
+Found user by device_id: 1
+
+--- Guest Registration ---
+Device ID: SP1A.210812.003
+Found existing user: 1
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM2NzIzMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM2NTQzMn0.GUW8CETE8dDJeXAiQ5gxLc0cSh9MX4jlHTRMZUTOuAs', 'x-device-id': 'SP1A.210812.003', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM2NzIzMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM2NTQzMn0.GUW8CETE8dDJeXAiQ5gxLc0cSh9MX4jlHTRMZUTOuAs', 'host': '192.168.8.100:8000'}
+
+--- Request at /api/v1/pdfconversiontools/excel-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '23887', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM2NzIzMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM2NTQzMn0.GUW8CETE8dDJeXAiQ5gxLc0cSh9MX4jlHTRMZUTOuAs', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3556054791'}
+
+--- Request at /api/v1/pdfconversiontools/excel-to-pdf ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '23887', 'host': '192.168.8.100:8000', 'x-device-id': 'SP1A.210812.003', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyLCJyb2xlIjoidXNlciIsImV4cCI6MTc2OTM2NzIzMiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2OTM2NTQzMn0.GUW8CETE8dDJeXAiQ5gxLc0cSh9MX4jlHTRMZUTOuAs', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3678282251'}
