@@ -479,17 +479,22 @@ class ConversionService {
   }
 
   // Excel to XPS conversion
-  Future<ImageToPdfResult?> convertExcelToXps(File excelFile) async {
+  Future<ImageToPdfResult?> convertExcelToXps(
+    File excelFile, {
+    String? outputFilename,
+  }) async {
     try {
       FormData formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           excelFile.path,
           filename: excelFile.path.split('/').last,
         ),
+        if (outputFilename != null && outputFilename.isNotEmpty)
+          'output_filename': outputFilename,
       });
 
       Response response = await _dio.post(
-        ApiConfig.officeExcelToXpsEndpoint,
+        ApiConfig.pdfExcelToXpsEndpoint,
         data: formData,
       );
 

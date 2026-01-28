@@ -7,8 +7,11 @@ class ExcelToXpsPage extends StatefulWidget {
   State<ExcelToXpsPage> createState() => _ExcelToXpsPageState();
 }
 
-class _ExcelToXpsPageState extends State<ExcelToXpsPage> with AdHelper, ConversionMixin {
-  final ConversionModel _model = ConversionModel(statusMessage: 'Select an Excel file to begin.');
+class _ExcelToXpsPageState extends State<ExcelToXpsPage>
+    with AdHelper, ConversionMixin {
+  final ConversionModel _model = ConversionModel(
+    statusMessage: 'Select an Excel file to begin.',
+  );
   final TextEditingController _fileNameController = TextEditingController();
   final ConversionService _service = ConversionService();
 
@@ -34,12 +37,13 @@ class _ExcelToXpsPageState extends State<ExcelToXpsPage> with AdHelper, Conversi
   List<String> get allowedExtensions => ['xls', 'xlsx'];
 
   @override
-  Future<Directory> get saveDirectory => FileManager.getPdfExcelToXpsDirectory();
+  Future<Directory> get saveDirectory =>
+      FileManager.getPdfExcelToXpsDirectory();
 
   @override
   Future<ImageToPdfResult?> performConversion(File? file, String? outputName) {
     if (file == null) throw Exception('File is null');
-    return service.convertExcelToXps(file);
+    return service.convertExcelToXps(file, outputFilename: outputName);
   }
 
   @override
@@ -49,7 +53,10 @@ class _ExcelToXpsPageState extends State<ExcelToXpsPage> with AdHelper, Conversi
       appBar: AppBar(
         title: const Text(
           'Convert Excel to XPS',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,

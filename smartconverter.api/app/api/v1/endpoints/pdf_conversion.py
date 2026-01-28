@@ -1115,6 +1115,7 @@ async def convert_excel_to_pdf(
 async def convert_excel_to_xps(
     request: Request,
     file: UploadFile = File(...),
+    output_filename: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Convert Excel to XPS."""
@@ -1144,13 +1145,19 @@ async def convert_excel_to_xps(
     
     try:
         # Validate file
-        FileService.validate_file(file, "pdf")
+        FileService.validate_file(file, "office")
         
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
         
         # Convert Excel to XPS
-        output_path = FileService.get_output_path(input_path, "_converted.xps")
+        # Determine desired output filename
+        original_name = file.filename or "excel_document"
+        desired_name = (output_filename or original_name).strip() or "excel_document"
+        output_path, final_filename = FileService.generate_output_path_with_filename(
+            desired_name,
+            default_extension=".xps",
+        )
         result_path = PDFConversionService.excel_to_xps(input_path, output_path)
         
         # Update log on success
@@ -1158,15 +1165,15 @@ async def convert_excel_to_xps(
             db=db,
             log_id=log.id,
             status="success",
-            output_filename=os.path.basename(result_path),
+            output_filename=final_filename,
             output_file_type="xps"
         )
         
         return PDFConversionResponse(
             success=True,
             message="Excel converted to XPS successfully",
-            output_filename=os.path.basename(result_path),
-            download_url=f"/download/{os.path.basename(result_path)}"
+            output_filename=final_filename,
+            download_url=f"/download/{final_filename}"
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
