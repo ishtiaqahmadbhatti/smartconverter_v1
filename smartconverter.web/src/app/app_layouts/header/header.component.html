@@ -1,0 +1,114 @@
+<header class="header" [class.scrolled]="isScrolled">
+    <div class="header-container">
+        <!-- Logo/Brand -->
+        <div class="logo">
+            <a routerLink="/" class="logo-link">
+                <img src="assets/logo.png" alt="SmartConverter" class="logo-icon">
+                <span class="logo-text">Smart<span class="logo-highlight">Converter</span></span>
+            </a>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="nav-menu" [class.mobile-open]="isMobileMenuOpen">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#home" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item dropdown" (mouseenter)="showDropdown = true" (mouseleave)="showDropdown = false">
+                    <a href="#tools" class="nav-link">
+                        Tools
+                        <span class="dropdown-icon">▼</span>
+                    </a>
+                    <div class="dropdown-menu" [class.show]="showDropdown">
+                        <a href="#json" class="dropdown-item">
+                            <i class="fas fa-database"></i>
+                            <span>JSON Conversion</span>
+                        </a>
+                        <a href="#xml" class="dropdown-item">
+                            <i class="fas fa-code"></i>
+                            <span>XML Conversion</span>
+                        </a>
+                        <a href="#csv" class="dropdown-item">
+                            <i class="fas fa-table"></i>
+                            <span>CSV Conversion</span>
+                        </a>
+                        <a href="#office" class="dropdown-item">
+                            <i class="fas fa-file-word"></i>
+                            <span>Office Documents</span>
+                        </a>
+                        <a href="#pdf" class="dropdown-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>PDF Conversion</span>
+                        </a>
+                        <a href="#image" class="dropdown-item">
+                            <i class="fas fa-image"></i>
+                            <span>Image Conversion</span>
+                        </a>
+                        <a href="#ocr" class="dropdown-item">
+                            <i class="fas fa-file-alt"></i>
+                            <span>OCR Conversion</span>
+                        </a>
+                        <a href="#website" class="dropdown-item">
+                            <i class="fas fa-globe"></i>
+                            <span>Website Conversion</span>
+                        </a>
+                        <a href="#video" class="dropdown-item">
+                            <i class="fas fa-video"></i>
+                            <span>Video Conversion</span>
+                        </a>
+                        <a href="#audio" class="dropdown-item">
+                            <i class="fas fa-music"></i>
+                            <span>Audio Conversion</span>
+                        </a>
+                        <a href="#subtitle" class="dropdown-item">
+                            <i class="fas fa-closed-captioning"></i>
+                            <span>Subtitle Conversion</span>
+                        </a>
+                        <a href="#text" class="dropdown-item">
+                            <i class="fas fa-font"></i>
+                            <span>Text Conversion</span>
+                        </a>
+                        <a href="#ebook" class="dropdown-item">
+                            <i class="fas fa-book"></i>
+                            <span>eBook Conversion</span>
+                        </a>
+                        <a href="#formatter" class="dropdown-item">
+                            <i class="fas fa-wrench"></i>
+                            <span>File Formatter</span>
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#features" class="nav-link">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#pricing" class="nav-link">Pricing</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#about" class="nav-link">About</a>
+                </li>
+            </ul>
+
+            <!-- Mobile Actions (inside mobile menu) -->
+            <div class="mobile-actions">
+                <button class="btn btn-secondary" routerLink="/authentication/signin" (click)="toggleMobileMenu()">Sign
+                    In</button>
+                <button class="btn btn-primary" routerLink="/authentication/signup" (click)="toggleMobileMenu()">Sign
+                    Up</button>
+            </div>
+        </nav>
+
+        <!-- Desktop Action Buttons -->
+        <div class="header-actions">
+            <button class="btn btn-secondary" routerLink="/authentication/signin">Sign In</button>
+            <button class="btn btn-primary" routerLink="/authentication/signup">Sign Up</button>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [class.active]="isMobileMenuOpen">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+    </div>
+</header>
