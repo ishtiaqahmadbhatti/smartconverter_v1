@@ -12,7 +12,7 @@ export const AppRoutes: Routes = [
   },
   {
     path: 'authentication',
-    loadChildren: () => import('./app_views/authentication/authentication.routes').then(r =>r.AuthenticatioRoutes),
+    loadChildren: () => import('./app_views/authentication/authentication.routes').then(r => r.AuthenticatioRoutes),
   },
   {
     path: 'profile',
@@ -23,7 +23,11 @@ export const AppRoutes: Routes = [
     loadChildren: () => import('./app_views/verification/verification.routes').then(r => r.VerificationRoutes),
   },
   {
-    path: 'convert',
-    loadChildren: () => import('./app_views/convert/convert.routes').then(r => r.ConvertRoutes),
+    path: 'pdfconversion',
+    loadChildren: () => import('./app_views/conversion_management/pdf_conversion/pdf_conversion.routes').then(r => r.PDFConversionRoutes),
+  },
+  {
+    path: 'jsonconversion',
+    loadChildren: () => import('./app_views/conversion_management/json_conversion/json_conversion.routes').then(r => r.JSONConversionRoutes),
   }
 ];

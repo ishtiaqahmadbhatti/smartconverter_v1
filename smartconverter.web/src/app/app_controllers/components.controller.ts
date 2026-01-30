@@ -17,5 +17,5 @@ export * from '../app_views/verification/verifymobilenumber/verifymobilenumber.c
 export * from '../app_views/profile/editprofile/editprofile.component';
 export * from '../app_views/profile/deleteprofile/deleteprofile.component';
 
-//Convert Components
-export * from '../app_views/convert/pdf-to-word/pdf-to-word.component';
+//PDF Conversion Components
+export * from '../app_views/conversion_management/pdf_conversion/pdf-to-word/pdf-to-word.component';
