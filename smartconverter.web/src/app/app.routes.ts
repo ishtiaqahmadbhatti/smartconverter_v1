@@ -12,15 +12,15 @@ export const AppRoutes: Routes = [
   },
   {
     path: 'authentication',
-    loadChildren: () => import('./app_views/authentication/authentication.routes').then(r => r.AuthenticatioRoutes),
+    loadChildren: () => import('./app_views/user_management/user_authentication/user_authentication.routes').then(r => r.AuthenticatioRoutes),
   },
   {
     path: 'profile',
-    loadChildren: () => import('./app_views/profile/profile.routes').then(r => r.ProfileRoutes),
+    loadChildren: () => import('./app_views/user_management/user_profile/user_profile.routes').then(r => r.ProfileRoutes),
   },
   {
     path: 'verification',
-    loadChildren: () => import('./app_views/verification/verification.routes').then(r => r.VerificationRoutes),
+    loadChildren: () => import('./app_views/user_management/user_verification/user_verification.routes').then(r => r.VerificationRoutes),
   },
   {
     path: 'pdfconversion',
