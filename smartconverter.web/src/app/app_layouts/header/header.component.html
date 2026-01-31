@@ -15,12 +15,12 @@
                     <a href="#home" class="nav-link">Home</a>
                 </li>
                 <li class="nav-item dropdown" (mouseenter)="showDropdown = true" (mouseleave)="showDropdown = false">
-                    <a href="#tools" class="nav-link">
-                        Tools
+                    <a href="javascript:void(0)" class="nav-link">
+                        All Tools
                         <span class="dropdown-icon">▼</span>
                     </a>
                     <div class="dropdown-menu" [class.show]="showDropdown">
-                        <a href="#json" class="dropdown-item">
+                        <a routerLink="/jsonconversion" class="dropdown-item">
                             <i class="fas fa-database"></i>
                             <span>JSON Conversion</span>
                         </a>

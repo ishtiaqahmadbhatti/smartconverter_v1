@@ -1,1 +1,108 @@
-<p>json-to-csv works!</p>
+<div class="conversion-container">
+    <div class="conversion-card">
+        <!-- Header -->
+        <div class="card-header">
+            <div class="header-icons-wrapper">
+                <div class="header-icon source">
+                    <i class="fas fa-file-code"></i>
+                </div>
+                <div class="header-icon-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="header-icon target">
+                    <i class="fas fa-file-csv"></i>
+                </div>
+            </div>
+            <h1>JSON to CSV</h1>
+            <p>Convert your JSON data structures into flat CSV tables instantly.</p>
+        </div>
+
+        <!-- content -->
+        <div class="card-content">
+
+            <!-- File Upload Section -->
+            <div class="upload-section" *ngIf="!selectedFile" (click)="fileInput.click()" [class.drag-active]="false">
+                <input #fileInput type="file" accept=".json" (change)="onFileSelected($event)" hidden>
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3>Select JSON File</h3>
+                <p>or drag and drop here</p>
+                <span class="file-info-text">Supports .json files</span>
+            </div>
+
+            <!-- Selected File & Options -->
+            <div class="options-section" *ngIf="selectedFile">
+                <div class="selected-file-card">
+                    <div class="file-icon">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <div class="file-details">
+                        <span class="file-name">{{ selectedFile.name }}</span>
+                        <span class="file-size">{{ (selectedFile.size / 1024).toFixed(2) }} KB</span>
+                    </div>
+                    <button class="remove-btn" (click)="reset()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="form-grid" *ngIf="!conversionResult">
+                    <div class="form-group">
+                        <label>Output Filename</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-file-csv"></i>
+                            <input type="text" [(ngModel)]="outputFilename" placeholder="converted">
+                        </div>
+                        <small>.csv extension is added automatically</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Delimiter</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-columns"></i>
+                            <input type="text" [(ngModel)]="delimiter" placeholder=",">
+                        </div>
+                        <small>Character to separate values (default: ,)</small>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Section -->
+                <div class="progress-section" *ngIf="isConverting">
+                    <div class="progress-details">
+                        <span class="status-text">{{ conversionStatus }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+                    </div>
+                </div>
+
+                <!-- Success State & Save Button -->
+                <div class="success-section" *ngIf="conversionResult">
+                    <div class="success-card">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3>File Converted Successfully!</h3>
+                        <p>File <strong>{{ conversionResult.fileName }}</strong> is ready for download.</p>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-reset" (click)="reset()">
+                        Reset
+                    </button>
+
+                    <button class="btn-convert" (click)="convert()" [disabled]="isConverting" *ngIf="!conversionResult">
+                        <span *ngIf="!isConverting">Convert to CSV</span>
+                        <span *ngIf="isConverting"><i class="fas fa-spinner fa-spin"></i> Processing...</span>
+                    </button>
+
+                    <button class="btn-save" (click)="saveFile()" *ngIf="conversionResult">
+                        <i class="fas fa-download"></i> Save File
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

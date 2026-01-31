@@ -1,0 +1,25 @@
+<div class="conversion-tools-container">
+    <div class="tools-header">
+        <h1>JSON Conversion Tools</h1>
+        <p>Efficiently convert, format, and validate your JSON data with our suite of tools.</p>
+    </div>
+
+    <div class="tools-grid">
+        <div class="tool-card" *ngFor="let tool of tools" [routerLink]="[tool.route]">
+            <div class="tool-icons-wrapper">
+                <div class="icon-box source">
+                    <i [class]="tool.sourceIcon"></i>
+                </div>
+                <div class="icon-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="icon-box target">
+                    <i [class]="tool.targetIcon"></i>
+                </div>
+            </div>
+            <h3>{{ tool.title }}</h3>
+            <p>{{ tool.description }}</p>
+
+        </div>
+    </div>
+</div>
