@@ -14,7 +14,7 @@ export const appConfig: ApplicationConfig = {
 };
 
 export class ApplicationConfiguration {
-  public ApiServiceLink: string = 'http://192.168.8.100:8000/api/v1/';
+  public ApiServiceLink: string = 'http://192.168.8.100:8000/api/v1';
   public WebSiteLink: string = 'https://techmindsforge.com/';
 
   static Get() {

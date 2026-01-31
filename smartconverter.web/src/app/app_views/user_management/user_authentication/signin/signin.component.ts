@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../../app_services/auth.service';
+import { ToastService } from '../../../../app_services/toast';
 
 @Component({
   selector: 'app-signin',
@@ -17,7 +19,9 @@ export class SigninComponent {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService,
+    private toastService: ToastService
   ) {
     this.signinForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -29,7 +33,7 @@ export class SigninComponent {
   get email() { return this.signinForm.get('email'); }
   get password() { return this.signinForm.get('password'); }
 
-  async onSubmit() {
+  onSubmit() {
     if (this.signinForm.invalid) {
       // Mark all fields as touched to show validation errors
       Object.keys(this.signinForm.controls).forEach(key => {
@@ -39,23 +43,33 @@ export class SigninComponent {
     }
 
     this.isSubmitting = true;
+    const credentials = this.signinForm.value;
 
-    try {
-      // TODO: Implement actual API call
-      const formData = this.signinForm.value;
-      console.log('Signin data:', formData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Success - navigate to home or dashboard
-      alert('Sign in successful!');
-      this.router.navigate(['/']);
-    } catch (error) {
-      console.error('Signin error:', error);
-      alert('Sign in failed. Please check your credentials.');
-    } finally {
-      this.isSubmitting = false;
-    }
+    this.authService.login(credentials).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        // Adjust based on actual API response structure. 
+        // Mobile implies response has access_token and refresh_token directly.
+        if (response && response.access_token) {
+          this.authService.saveTokens(
+            response.access_token,
+            response.refresh_token,
+            response.full_name || 'User',
+            credentials.email
+          );
+          this.toastService.show('Sign in successful!', 'success');
+          this.router.navigate(['/']);
+        } else {
+          console.error('Unexpected response structure:', response);
+          this.toastService.show('Login succeeded but token missing. Please try again.', 'error');
+        }
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        console.error('Signin error:', err);
+        const errorMsg = err.error?.detail || err.error?.message || 'Sign in failed. Please check your credentials.';
+        this.toastService.show(errorMsg, 'error');
+      }
+    });
   }
 }

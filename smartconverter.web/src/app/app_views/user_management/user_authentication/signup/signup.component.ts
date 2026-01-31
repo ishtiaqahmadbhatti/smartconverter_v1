@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../../app_services/auth.service';
+import { ToastService } from '../../../../app_services/toast';
 
 @Component({
   selector: 'app-signup',
@@ -10,6 +12,7 @@ import { Router, RouterModule } from '@angular/router';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule]
 })
+
 export class SignupComponent {
   signupForm: FormGroup;
   showPassword = false;
@@ -18,13 +21,15 @@ export class SignupComponent {
 
   constructor(
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private authService: AuthService,
+    private toastService: ToastService
   ) {
     this.signupForm = this.fb.group({
       firstName: ['', [Validators.required]],
       lastName: ['', [Validators.required]],
       gender: ['', [Validators.required]],
-      phone: ['', [Validators.required, Validators.pattern(/^[0-9]{10,15}$/)]],
+      phone: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, this.passwordStrengthValidator]],
       confirmPassword: ['', [Validators.required]]
@@ -64,9 +69,8 @@ export class SignupComponent {
     return password === confirmPassword ? null : { passwordMismatch: true };
   }
 
-  async onSubmit() {
+  onSubmit() {
     if (this.signupForm.invalid) {
-      // Mark all fields as touched to show validation errors
       Object.keys(this.signupForm.controls).forEach(key => {
         this.signupForm.get(key)?.markAsTouched();
       });
@@ -74,23 +78,30 @@ export class SignupComponent {
     }
 
     this.isSubmitting = true;
+    const formData = this.signupForm.value;
 
-    try {
-      // TODO: Implement actual API call
-      const formData = this.signupForm.value;
-      console.log('Signup data:', formData);
+    const apiData = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      phone_number: formData.phone,
+      gender: formData.gender,
+      password: formData.password,
+      device_id: 'web-client'
+    };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Success - navigate to signin
-      alert('Registration successful! Please sign in.');
-      this.router.navigate(['/signin']);
-    } catch (error) {
-      console.error('Signup error:', error);
-      alert('Registration failed. Please try again.');
-    } finally {
-      this.isSubmitting = false;
-    }
+    this.authService.register(apiData).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        this.toastService.show('Registration successful! Please sign in.', 'success');
+        this.router.navigate(['/authentication/signin']);
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        console.error('Signup error:', err);
+        const errorMsg = err.error?.detail || err.error?.message || 'Registration failed. Please try again.';
+        this.toastService.show(errorMsg, 'error');
+      }
+    });
   }
 }

@@ -91,17 +91,73 @@
 
             <!-- Mobile Actions (inside mobile menu) -->
             <div class="mobile-actions">
-                <button class="btn btn-secondary" routerLink="/authentication/signin" (click)="toggleMobileMenu()">Sign
-                    In</button>
-                <button class="btn btn-primary" routerLink="/authentication/signup" (click)="toggleMobileMenu()">Sign
-                    Up</button>
+                <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+                    <button class="btn btn-secondary" routerLink="/authentication/signin"
+                        (click)="toggleMobileMenu()">Sign In</button>
+                    <button class="btn btn-signup" routerLink="/authentication/signup" (click)="toggleMobileMenu()">Sign
+                        Up</button>
+                </ng-container>
+                <ng-container *ngIf="authService.isLoggedIn$ | async">
+                    <div class="mobile-profile-info">
+                        <div class="profile-avatar mobile">
+                            {{ authService.getUserInitials() }}
+                        </div>
+                        <div class="mobile-user-details">
+                            <span class="user-name">{{ authService.getUserName() }}</span>
+                            <span class="user-email">{{ authService.getUserEmail() }}</span>
+                        </div>
+                    </div>
+                    <a routerLink="/profile/personal-info" (click)="toggleMobileMenu()" class="dropdown-item">
+                        <i class="fas fa-user"></i> Personal Information
+                    </a>
+                    <a routerLink="/profile/change-password" (click)="toggleMobileMenu()" class="dropdown-item">
+                        <i class="fas fa-lock"></i> Change Password
+                    </a>
+                    <a routerLink="/profile/subscription" (click)="toggleMobileMenu()" class="dropdown-item">
+                        <i class="fas fa-crown"></i> Subscription
+                    </a>
+                    <button class="btn btn-secondary" (click)="logout()">Log Out</button>
+                </ng-container>
             </div>
         </nav>
 
         <!-- Desktop Action Buttons -->
         <div class="header-actions">
-            <button class="btn btn-secondary" routerLink="/authentication/signin">Sign In</button>
-            <button class="btn btn-primary" routerLink="/authentication/signup">Sign Up</button>
+            <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
+                <button class="btn btn-secondary" routerLink="/authentication/signin">Sign In</button>
+                <button class="btn btn-signup" routerLink="/authentication/signup">Sign Up</button>
+            </ng-container>
+
+            <!-- Profile Dropdown (Logged In) -->
+            <div class="profile-dropdown-container" *ngIf="authService.isLoggedIn$ | async"
+                (mouseenter)="showProfileDropdown = true" (mouseleave)="showProfileDropdown = false">
+                <div class="profile-icon-wrapper">
+                    <div class="profile-avatar">
+                        {{ authService.getUserInitials() }}
+                    </div>
+                </div>
+
+                <div class="dropdown-menu profile-menu" [class.show]="showProfileDropdown">
+                    <div class="user-info-header">
+                        <div class="user-name">{{ authService.getUserName() }}</div>
+                        <div class="user-email">{{ authService.getUserEmail() }}</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a routerLink="/profile/personal-info" class="dropdown-item">
+                        <i class="fas fa-user"></i> <span>Personal Information</span>
+                    </a>
+                    <a routerLink="/profile/change-password" class="dropdown-item">
+                        <i class="fas fa-lock"></i> <span>Change Password</span>
+                    </a>
+                    <a routerLink="/profile/subscription" class="dropdown-item">
+                        <i class="fas fa-crown"></i> <span>Subscription</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a (click)="logout()" class="dropdown-item logout-item">
+                        <i class="fas fa-sign-out-alt"></i> <span>Log Out</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
         <!-- Mobile Menu Toggle -->
