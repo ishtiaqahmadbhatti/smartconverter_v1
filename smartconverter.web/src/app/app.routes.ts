@@ -36,7 +36,7 @@ export const AppRoutes: Routes = [
   },
   {
     path: 'csvconversion',
-    loadChildren: () => import('./app_views/conversion_management/csv_conversion/csv_conversion.routes').then(r => r.CsvConversionRoutes),
+    loadChildren: () => import('./app_views/conversion_management/csv_conversion/csv_conversion.routes').then(r => r.CSVConversionRoutes),
   },
   {
     path: 'ebookconversion',
@@ -76,6 +76,6 @@ export const AppRoutes: Routes = [
   },
   {
     path: 'xmlconversion',
-    loadChildren: () => import('./app_views/conversion_management/xml_conversion/xml_conversion.routes').then(r => r.XmlConversionRoutes),
+    loadChildren: () => import('./app_views/conversion_management/xml_conversion/xml_conversion.routes').then(r => r.XMLConversionRoutes),
   }
 ];
