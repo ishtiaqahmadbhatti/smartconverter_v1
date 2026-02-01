@@ -6,9 +6,16 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class JSONConversionService {
 
-  private apiUrl = ApplicationConfiguration.Get().ApiServiceLink;
+  private apiUrl: string;
+  private serverBaseUrl: string;
+  private jsonToolsUrl: string;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    const config = ApplicationConfiguration.Get();
+    this.apiUrl = config.ApiServiceLink;
+    this.serverBaseUrl = config.ServerBaseUrl;
+    this.jsonToolsUrl = `${this.apiUrl}/jsonconversiontools`;
+  }
 
   convertJsonToCsv(file: File, delimiter?: string, outputFilename?: string): Observable<HttpEvent<any>> {
     const formData: FormData = new FormData();
@@ -19,7 +26,7 @@ export class JSONConversionService {
     if (outputFilename) {
       formData.append('filename', outputFilename);
     }
-    return this.http.post(`${this.apiUrl}/jsonconversiontools/json-to-csv`, formData, {
+    return this.http.post(`${this.jsonToolsUrl}/json-to-csv`, formData, {
       reportProgress: true,
       observe: 'events'
     });
@@ -29,17 +36,11 @@ export class JSONConversionService {
     // Construct full URL if it's a relative path
     let fullUrl = url;
     if (!url.startsWith('http')) {
-      // Get base URL from ApiServiceLink (remove /api/v1 suffix if present in download url or just use the host)
-      // Assuming ApiServiceLink is http://host:port/api/v1
-      // and download_url is usually /api/v1/... or just /...
-
-      const apiLink = ApplicationConfiguration.Get().ApiServiceLink;
-      const baseUrl = apiLink.substring(0, apiLink.indexOf('/api/v1'));
-
+      // If URL starts with /, append to ServerBaseUrl (Root), not ApiUrl
       if (url.startsWith('/')) {
-        fullUrl = `${baseUrl}${url}`;
+        fullUrl = `${this.serverBaseUrl}${url}`;
       } else {
-        fullUrl = `${baseUrl}/${url}`;
+        fullUrl = `${this.serverBaseUrl}/${url}`;
       }
     }
 

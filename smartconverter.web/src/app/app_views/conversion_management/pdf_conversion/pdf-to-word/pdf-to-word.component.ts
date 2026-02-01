@@ -1,12 +1,137 @@
+import { CommonModule } from '@angular/common';
+import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { PDFConversionService } from '../../../../app_services/pdf_conversion.service';
+import { ToastService } from '../../../../app_services/toast';
 
 @Component({
   selector: 'app-pdf-to-word',
+  imports: [CommonModule, FormsModule],
   templateUrl: './pdf-to-word.component.html',
-  styleUrls: ['./pdf-to-word.component.css'],
-  standalone: true,
-  imports: []
+  styleUrl: './pdf-to-word.component.css',
+  standalone: true
 })
 export class PdfToWordComponent {
+  selectedFile: File | null = null;
+  outputFilename: string = '';
+  isConverting: boolean = false;
 
+  uploadProgress: number = 0;
+  conversionStatus: string = '';
+
+  conversionResult: { downloadUrl: string, fileName: string } | null = null;
+
+  constructor(
+    private pdfService: PDFConversionService,
+    private toastService: ToastService
+  ) { }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      this.selectedFile = file;
+      // Auto-suggest filename without extension
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+      this.outputFilename = nameWithoutExt;
+      this.conversionResult = null; // Reset result on new file selection
+      this.uploadProgress = 0;
+      this.conversionStatus = '';
+      this.toastService.show('PDF file selected successfully', 'success');
+    } else {
+      this.toastService.show('Please select a valid PDF file', 'error');
+      this.selectedFile = null;
+    }
+  }
+
+  convert(): void {
+    if (!this.selectedFile) {
+      this.toastService.show('Please select a file first', 'error');
+      return;
+    }
+
+    this.isConverting = true;
+    this.conversionResult = null;
+    this.uploadProgress = 0;
+    this.conversionStatus = 'Initializing...';
+
+    this.pdfService.ConvertPdfToWord(this.selectedFile, this.outputFilename)
+      .subscribe({
+        next: (event: HttpEvent<any>) => {
+          switch (event.type) {
+            case HttpEventType.Sent:
+              this.conversionStatus = 'Request sent...';
+              break;
+            case HttpEventType.UploadProgress:
+              if (event.total) {
+                this.uploadProgress = Math.round(100 * event.loaded / event.total);
+                this.conversionStatus = `File Uploading... ${this.uploadProgress}%`;
+              }
+              break;
+            case HttpEventType.Response:
+              this.conversionStatus = 'File Converting...';
+              // Simulate a small delay for user experience
+              setTimeout(() => {
+                const response = event.body;
+                if (response && response.download_url) {
+                  this.conversionResult = {
+                    downloadUrl: response.download_url,
+                    fileName: response.output_filename || this.outputFilename + '.docx' || 'converted.docx'
+                  };
+                  this.isConverting = false;
+                  this.toastService.show('File converted successfully. Ready to save.', 'success');
+                } else {
+                  this.toastService.show('Conversion failed: No download URL returned.', 'error');
+                  this.isConverting = false;
+                  this.conversionStatus = 'Failed';
+                }
+              }, 500);
+              break;
+          }
+        },
+        error: (error) => {
+          this.handleError(error);
+        }
+      });
+  }
+
+  saveFile(): void {
+    if (!this.conversionResult) return;
+    debugger;
+    this.pdfService.downloadFile(this.conversionResult.downloadUrl).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, this.conversionResult!.fileName);
+        this.toastService.show('File saved successfully!', 'success');
+        this.reset();
+      },
+      error: (err) => {
+        console.error('Download failed', err);
+        this.toastService.show('Download failed. Please try again.', 'error');
+      }
+    });
+  }
+
+  private handleError(error: any): void {
+    console.error('Conversion failed', error);
+    this.toastService.show('Conversion failed. Please try again.', 'error');
+    this.isConverting = false;
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  reset(): void {
+    this.selectedFile = null;
+    this.outputFilename = '';
+    this.isConverting = false;
+    this.conversionResult = null;
+  }
 }

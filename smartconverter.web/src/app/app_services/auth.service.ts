@@ -21,7 +21,7 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {
     this.apiUrl = ApplicationConfiguration.Get().ApiServiceLink;
-    this.authUrl = `${this.apiUrl}/auth/`;
+    this.authUrl = `${this.apiUrl}/auth`;
   }
 
   private hasToken(): boolean {
@@ -32,12 +32,12 @@ export class AuthService {
   }
 
   register(userData: any): Observable<any> {
-    const url = `${this.authUrl}register-userlist`;
+    const url = `${this.authUrl}/register-userlist`;
     return this.http.post(url, userData);
   }
 
   login(credentials: { email: string, password: string }): Observable<any> {
-    const url = `${this.authUrl}login-userlist`;
+    const url = `${this.authUrl}/login-userlist`;
     return this.http.post(url, credentials);
   }
 
