@@ -1,9 +1,13 @@
 import os
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
 from typing import Optional
 from app.models.schemas import ConversionResponse
 from app.services.file_formatter_service import FileFormatterService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.exceptions import (
     FileProcessingError, 
     UnsupportedFileTypeError, 
@@ -43,12 +47,35 @@ def _determine_output_filename(original_filename: str, provided_filename: Option
 
 @router.post("/format-json", response_model=ConversionResponse)
 async def format_json(
+    request: Request,
     file: UploadFile = File(...),
     indent: int = Form(2),
     sort_keys: bool = Form(False),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Format JSON file with proper indentation and sorting."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="format-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     
     try:
@@ -65,6 +92,15 @@ async def format_json(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
+        )
+        
         return ConversionResponse(
             success=True,
             message="JSON file formatted successfully",
@@ -73,12 +109,14 @@ async def format_json(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -92,10 +130,33 @@ async def format_json(
 
 @router.post("/validate-json")
 async def validate_json(
+    request: Request,
     file: UploadFile = File(...),
-    schema_file: Optional[UploadFile] = File(None)
+    schema_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
 ):
     """Validate JSON file against schema or basic JSON syntax."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="validate-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     schema_path = None
     
@@ -114,6 +175,13 @@ async def validate_json(
         # Validate JSON
         validation_result = FileFormatterService.validate_json(input_path, schema_path)
         
+        # Update log on success (Note: validation doesn't produce an output file usually, but we mark success)
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success"
+        )
+
         return {
             "success": True,
             "message": "JSON validation completed",
@@ -121,12 +189,14 @@ async def validate_json(
         }
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -143,10 +213,33 @@ async def validate_json(
 
 @router.post("/validate-xml")
 async def validate_xml(
+    request: Request,
     file: UploadFile = File(...),
-    xsd_file: Optional[UploadFile] = File(None)
+    xsd_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
 ):
     """Validate XML file against XSD schema or basic XML syntax."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="validate-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     xsd_path = None
     
@@ -165,6 +258,13 @@ async def validate_xml(
         # Validate XML
         validation_result = FileFormatterService.validate_xml(input_path, xsd_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success"
+        )
+        
         return {
             "success": True,
             "message": "XML validation completed",
@@ -172,12 +272,14 @@ async def validate_xml(
         }
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -193,8 +295,33 @@ async def validate_xml(
 
 
 @router.post("/validate-xsd")
-async def validate_xsd(file: UploadFile = File(...)):
+async def validate_xsd(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Validate XSD schema file."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="validate-xsd",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xsd",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     
     try:
@@ -207,6 +334,13 @@ async def validate_xsd(file: UploadFile = File(...)):
         # Validate XSD
         validation_result = FileFormatterService.validate_xsd(input_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success"
+        )
+        
         return {
             "success": True,
             "message": "XSD validation completed",
@@ -214,12 +348,14 @@ async def validate_xsd(file: UploadFile = File(...)):
         }
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -234,10 +370,33 @@ async def validate_xsd(file: UploadFile = File(...)):
 
 @router.post("/minify-json", response_model=ConversionResponse)
 async def minify_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Minify JSON file by removing unnecessary whitespace."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="minify-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     
     try:
@@ -259,6 +418,15 @@ async def minify_json(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
+        )
+        
         return ConversionResponse(
             success=True,
             message="JSON file minified successfully",
@@ -267,12 +435,14 @@ async def minify_json(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -286,11 +456,34 @@ async def minify_json(
 
 @router.post("/format-xml", response_model=ConversionResponse)
 async def format_xml(
+    request: Request,
     file: UploadFile = File(...),
     indent: int = Form(2),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Format XML file with proper indentation."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="format-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     
     try:
@@ -306,6 +499,15 @@ async def format_xml(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
+        )
+        
         return ConversionResponse(
             success=True,
             message="XML file formatted successfully",
@@ -314,12 +516,14 @@ async def format_xml(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -332,8 +536,33 @@ async def format_xml(
 
 
 @router.post("/json-schema-info")
-async def get_json_schema_info(file: UploadFile = File(...)):
+async def get_json_schema_info(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """Get information about JSON structure and schema."""
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-schema-info",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     input_path = None
     
     try:
@@ -346,6 +575,13 @@ async def get_json_schema_info(file: UploadFile = File(...)):
         # Get JSON schema info
         schema_info = FileFormatterService.get_json_schema_info(input_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success"
+        )
+        
         return {
             "success": True,
             "message": "JSON schema analysis completed",
@@ -353,12 +589,14 @@ async def get_json_schema_info(file: UploadFile = File(...)):
         }
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

@@ -6,11 +6,17 @@ This module provides API endpoints for various website and HTML conversion opera
 
 import json
 import logging
+import os
+import tempfile
 from typing import Optional, Union
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from fastapi.responses import JSONResponse, FileResponse
+from sqlalchemy.orm import Session
 
 from app.services.website_conversion_service_simple import WebsiteConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.exceptions import create_error_response
 from app.models.schemas import ConversionResponse
 
@@ -20,24 +26,53 @@ router = APIRouter()
 
 
 # HTML to PDF
+# HTML to PDF
 @router.post("/html-to-pdf", response_model=ConversionResponse)
 async def convert_html_to_pdf(
+    request: Request,
     html_content: Optional[str] = Form(None),
     css_content: Optional[str] = Form(None),
     filename: Optional[str] = Form(None),
-    file: Union[UploadFile, str, None] = File(None)
+    file: Union[UploadFile, str, None] = File(None),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML content or file to PDF."""
-    try:
-        # Handle case where file is sent as empty string
-        if isinstance(file, str):
-            file = None
+    
+    # Determine input info for logging
+    input_info = "HTML Content"
+    input_size = 0
+    if html_content:
+        input_size = len(html_content)
+    
+    if isinstance(file, UploadFile):
+        input_info = file.filename
+        # Try to get size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+    elif isinstance(file, str):
+        # file might be passed as string "null" or empty from some clients
+        file = None
 
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-to-pdf",
+        input_filename=input_info,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
+    try:
         if file:
             # Handle file upload
-            import tempfile
-            import os
-            
             # Create temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as temp_file:
                 content = await file.read()
@@ -60,45 +95,30 @@ async def convert_html_to_pdf(
             raise HTTPException(status_code=400, detail="Either html_content or file must be provided")
         
         # Create download URL
-        import os
-        filename = os.path.basename(result)
-        download_url = f"/api/v1/websiteconversiontools/download/{filename}"
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        input_data = "HTML Content"
-        if file:
-            input_data = f"File: {file.filename}"
-            
-        WebsiteConversionService.log_conversion(
-            "html-to-pdf",
-            input_data,
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
             success=True,
             message="HTML converted to PDF successfully",
-            output_filename=filename,
+            output_filename=result_filename,
             download_url=download_url
         )
         
     except HTTPException as he:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(he.detail))
         raise he
     except Exception as e:
-        input_data = "HTML Content"
-        if file:
-            input_data = f"File: {file.filename}" if file else "Unknown File"
-            
-        WebsiteConversionService.log_conversion(
-            "html-to-pdf",
-            input_data,
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -108,45 +128,57 @@ async def convert_html_to_pdf(
 
 
 # Website to PDF
+# Website to PDF
 @router.post("/website-to-pdf", response_model=ConversionResponse)
 async def convert_website_to_pdf(
+    request: Request,
     url: str = Form(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Website URL to PDF."""
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="website-to-pdf",
+        input_filename=url,
+        input_file_size=0,
+        input_file_type="url",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         result = WebsiteConversionService.website_to_pdf(url, filename)
         
         # Create download URL
-        import os
-        filename = os.path.basename(result)
-        download_url = f"/api/v1/websiteconversiontools/download/{filename}"
+        result_filename = os.path.basename(result)
+        download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "website-to-pdf",
-            url,
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
             success=True,
             message="Website converted to PDF successfully",
-            output_filename=filename,
+            output_filename=result_filename,
             download_url=download_url
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "website-to-pdf",
-            url,
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -156,12 +188,37 @@ async def convert_website_to_pdf(
 
 
 # Word to HTML
+# Word to HTML
 @router.post("/word-to-html", response_model=ConversionResponse)
 async def convert_word_to_html(
+    request: Request,
     filename: Optional[str] = Form(None),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
     """Convert Word document to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="word-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="docx", # Assuming docx/doc
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -169,17 +226,16 @@ async def convert_word_to_html(
         result = WebsiteConversionService.word_to_html(file_content, file.filename, filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
 
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "word-to-html",
-            f"File: {file.filename}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -190,14 +246,7 @@ async def convert_word_to_html(
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "word-to-html",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -209,10 +258,34 @@ async def convert_word_to_html(
 # PowerPoint to HTML
 @router.post("/powerpoint-to-html", response_model=ConversionResponse)
 async def convert_powerpoint_to_html(
+    request: Request,
     filename: Optional[str] = Form(None),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
     """Convert PowerPoint presentation to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="powerpoint-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pptx", # Assuming pptx/ppt
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -220,17 +293,16 @@ async def convert_powerpoint_to_html(
         result = WebsiteConversionService.powerpoint_to_html(file_content, file.filename, filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "powerpoint-to-html",
-            f"File: {file.filename}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -241,14 +313,7 @@ async def convert_powerpoint_to_html(
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "powerpoint-to-html",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -260,19 +325,47 @@ async def convert_powerpoint_to_html(
 # Markdown to HTML
 @router.post("/markdown-to-html", response_model=ConversionResponse)
 async def convert_markdown_to_html(
+    request: Request,
     filename: Optional[str] = Form(None),
     markdown_content: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Markdown content or file to HTML."""
+    
+    input_size = 0
+    input_name = "Markdown Content"
+    
+    if file:
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        input_name = file.filename
+    elif markdown_content:
+        input_size = len(markdown_content)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="markdown-to-html",
+        input_filename=input_name,
+        input_file_size=input_size,
+        input_file_type="md",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = ""
-        input_name = "Markdown Content"
         
         if file:
             content_bytes = await file.read()
             content = content_bytes.decode('utf-8')
-            input_name = file.filename
         elif markdown_content:
             content = markdown_content
         else:
@@ -281,17 +374,16 @@ async def convert_markdown_to_html(
         result = WebsiteConversionService.markdown_to_html(content, input_name if file else None, filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "markdown-to-html",
-            f"Input: {input_name}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -301,15 +393,11 @@ async def convert_markdown_to_html(
             download_url=download_url
         )
         
+    except HTTPException as he:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(he.detail))
+        raise he
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "markdown-to-html",
-            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -321,27 +409,45 @@ async def convert_markdown_to_html(
 # Website to JPG
 @router.post("/website-to-jpg", response_model=ConversionResponse)
 async def convert_website_to_jpg(
+    request: Request,
     url: str = Form(...),
     filename: Optional[str] = Form(None),
     width: int = Form(1920),
-    height: int = Form(1080)
+    height: int = Form(1080),
+    db: Session = Depends(get_db)
 ):
     """Convert website to JPG image."""
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="website-to-jpg",
+        input_filename=url,
+        input_file_size=0,
+        input_file_type="url",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         result = WebsiteConversionService.website_to_jpg(url, filename, width, height)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "website-to-jpg",
-            url,
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="jpg"
         )
         
         return ConversionResponse(
@@ -353,14 +459,7 @@ async def convert_website_to_jpg(
 
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "website-to-jpg",
-            url,
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -373,25 +472,53 @@ async def convert_website_to_jpg(
 # HTML to JPG
 @router.post("/html-to-jpg", response_model=ConversionResponse)
 async def convert_html_to_jpg(
+    request: Request,
     file: Optional[UploadFile] = File(None),
     html_content: Optional[str] = Form(None),
     filename: Optional[str] = Form(None),
     width: int = Form(1920),
-    height: int = Form(1080)
+    height: int = Form(1080),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML content or file to JPG image."""
+    
+    input_size = 0
+    input_name = "HTML Content"
+    
+    if file:
+        input_name = file.filename
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+    elif html_content:
+        input_size = len(html_content)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-to-jpg",
+        input_filename=input_name,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         if not file and not html_content:
             raise HTTPException(status_code=400, detail="Either file or html_content must be provided")
             
-        input_name = "HTML Content"
         content_to_process = ""
         original_filename = None
         
         if file:
             content = await file.read()
             content_to_process = content.decode('utf-8')
-            input_name = file.filename
             original_filename = file.filename
         else:
             content_to_process = html_content
@@ -405,17 +532,16 @@ async def convert_html_to_jpg(
         )
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "html-to-jpg",
-            f"Input: {input_name}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="jpg"
         )
         
         return ConversionResponse(
@@ -425,15 +551,11 @@ async def convert_html_to_jpg(
             download_url=download_url
         )
         
+    except HTTPException as he:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(he.detail))
+        raise he
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "html-to-jpg",
-            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -446,27 +568,45 @@ async def convert_html_to_jpg(
 # Website to PNG
 @router.post("/website-to-png", response_model=ConversionResponse)
 async def convert_website_to_png(
+    request: Request,
     url: str = Form(...),
     filename: Optional[str] = Form(None),
     width: int = Form(1920),
-    height: int = Form(1080)
+    height: int = Form(1080),
+    db: Session = Depends(get_db)
 ):
     """Convert website to PNG image."""
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="website-to-png",
+        input_filename=url,
+        input_file_size=0,
+        input_file_type="url",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         result = WebsiteConversionService.website_to_png(url, filename, width, height)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "website-to-png",
-            url,
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="png"
         )
         
         return ConversionResponse(
@@ -477,14 +617,7 @@ async def convert_website_to_png(
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "website-to-png",
-            url,
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -496,25 +629,53 @@ async def convert_website_to_png(
 # HTML to PNG
 @router.post("/html-to-png", response_model=ConversionResponse)
 async def convert_html_to_png(
+    request: Request,
     file: Optional[UploadFile] = File(None),
     html_content: Optional[str] = Form(None),
     filename: Optional[str] = Form(None),
     width: int = Form(1920),
-    height: int = Form(1080)
+    height: int = Form(1080),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML content or file to PNG image."""
+    
+    input_size = 0
+    input_name = "HTML Content"
+    
+    if file:
+        input_name = file.filename
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+    elif html_content:
+        input_size = len(html_content)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-to-png",
+        input_filename=input_name,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         if not file and not html_content:
             raise HTTPException(status_code=400, detail="Either file or html_content must be provided")
             
-        input_name = "HTML Content"
         content_to_process = ""
         original_filename = None
         
         if file:
             content = await file.read()
             content_to_process = content.decode('utf-8')
-            input_name = file.filename
             original_filename = file.filename
         else:
             content_to_process = html_content
@@ -528,17 +689,16 @@ async def convert_html_to_png(
         )
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
         
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "html-to-png",
-            f"Input: {input_name}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="png"
         )
         
         return ConversionResponse(
@@ -548,15 +708,11 @@ async def convert_html_to_png(
             download_url=download_url
         )
         
+    except HTTPException as he:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(he.detail))
+        raise he
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "html-to-png",
-            f"Input: {input_name if 'input_name' in locals() else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -568,19 +724,47 @@ async def convert_html_to_png(
 # HTML Table to CSV
 @router.post("/html-table-to-csv", response_model=ConversionResponse)
 async def convert_html_table_to_csv(
+    request: Request,
     html_content: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML table to CSV."""
+    
+    input_size = 0
+    input_name = "HTML Content"
+    
+    if file:
+        input_name = file.filename
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+    elif html_content:
+        input_size = len(html_content)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-table-to-csv",
+        input_filename=input_name,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
-        input_name = "HTML Content"
         original_filename = None
         
         if file:
             content_bytes = await file.read()
             content_to_process = content_bytes.decode('utf-8')
-            input_name = file.filename
             original_filename = file.filename
         elif html_content:
             content_to_process = html_content
@@ -590,17 +774,16 @@ async def convert_html_table_to_csv(
         result = WebsiteConversionService.html_table_to_csv(content_to_process, filename, original_filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
 
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "html-table-to-csv",
-            f"Input: {input_name}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -610,19 +793,11 @@ async def convert_html_table_to_csv(
             download_url=download_url
         )
         
+    except HTTPException as he:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(he.detail))
+        raise he
     except Exception as e:
-        input_name = "HTML Content"
-        if file:
-            input_name = f"File: {file.filename}" if file else "Unknown File"
-            
-        WebsiteConversionService.log_conversion(
-            "html-table-to-csv",
-            f"Input: {input_name}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -634,10 +809,34 @@ async def convert_html_table_to_csv(
 # Excel to HTML
 @router.post("/excel-to-html", response_model=ConversionResponse)
 async def convert_excel_to_html(
+    request: Request,
     filename: Optional[str] = Form(None),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel file to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # Assuming xlsx/xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -645,17 +844,16 @@ async def convert_excel_to_html(
         result = WebsiteConversionService.excel_to_html(file_content, file.filename, filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
 
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "excel-to-html",
-            f"File: {file.filename}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -666,14 +864,7 @@ async def convert_excel_to_html(
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "excel-to-html",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -685,10 +876,34 @@ async def convert_excel_to_html(
 # PDF to HTML
 @router.post("/pdf-to-html", response_model=ConversionResponse)
 async def convert_pdf_to_html(
+    request: Request,
     filename: Optional[str] = Form(None),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -696,17 +911,16 @@ async def convert_pdf_to_html(
         result = WebsiteConversionService.pdf_to_html(file_content, file.filename, filename)
         
         # Create download URL
-        import os
         result_filename = os.path.basename(result)
         download_url = f"/api/v1/websiteconversiontools/download/{result_filename}"
 
-        # Log conversion
-        WebsiteConversionService.log_conversion(
-            "pdf-to-html",
-            f"File: {file.filename}",
-            result,
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -717,14 +931,7 @@ async def convert_pdf_to_html(
         )
         
     except Exception as e:
-        WebsiteConversionService.log_conversion(
-            "pdf-to-html",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

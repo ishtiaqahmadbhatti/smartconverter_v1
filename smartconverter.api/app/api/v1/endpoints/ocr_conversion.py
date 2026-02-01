@@ -3,12 +3,16 @@ import os
 import shutil
 import logging
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy.orm import Session
 from app.models.schemas import ConversionResponse
 from app.services.ocr_conversion_service import OCRConversionService
+from app.services.conversion_log_service import ConversionLogService
 from app.services.file_service import FileService
 from app.core.config import settings
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.exceptions import (
     FileProcessingError, 
     UnsupportedFileTypeError, 
@@ -58,14 +62,37 @@ def _determine_output_filename(
 
 @router.post("/png-to-text", response_model=ConversionResponse)
 async def convert_png_to_text(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PNG image to text using OCR."""
     input_path = None
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="png-to-text",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="png",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "png")
         input_path = FileService.save_uploaded_file(file)
         
@@ -77,6 +104,15 @@ async def convert_png_to_text(
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(extracted_text)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="txt"
+        )
             
         return ConversionResponse(
             success=True,
@@ -87,8 +123,10 @@ async def convert_png_to_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting PNG to text: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
@@ -98,14 +136,37 @@ async def convert_png_to_text(
 
 @router.post("/jpg-to-text", response_model=ConversionResponse)
 async def convert_jpg_to_text(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JPG image to text using OCR."""
     input_path = None
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="jpg-to-text",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="jpg",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "jpg")
         input_path = FileService.save_uploaded_file(file)
         
@@ -117,6 +178,15 @@ async def convert_jpg_to_text(
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(extracted_text)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="txt"
+        )
             
         return ConversionResponse(
             success=True,
@@ -127,8 +197,10 @@ async def convert_jpg_to_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting JPG to text: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
@@ -138,16 +210,39 @@ async def convert_jpg_to_text(
 
 @router.post("/png-to-pdf", response_model=ConversionResponse)
 async def convert_png_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PNG image to PDF with OCR text layer."""
     input_path = None
     service_output_path = None
     
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="png-to-pdf",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="png",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "png")
         input_path = FileService.save_uploaded_file(file)
         
@@ -159,6 +254,15 @@ async def convert_png_to_pdf(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+
         return ConversionResponse(
             success=True,
             message="PNG converted to PDF with OCR successfully",
@@ -167,8 +271,10 @@ async def convert_png_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting PNG to PDF: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
@@ -178,16 +284,39 @@ async def convert_png_to_pdf(
 
 @router.post("/jpg-to-pdf", response_model=ConversionResponse)
 async def convert_jpg_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JPG image to PDF with OCR text layer."""
     input_path = None
     service_output_path = None
     
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="jpg-to-pdf",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="jpg",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "jpg")
         input_path = FileService.save_uploaded_file(file)
         
@@ -198,6 +327,15 @@ async def convert_jpg_to_pdf(
         
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
             
         return ConversionResponse(
             success=True,
@@ -207,8 +345,10 @@ async def convert_jpg_to_pdf(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting JPG to PDF: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
@@ -218,14 +358,37 @@ async def convert_jpg_to_pdf(
 
 @router.post("/pdf-to-text", response_model=ConversionResponse)
 async def convert_pdf_to_text(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to text using OCR."""
     input_path = None
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="pdf-to-text",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="pdf",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
@@ -236,6 +399,15 @@ async def convert_pdf_to_text(
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(extracted_text)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="txt"
+        )
             
         return ConversionResponse(
             success=True,
@@ -246,8 +418,10 @@ async def convert_pdf_to_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting PDF to text: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:
@@ -257,16 +431,39 @@ async def convert_pdf_to_text(
 
 @router.post("/pdf-image-to-pdf-text", response_model=ConversionResponse)
 async def convert_pdf_image_to_pdf_text(
+    request: Request,
     file: UploadFile = File(...),
     language: str = Form("eng"),
     ocr_engine: str = Form("tesseract"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF with images to PDF with searchable text."""
     input_path = None
     service_output_path = None
     
     try:
+        # Get file size
+        file.file.seek(0, 2)
+        input_size = file.file.tell()
+        file.file.seek(0)
+        
+        # Get user_id
+        user_id = await get_user_id(request, db)
+        
+        # Initial log
+        log = ConversionLogService.log_conversion(
+            db=db,
+            user_id=user_id,
+            conversion_type="pdf-image-to-pdf-text",
+            input_filename=file.filename,
+            input_file_size=input_size,
+            input_file_type="pdf",
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+            api_endpoint=request.url.path
+        )
+
         FileService.validate_file(file, "pdf")
         input_path = FileService.save_uploaded_file(file)
         
@@ -277,6 +474,15 @@ async def convert_pdf_image_to_pdf_text(
         
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
             
         return ConversionResponse(
             success=True,
@@ -286,8 +492,10 @@ async def convert_pdf_image_to_pdf_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(type(e).__name__, str(e), 400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         logger.error(f"Error converting PDF image to text PDF: {str(e)}")
         raise create_error_response("InternalServerError", "An unexpected error occurred", 500, {"error": str(e)})
     finally:

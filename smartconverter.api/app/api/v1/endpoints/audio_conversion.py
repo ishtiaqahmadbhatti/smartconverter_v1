@@ -126,13 +126,36 @@ async def convert_mp4_to_mp3(
 
 @router.post("/wav-to-mp3", response_model=ConversionResponse)
 async def convert_wav_to_mp3(
+    request: Request,
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert WAV file to MP3 format."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="wav-to-mp3",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="wav",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -146,6 +169,15 @@ async def convert_wav_to_mp3(
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
+             
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp3"
+        )
         
         return ConversionResponse(
             success=True,
@@ -155,6 +187,7 @@ async def convert_wav_to_mp3(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -163,13 +196,36 @@ async def convert_wav_to_mp3(
 
 @router.post("/flac-to-mp3", response_model=ConversionResponse)
 async def convert_flac_to_mp3(
+    request: Request,
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert FLAC file to MP3 format."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="flac-to-mp3",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="flac",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -183,6 +239,15 @@ async def convert_flac_to_mp3(
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp3"
+        )
         
         return ConversionResponse(
             success=True,
@@ -192,6 +257,7 @@ async def convert_flac_to_mp3(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -200,13 +266,36 @@ async def convert_flac_to_mp3(
 
 @router.post("/mp3-to-wav", response_model=ConversionResponse)
 async def convert_mp3_to_wav(
+    request: Request,
     file: UploadFile = File(...),
     sample_rate: int = Form(44100),
     channels: int = Form(2),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MP3 file to WAV format."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mp3-to-wav",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mp3",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -220,6 +309,15 @@ async def convert_mp3_to_wav(
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="wav"
+        )
         
         return ConversionResponse(
             success=True,
@@ -229,6 +327,7 @@ async def convert_mp3_to_wav(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -237,13 +336,36 @@ async def convert_mp3_to_wav(
 
 @router.post("/flac-to-wav", response_model=ConversionResponse)
 async def convert_flac_to_wav(
+    request: Request,
     file: UploadFile = File(...),
     sample_rate: int = Form(44100),
     channels: int = Form(2),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert FLAC file to WAV format."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="flac-to-wav",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="flac",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -257,6 +379,15 @@ async def convert_flac_to_wav(
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
+
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="wav"
+        )
         
         return ConversionResponse(
             success=True,
@@ -266,6 +397,7 @@ async def convert_flac_to_wav(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -274,13 +406,36 @@ async def convert_flac_to_wav(
 
 @router.post("/wav-to-flac", response_model=ConversionResponse)
 async def convert_wav_to_flac(
+    request: Request,
     file: UploadFile = File(...),
     compression_level: int = Form(5),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert WAV file to FLAC format."""
     input_path = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="wav-to-flac",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="wav",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         FileService.validate_file(file, "audio")
         input_path = FileService.save_uploaded_file(file)
@@ -294,6 +449,15 @@ async def convert_wav_to_flac(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="flac"
+        )
+
         return ConversionResponse(
             success=True,
             message="WAV file converted to FLAC successfully",
@@ -302,6 +466,7 @@ async def convert_wav_to_flac(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -310,14 +475,37 @@ async def convert_wav_to_flac(
 
 @router.post("/convert-audio-format", response_model=ConversionResponse)
 async def convert_audio_format(
+    request: Request,
     file: UploadFile = File(...),
     output_format: str = Form(...),
     bitrate: str = Form("192k"),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert audio to any supported format."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="convert-audio-format",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="audio",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -332,6 +520,15 @@ async def convert_audio_format(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type=output_format
+        )
+
         return ConversionResponse(
             success=True,
             message=f"Audio converted to {output_format.upper()} successfully",
@@ -340,6 +537,7 @@ async def convert_audio_format(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -348,12 +546,35 @@ async def convert_audio_format(
 
 @router.post("/normalize-audio", response_model=ConversionResponse)
 async def normalize_audio(
+    request: Request,
     file: UploadFile = File(...),
     target_dBFS: float = Form(-20.0),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Normalize audio to target dBFS level."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="normalize-audio",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="audio",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -369,6 +590,15 @@ async def normalize_audio(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="wav"
+        )
+        
         return ConversionResponse(
             success=True,
             message="Audio normalized successfully",
@@ -377,6 +607,7 @@ async def normalize_audio(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:
@@ -385,13 +616,36 @@ async def normalize_audio(
 
 @router.post("/trim-audio", response_model=ConversionResponse)
 async def trim_audio(
+    request: Request,
     file: UploadFile = File(...),
     start_time: float = Form(...),
     end_time: float = Form(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Trim audio to specified time range."""
     input_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="trim-audio",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="audio",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "audio")
@@ -407,6 +661,15 @@ async def trim_audio(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="wav"
+        )
+
         return ConversionResponse(
             success=True,
             message="Audio trimmed successfully",
@@ -415,6 +678,7 @@ async def trim_audio(
         )
         
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("ProcessingError", str(e), 500)
     finally:
         if input_path:

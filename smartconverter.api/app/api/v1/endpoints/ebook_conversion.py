@@ -1,10 +1,14 @@
 import os
 import shutil
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
 from fastapi.responses import FileResponse
 from typing import Optional
+from sqlalchemy.orm import Session
 from app.models.schemas import ConversionResponse
 from app.services.ebook_conversion_service import EBookConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.config import settings
 from app.core.exceptions import (
     FileProcessingError, 
@@ -38,14 +42,37 @@ def _determine_output_filename(original_filename: str, provided_filename: Option
 
 @router.post("/markdown-to-epub", response_model=ConversionResponse)
 async def convert_markdown_to_epub(
+    request: Request,
     file: UploadFile = File(...),
     title: str = Form("Converted Book"),
     author: str = Form("Unknown"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Markdown file to ePUB format."""
     input_path = None
     output_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="markdown-to-epub",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="md",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -68,6 +95,15 @@ async def convert_markdown_to_epub(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="epub"
+        )
+        
         return ConversionResponse(
             success=True,
             message="Markdown file converted to ePUB successfully",
@@ -76,12 +112,14 @@ async def convert_markdown_to_epub(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -96,11 +134,34 @@ async def convert_markdown_to_epub(
 
 @router.post("/epub-to-mobi", response_model=ConversionResponse)
 async def convert_epub_to_mobi(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ePUB file to MOBI format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="epub-to-mobi",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="epub",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "epub")
@@ -115,6 +176,15 @@ async def convert_epub_to_mobi(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mobi"
+        )
+        
         return ConversionResponse(
             success=True,
             message="ePUB file converted to MOBI successfully",
@@ -122,8 +192,10 @@ async def convert_epub_to_mobi(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -132,11 +204,34 @@ async def convert_epub_to_mobi(
 
 @router.post("/epub-to-azw", response_model=ConversionResponse)
 async def convert_epub_to_azw(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ePUB file to AZW format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="epub-to-azw",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="epub",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "epub")
@@ -151,6 +246,15 @@ async def convert_epub_to_azw(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="azw"
+        )
+        
         return ConversionResponse(
             success=True,
             message="ePUB file converted to AZW successfully",
@@ -158,8 +262,10 @@ async def convert_epub_to_azw(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -168,11 +274,34 @@ async def convert_epub_to_azw(
 
 @router.post("/mobi-to-epub", response_model=ConversionResponse)
 async def convert_mobi_to_epub(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MOBI file to ePUB format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mobi-to-epub",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mobi",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "mobi")
@@ -187,6 +316,15 @@ async def convert_mobi_to_epub(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="epub"
+        )
+        
         return ConversionResponse(
             success=True,
             message="MOBI file converted to ePUB successfully",
@@ -194,8 +332,10 @@ async def convert_mobi_to_epub(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -204,11 +344,34 @@ async def convert_mobi_to_epub(
 
 @router.post("/mobi-to-azw", response_model=ConversionResponse)
 async def convert_mobi_to_azw(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MOBI file to AZW format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mobi-to-azw",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mobi",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "mobi")
@@ -223,6 +386,15 @@ async def convert_mobi_to_azw(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="azw"
+        )
+        
         return ConversionResponse(
             success=True,
             message="MOBI file converted to AZW successfully",
@@ -230,8 +402,10 @@ async def convert_mobi_to_azw(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -240,11 +414,34 @@ async def convert_mobi_to_azw(
 
 @router.post("/azw-to-epub", response_model=ConversionResponse)
 async def convert_azw_to_epub(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert AZW file to ePUB format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="azw-to-epub",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="azw",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "azw")
@@ -259,6 +456,15 @@ async def convert_azw_to_epub(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="epub"
+        )
+        
         return ConversionResponse(
             success=True,
             message="AZW file converted to ePUB successfully",
@@ -266,8 +472,10 @@ async def convert_azw_to_epub(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -276,11 +484,34 @@ async def convert_azw_to_epub(
 
 @router.post("/azw-to-mobi", response_model=ConversionResponse)
 async def convert_azw_to_mobi(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert AZW file to MOBI format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="azw-to-mobi",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="azw",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "azw")
@@ -295,6 +526,15 @@ async def convert_azw_to_mobi(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mobi"
+        )
+        
         return ConversionResponse(
             success=True,
             message="AZW file converted to MOBI successfully",
@@ -302,8 +542,10 @@ async def convert_azw_to_mobi(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -312,11 +554,34 @@ async def convert_azw_to_mobi(
 
 @router.post("/epub-to-pdf", response_model=ConversionResponse)
 async def convert_epub_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ePUB file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="epub-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="epub",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "epub")
@@ -331,6 +596,15 @@ async def convert_epub_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+        
         return ConversionResponse(
             success=True,
             message="ePUB file converted to PDF successfully",
@@ -338,8 +612,10 @@ async def convert_epub_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -348,11 +624,34 @@ async def convert_epub_to_pdf(
 
 @router.post("/mobi-to-pdf", response_model=ConversionResponse)
 async def convert_mobi_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MOBI file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mobi-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mobi",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "mobi")
@@ -367,6 +666,15 @@ async def convert_mobi_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+        
         return ConversionResponse(
             success=True,
             message="MOBI file converted to PDF successfully",
@@ -374,8 +682,10 @@ async def convert_mobi_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -384,11 +694,34 @@ async def convert_mobi_to_pdf(
 
 @router.post("/azw-to-pdf", response_model=ConversionResponse)
 async def convert_azw_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert AZW file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="azw-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="azw",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "azw")
@@ -403,6 +736,15 @@ async def convert_azw_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+        
         return ConversionResponse(
             success=True,
             message="AZW file converted to PDF successfully",
@@ -410,8 +752,10 @@ async def convert_azw_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -420,11 +764,34 @@ async def convert_azw_to_pdf(
 
 @router.post("/azw3-to-pdf", response_model=ConversionResponse)
 async def convert_azw3_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert AZW3 file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="azw3-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="azw3",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "azw3")
@@ -439,6 +806,15 @@ async def convert_azw3_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+        
         return ConversionResponse(
             success=True,
             message="AZW3 file converted to PDF successfully",
@@ -446,8 +822,10 @@ async def convert_azw3_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -456,11 +834,34 @@ async def convert_azw3_to_pdf(
 
 @router.post("/fb2-to-pdf", response_model=ConversionResponse)
 async def convert_fb2_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert FB2 file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="fb2-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="fb2",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "fb2")
@@ -475,6 +876,15 @@ async def convert_fb2_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+        
         return ConversionResponse(
             success=True,
             message="FB2 file converted to PDF successfully",
@@ -482,8 +892,10 @@ async def convert_fb2_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -492,11 +904,34 @@ async def convert_fb2_to_pdf(
 
 @router.post("/fbz-to-pdf", response_model=ConversionResponse)
 async def convert_fbz_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert FBZ file to PDF format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="fbz-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="fbz",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "fbz")
@@ -511,6 +946,15 @@ async def convert_fbz_to_pdf(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
+        )
+
         return ConversionResponse(
             success=True,
             message="FBZ file converted to PDF successfully",
@@ -518,8 +962,10 @@ async def convert_fbz_to_pdf(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -528,11 +974,34 @@ async def convert_fbz_to_pdf(
 
 @router.post("/pdf-to-epub", response_model=ConversionResponse)
 async def convert_pdf_to_epub(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to ePUB format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-epub",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -547,6 +1016,15 @@ async def convert_pdf_to_epub(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="epub"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to ePUB successfully",
@@ -554,8 +1032,10 @@ async def convert_pdf_to_epub(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -564,11 +1044,34 @@ async def convert_pdf_to_epub(
 
 @router.post("/pdf-to-mobi", response_model=ConversionResponse)
 async def convert_pdf_to_mobi(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to MOBI format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-mobi",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -583,6 +1086,15 @@ async def convert_pdf_to_mobi(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mobi"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to MOBI successfully",
@@ -590,8 +1102,10 @@ async def convert_pdf_to_mobi(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -600,11 +1114,34 @@ async def convert_pdf_to_mobi(
 
 @router.post("/pdf-to-azw", response_model=ConversionResponse)
 async def convert_pdf_to_azw(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to AZW format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-azw",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -619,6 +1156,15 @@ async def convert_pdf_to_azw(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="azw"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to AZW successfully",
@@ -626,8 +1172,10 @@ async def convert_pdf_to_azw(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -636,11 +1184,34 @@ async def convert_pdf_to_azw(
 
 @router.post("/pdf-to-azw3", response_model=ConversionResponse)
 async def convert_pdf_to_azw3(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to AZW3 format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-azw3",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -655,6 +1226,15 @@ async def convert_pdf_to_azw3(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="azw3"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to AZW3 successfully",
@@ -662,8 +1242,10 @@ async def convert_pdf_to_azw3(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -672,11 +1254,34 @@ async def convert_pdf_to_azw3(
 
 @router.post("/pdf-to-fb2", response_model=ConversionResponse)
 async def convert_pdf_to_fb2(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to FB2 format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-fb2",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -691,6 +1296,15 @@ async def convert_pdf_to_fb2(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="fb2"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to FB2 successfully",
@@ -698,8 +1312,10 @@ async def convert_pdf_to_fb2(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:
@@ -708,11 +1324,34 @@ async def convert_pdf_to_fb2(
 
 @router.post("/pdf-to-fbz", response_model=ConversionResponse)
 async def convert_pdf_to_fbz(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF file to FBZ format."""
     input_path = None
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-fbz",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "pdf")
@@ -727,6 +1366,15 @@ async def convert_pdf_to_fbz(
                 os.remove(final_output_path)
             shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="fbz"
+        )
+        
         return ConversionResponse(
             success=True,
             message="PDF file converted to FBZ successfully",
@@ -734,8 +1382,10 @@ async def convert_pdf_to_fbz(
             download_url=f"/api/v1/ebookconversiontools/download/{output_filename}"
         )
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type=type(e).__name__, message=str(e), status_code=400)
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(error_type="InternalServerError", message="An unexpected error occurred", details={"error": str(e)}, status_code=500)
     finally:
         if input_path:

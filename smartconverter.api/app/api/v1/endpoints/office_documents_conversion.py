@@ -7,13 +7,17 @@ This module provides API endpoints for various office document conversion operat
 import json
 import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body, Request, Depends
 from fastapi.responses import JSONResponse, FileResponse
+from sqlalchemy.orm import Session
 import shutil
 import os
 import uuid
 
 from app.services.office_documents_conversion_service import OfficeDocumentsConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.config import settings
 from app.core.exceptions import (
     create_error_response,
@@ -90,10 +94,34 @@ async def _read_file_content_str(file: UploadFile) -> str:
 
 @router.post("/pdf-to-csv", response_model=ConversionResponse)
 async def convert_pdf_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+    
     try:
         content = await _read_file_content(file)
         
@@ -105,11 +133,13 @@ async def convert_pdf_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "pdf-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -120,15 +150,39 @@ async def convert_pdf_to_csv(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("pdf-to-csv", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PDF to CSV", str(e))
 
 @router.post("/pdf-to-excel", response_model=ConversionResponse)
 async def convert_pdf_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -140,11 +194,13 @@ async def convert_pdf_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "pdf-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -154,15 +210,39 @@ async def convert_pdf_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("pdf-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PDF to Excel", str(e))
 
 @router.post("/pdf-to-word", response_model=ConversionResponse)
 async def convert_pdf_to_word(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to Word."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-word",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+    
     try:
         content = await _read_file_content(file)
         
@@ -178,11 +258,13 @@ async def convert_pdf_to_word(
         
         # If service returns a path that is what we want.
         
-        OfficeDocumentsConversionService.log_conversion(
-            "pdf-to-word",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="docx"
         )
         
         return ConversionResponse(
@@ -192,7 +274,7 @@ async def convert_pdf_to_word(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("pdf-to-word", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PDF to Word", str(e))
 
 
@@ -202,10 +284,34 @@ async def convert_pdf_to_word(
 
 @router.post("/word-to-pdf", response_model=ConversionResponse)
 async def convert_word_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Word to PDF."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="word-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="docx", # or doc
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -217,11 +323,13 @@ async def convert_word_to_pdf(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "word-to-pdf",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
@@ -231,15 +339,39 @@ async def convert_word_to_pdf(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("word-to-pdf", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Word to PDF", str(e))
 
 @router.post("/word-to-html", response_model=ConversionResponse)
 async def convert_word_to_html(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Word to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="word-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="docx", # or doc
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+    
     try:
         content = await _read_file_content(file)
         
@@ -251,11 +383,13 @@ async def convert_word_to_html(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "word-to-html",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -266,15 +400,39 @@ async def convert_word_to_html(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("word-to-html", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Word to HTML", str(e))
 
 @router.post("/word-to-text", response_model=ConversionResponse)
 async def convert_word_to_text(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Word to Text."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="word-to-text",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="docx", # or doc
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+    
     try:
         content = await _read_file_content(file)
         
@@ -286,11 +444,13 @@ async def convert_word_to_text(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "word-to-text",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="txt"
         )
         
         return ConversionResponse(
@@ -301,7 +461,7 @@ async def convert_word_to_text(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("word-to-text", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Word to Text", str(e))
 
 # ---------------------------------------------------------------------------
@@ -310,10 +470,34 @@ async def convert_word_to_text(
 
 @router.post("/powerpoint-to-pdf", response_model=ConversionResponse)
 async def convert_powerpoint_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PowerPoint to PDF."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="powerpoint-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pptx", # or ppt
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -325,11 +509,13 @@ async def convert_powerpoint_to_pdf(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "powerpoint-to-pdf",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
@@ -339,15 +525,39 @@ async def convert_powerpoint_to_pdf(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("powerpoint-to-pdf", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PowerPoint to PDF", str(e))
 
 @router.post("/powerpoint-to-html", response_model=ConversionResponse)
 async def convert_powerpoint_to_html(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PowerPoint to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="powerpoint-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pptx", # or ppt
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -359,11 +569,13 @@ async def convert_powerpoint_to_html(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "powerpoint-to-html",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -374,15 +586,39 @@ async def convert_powerpoint_to_html(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("powerpoint-to-html", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PowerPoint to HTML", str(e))
 
 @router.post("/powerpoint-to-text", response_model=ConversionResponse)
 async def convert_powerpoint_to_text(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PowerPoint to Text."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="powerpoint-to-text",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pptx", # or ppt
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -394,11 +630,13 @@ async def convert_powerpoint_to_text(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "powerpoint-to-text",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="txt"
         )
         
         return ConversionResponse(
@@ -409,7 +647,7 @@ async def convert_powerpoint_to_text(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("powerpoint-to-text", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert PowerPoint to Text", str(e))
 
 
@@ -419,10 +657,34 @@ async def convert_powerpoint_to_text(
 
 @router.post("/excel-to-pdf", response_model=ConversionResponse)
 async def convert_excel_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to PDF."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -434,11 +696,13 @@ async def convert_excel_to_pdf(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-pdf",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
@@ -448,15 +712,39 @@ async def convert_excel_to_pdf(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-pdf", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to PDF", str(e))
 
 @router.post("/excel-to-xps", response_model=ConversionResponse)
 async def convert_excel_to_xps(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to XPS."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-xps",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -468,11 +756,13 @@ async def convert_excel_to_xps(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-xps",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xps"
         )
         
         return ConversionResponse(
@@ -482,15 +772,39 @@ async def convert_excel_to_xps(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-xps", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to XPS", str(e))
 
 @router.post("/excel-to-html", response_model=ConversionResponse)
 async def convert_excel_to_html(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to HTML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-html",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -502,11 +816,13 @@ async def convert_excel_to_html(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-html",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="html"
         )
         
         return ConversionResponse(
@@ -517,15 +833,39 @@ async def convert_excel_to_html(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-html", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to HTML", str(e))
 
 @router.post("/excel-to-csv", response_model=ConversionResponse)
 async def convert_excel_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -537,11 +877,13 @@ async def convert_excel_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -552,15 +894,39 @@ async def convert_excel_to_csv(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-csv", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to CSV", str(e))
 
 @router.post("/excel-to-ods", response_model=ConversionResponse)
 async def convert_excel_to_ods(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to ODS."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-ods",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -572,11 +938,13 @@ async def convert_excel_to_ods(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-ods",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="ods"
         )
         
         return ConversionResponse(
@@ -586,7 +954,7 @@ async def convert_excel_to_ods(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-ods", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to ODS", str(e))
 
 # ---------------------------------------------------------------------------
@@ -595,10 +963,34 @@ async def convert_excel_to_ods(
 
 @router.post("/ods-to-csv", response_model=ConversionResponse)
 async def convert_ods_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ODS to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ods-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="ods",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -610,11 +1002,13 @@ async def convert_ods_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "ods-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -625,15 +1019,39 @@ async def convert_ods_to_csv(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("ods-to-csv", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert ODS to CSV", str(e))
 
 @router.post("/ods-to-pdf", response_model=ConversionResponse)
 async def convert_ods_to_pdf(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ODS to PDF."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ods-to-pdf",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="ods",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -645,11 +1063,13 @@ async def convert_ods_to_pdf(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "ods-to-pdf",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="pdf"
         )
         
         return ConversionResponse(
@@ -659,15 +1079,39 @@ async def convert_ods_to_pdf(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("ods-to-pdf", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert ODS to PDF", str(e))
 
 @router.post("/ods-to-excel", response_model=ConversionResponse)
 async def convert_ods_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert ODS to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ods-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="ods",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -679,11 +1123,13 @@ async def convert_ods_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "ods-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -693,16 +1139,40 @@ async def convert_ods_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("ods-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert ODS to Excel", str(e))
 
 
 @router.post("/csv-to-excel", response_model=ConversionResponse)
 async def convert_csv_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -714,11 +1184,13 @@ async def convert_csv_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "csv-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -728,17 +1200,41 @@ async def convert_csv_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("csv-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert CSV to Excel", str(e))
 
 @router.post("/excel-to-xml", response_model=ConversionResponse)
 async def convert_excel_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     root_name: str = Form("data"),
-    record_name: str = Form("record")
+    record_name: str = Form("record"),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to XML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -750,11 +1246,13 @@ async def convert_excel_to_xml(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-xml",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -765,15 +1263,39 @@ async def convert_excel_to_xml(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-xml", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to XML", str(e))
 
 @router.post("/xml-to-csv", response_model=ConversionResponse)
 async def convert_xml_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XML to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -785,11 +1307,13 @@ async def convert_xml_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "xml-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -805,10 +1329,34 @@ async def convert_xml_to_csv(
 
 @router.post("/xml-to-excel", response_model=ConversionResponse)
 async def convert_xml_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XML to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -820,11 +1368,13 @@ async def convert_xml_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "xml-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -834,15 +1384,39 @@ async def convert_xml_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("xml-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert XML to Excel", str(e))
 
 @router.post("/json-to-excel", response_model=ConversionResponse)
 async def convert_json_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         try:
@@ -858,11 +1432,13 @@ async def convert_json_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "json-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -872,15 +1448,39 @@ async def convert_json_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("json-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert JSON to Excel", str(e))
 
 @router.post("/excel-to-json", response_model=ConversionResponse)
 async def convert_excel_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to JSON."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -892,11 +1492,13 @@ async def convert_excel_to_json(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-json",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
         )
         
         return ConversionResponse(
@@ -907,15 +1509,39 @@ async def convert_excel_to_json(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-json", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to JSON", str(e))
 
 @router.post("/json-objects-to-excel", response_model=ConversionResponse)
 async def convert_json_objects_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON Objects to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-objects-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         try:
@@ -933,11 +1559,13 @@ async def convert_json_objects_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "json-objects-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -947,15 +1575,39 @@ async def convert_json_objects_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("json-objects-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert JSON objects to Excel", str(e))
 
 @router.post("/bson-to-excel", response_model=ConversionResponse)
 async def convert_bson_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert BSON to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="bson-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="bson",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -967,11 +1619,13 @@ async def convert_bson_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "bson-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -981,7 +1635,7 @@ async def convert_bson_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("bson-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert BSON to Excel", str(e))
 
 # ---------------------------------------------------------------------------
@@ -990,10 +1644,34 @@ async def convert_bson_to_excel(
 
 @router.post("/srt-to-excel", response_model=ConversionResponse)
 async def convert_srt_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT to Excel."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -1005,11 +1683,13 @@ async def convert_srt_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "srt-to-excel",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -1019,15 +1699,39 @@ async def convert_srt_to_excel(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("srt-to-excel", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert SRT to Excel", str(e))
 
 @router.post("/srt-to-xlsx", response_model=ConversionResponse)
 async def convert_srt_to_xlsx(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT to XLSX."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-xlsx",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -1039,11 +1743,13 @@ async def convert_srt_to_xlsx(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "srt-to-xlsx",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -1053,15 +1759,39 @@ async def convert_srt_to_xlsx(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("srt-to-xlsx", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert SRT to XLSX", str(e))
 
 @router.post("/srt-to-xls", response_model=ConversionResponse)
 async def convert_srt_to_xls(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT to XLS."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-xls",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content_str(file)
         
@@ -1073,11 +1803,13 @@ async def convert_srt_to_xls(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "srt-to-xls",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xls"
         )
         
         return ConversionResponse(
@@ -1087,15 +1819,39 @@ async def convert_srt_to_xls(
             download_url=_build_download_url(output_filename)
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("srt-to-xls", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert SRT to XLS", str(e))
 
 @router.post("/excel-to-srt", response_model=ConversionResponse)
 async def convert_excel_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel to SRT."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # or xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -1107,11 +1863,13 @@ async def convert_excel_to_srt(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "excel-to-srt",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="srt"
         )
         
         return ConversionResponse(
@@ -1122,15 +1880,39 @@ async def convert_excel_to_srt(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("excel-to-srt", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert Excel to SRT", str(e))
 
 @router.post("/xlsx-to-srt", response_model=ConversionResponse)
 async def convert_xlsx_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XLSX to SRT."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xlsx-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -1142,11 +1924,13 @@ async def convert_xlsx_to_srt(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "xlsx-to-srt",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="srt"
         )
         
         return ConversionResponse(
@@ -1157,15 +1941,39 @@ async def convert_xlsx_to_srt(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("xlsx-to-srt", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert XLSX to SRT", str(e))
 
 @router.post("/xls-to-srt", response_model=ConversionResponse)
 async def convert_xls_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XLS to SRT."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xls-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xls",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -1177,11 +1985,13 @@ async def convert_xls_to_srt(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        OfficeDocumentsConversionService.log_conversion(
-            "xls-to-srt",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="srt"
         )
         
         return ConversionResponse(
@@ -1192,7 +2002,7 @@ async def convert_xls_to_srt(
             converted_data=result
         )
     except Exception as e:
-        OfficeDocumentsConversionService.log_conversion("xls-to-srt", file.filename or "unknown", "", False, str(e))
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         return create_error_response("Failed to convert XLS to SRT", str(e))
 
 @router.get("/download/{filename}")

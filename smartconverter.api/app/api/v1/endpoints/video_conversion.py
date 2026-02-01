@@ -138,13 +138,36 @@ async def convert_mov_to_mp4(
 
 @router.post("/mkv-to-mp4", response_model=ConversionResponse)
 async def convert_mkv_to_mp4(
+    request: Request,
     file: UploadFile = File(...),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MKV file to MP4 format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mkv-to-mp4",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mkv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -166,6 +189,15 @@ async def convert_mkv_to_mp4(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp4"
+        )
+        
         return ConversionResponse(
             success=True,
             message="MKV file converted to MP4 successfully",
@@ -174,12 +206,14 @@ async def convert_mkv_to_mp4(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -193,13 +227,36 @@ async def convert_mkv_to_mp4(
 
 @router.post("/avi-to-mp4", response_model=ConversionResponse)
 async def convert_avi_to_mp4(
+    request: Request,
     file: UploadFile = File(...),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert AVI file to MP4 format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="avi-to-mp4",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="avi",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -221,6 +278,15 @@ async def convert_avi_to_mp4(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp4"
+        )
+        
         return ConversionResponse(
             success=True,
             message="AVI file converted to MP4 successfully",
@@ -229,12 +295,14 @@ async def convert_avi_to_mp4(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -248,14 +316,37 @@ async def convert_avi_to_mp4(
 
 @router.post("/mp4-to-mp3", response_model=ConversionResponse)
 async def convert_mp4_to_mp3(
+    request: Request,
     file: UploadFile = File(...),
     bitrate: str = Form("192k"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert MP4 file to MP3 audio format."""
     input_path = None
     output_path = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="mp4-to-mp3",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="mp4",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Validate file
         FileService.validate_file(file, "mp4")
@@ -276,6 +367,15 @@ async def convert_mp4_to_mp3(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp3"
+        )
+        
         return ConversionResponse(
             success=True,
             message="MP4 file converted to MP3 successfully",
@@ -284,12 +384,14 @@ async def convert_mp4_to_mp3(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -303,14 +405,37 @@ async def convert_mp4_to_mp3(
 
 @router.post("/convert-video-format", response_model=ConversionResponse)
 async def convert_video_format(
+    request: Request,
     file: UploadFile = File(...),
     output_format: str = Form(...),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert video to any supported format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="convert-video-format",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="video",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -332,6 +457,15 @@ async def convert_video_format(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type=output_format
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"Video converted to {output_format.upper()} successfully",
@@ -340,12 +474,14 @@ async def convert_video_format(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -359,13 +495,36 @@ async def convert_video_format(
 
 @router.post("/video-to-audio", response_model=ConversionResponse)
 async def video_to_audio(
+    request: Request,
     file: UploadFile = File(...),
     output_format: str = Form("mp3"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert video to audio using moviepy (simple approach)."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="video-to-audio",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="video",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -387,6 +546,15 @@ async def video_to_audio(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type=output_format
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"Video converted to {output_format.upper()} audio successfully",
@@ -395,12 +563,14 @@ async def video_to_audio(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -414,14 +584,37 @@ async def video_to_audio(
 
 @router.post("/extract-audio", response_model=ConversionResponse)
 async def extract_audio(
+    request: Request,
     file: UploadFile = File(...),
     output_format: str = Form("mp3"),
     bitrate: str = Form("192k"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Extract audio from video file with customizable bitrate."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="extract-audio",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="video",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -443,6 +636,15 @@ async def extract_audio(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type=output_format
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"Audio extracted to {output_format.upper()} successfully",
@@ -451,12 +653,14 @@ async def extract_audio(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -470,15 +674,38 @@ async def extract_audio(
 
 @router.post("/resize-video", response_model=ConversionResponse)
 async def resize_video(
+    request: Request,
     file: UploadFile = File(...),
     width: int = Form(...),
     height: int = Form(...),
     quality: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Resize video to specified dimensions."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="resize-video",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="video",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -507,6 +734,15 @@ async def resize_video(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp4"
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"Video resized to {width}x{height} successfully",
@@ -515,12 +751,14 @@ async def resize_video(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -534,13 +772,36 @@ async def resize_video(
 
 @router.post("/compress-video", response_model=ConversionResponse)
 async def compress_video(
+    request: Request,
     file: UploadFile = File(...),
     compression_level: str = Form("medium"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Compress video file to reduce size."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="compress-video",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="video",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -566,6 +827,15 @@ async def compress_video(
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="mp4"
+        )
+        
         return ConversionResponse(
             success=True,
             message="Video compressed successfully",
@@ -574,12 +844,14 @@ async def compress_video(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

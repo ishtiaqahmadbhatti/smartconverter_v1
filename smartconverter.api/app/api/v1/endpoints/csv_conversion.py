@@ -7,13 +7,17 @@ This module provides API endpoints for various CSV conversion operations.
 import json
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from fastapi.responses import JSONResponse, FileResponse, Response
 import shutil
 import os
 import uuid
+from sqlalchemy.orm import Session
 
 from app.services.csv_conversion_service import CSVConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.services.file_service import FileService
 from app.core.config import settings
 from app.core.exceptions import (
@@ -81,10 +85,34 @@ async def _read_file_content(file: UploadFile) -> str:
 # HTML Table to CSV
 @router.post("/html-table-to-csv", response_model=ConversionResponse)
 async def convert_html_table_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert HTML table to CSV. Requires HTML file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="html-table-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="html",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -97,13 +125,13 @@ async def convert_html_table_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "html-table-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -115,14 +143,7 @@ async def convert_html_table_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "html-table-to-csv",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -134,10 +155,34 @@ async def convert_html_table_to_csv(
 # Excel to CSV
 @router.post("/excel-to-csv", response_model=ConversionResponse)
 async def convert_excel_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel file to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # Assuming xlsx/xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -151,13 +196,13 @@ async def convert_excel_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "excel-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -169,14 +214,7 @@ async def convert_excel_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "excel-to-csv",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -188,10 +226,34 @@ async def convert_excel_to_csv(
 # OpenOffice Calc ODS to CSV
 @router.post("/ods-to-csv", response_model=ConversionResponse)
 async def convert_ods_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert OpenOffice Calc ODS file to CSV."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ods-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="ods",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -205,13 +267,13 @@ async def convert_ods_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "ods-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -223,14 +285,7 @@ async def convert_ods_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "ods-to-csv",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -242,10 +297,34 @@ async def convert_ods_to_csv(
 # CSV to Excel
 @router.post("/csv-to-excel", response_model=ConversionResponse)
 async def convert_csv_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to Excel file. Requires CSV file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -260,13 +339,13 @@ async def convert_csv_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "csv-to-excel",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -277,14 +356,7 @@ async def convert_csv_to_excel(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "csv-to-excel",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -296,11 +368,35 @@ async def convert_csv_to_excel(
 # CSV to XML
 @router.post("/csv-to-xml", response_model=ConversionResponse)
 async def convert_csv_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
-    root_name: str = Form("data")
+    root_name: str = Form("data"),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to XML. Requires CSV file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -313,13 +409,13 @@ async def convert_csv_to_xml(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "csv-to-xml",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -331,14 +427,7 @@ async def convert_csv_to_xml(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "csv-to-xml",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -350,10 +439,34 @@ async def convert_csv_to_xml(
 # XML to CSV
 @router.post("/xml-to-csv", response_model=ConversionResponse)
 async def convert_xml_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XML to CSV. Requires XML file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -366,13 +479,13 @@ async def convert_xml_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "xml-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -384,14 +497,7 @@ async def convert_xml_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "xml-to-csv",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -403,10 +509,34 @@ async def convert_xml_to_csv(
 # PDF to CSV
 @router.post("/pdf-to-csv", response_model=ConversionResponse)
 async def convert_pdf_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert PDF to CSV. Requires PDF file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="pdf-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -420,13 +550,13 @@ async def convert_pdf_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "pdf-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -438,14 +568,7 @@ async def convert_pdf_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "pdf-to-csv",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -457,10 +580,34 @@ async def convert_pdf_to_csv(
 # JSON to CSV
 @router.post("/json-to-csv", response_model=ConversionResponse)
 async def convert_json_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON to CSV. Requires JSON file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json", # Assuming json
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -479,13 +626,13 @@ async def convert_json_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "json-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -497,14 +644,7 @@ async def convert_json_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "json-to-csv",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -516,10 +656,34 @@ async def convert_json_to_csv(
 # CSV to JSON
 @router.post("/csv-to-json", response_model=ConversionResponse)
 async def convert_csv_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to JSON. Requires CSV file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -532,13 +696,13 @@ async def convert_csv_to_json(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "csv-to-json",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
         )
         
         return ConversionResponse(
@@ -550,14 +714,7 @@ async def convert_csv_to_json(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "csv-to-json",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -569,10 +726,34 @@ async def convert_csv_to_json(
 # JSON Objects to CSV
 @router.post("/json-objects-to-csv", response_model=ConversionResponse)
 async def convert_json_objects_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON objects to CSV. Requires JSON file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-objects-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json", # Assuming json
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -592,13 +773,13 @@ async def convert_json_objects_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "json-objects-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -610,14 +791,7 @@ async def convert_json_objects_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "json-objects-to-csv",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -626,12 +800,37 @@ async def convert_json_objects_to_csv(
         )
 
 
+# BSON to CSV
 @router.post("/bson-to-csv", response_model=ConversionResponse)
 async def convert_bson_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert BSON file to CSV. Requires BSON file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="bson-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="bson",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -645,13 +844,13 @@ async def convert_bson_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "bson-to-csv",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -663,14 +862,7 @@ async def convert_bson_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "bson-to-csv",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -682,10 +874,34 @@ async def convert_bson_to_csv(
 # SRT to CSV
 @router.post("/srt-to-csv", response_model=ConversionResponse)
 async def convert_srt_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT subtitle file to CSV. Requires SRT file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -698,13 +914,13 @@ async def convert_srt_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "srt-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -716,14 +932,7 @@ async def convert_srt_to_csv(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "srt-to-csv",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -735,10 +944,34 @@ async def convert_srt_to_csv(
 # CSV to SRT
 @router.post("/csv-to-srt", response_model=ConversionResponse)
 async def convert_csv_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to SRT subtitle file. Requires CSV file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -751,13 +984,13 @@ async def convert_csv_to_srt(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        CSVConversionService.log_conversion(
-            "csv-to-srt",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="srt"
         )
         
         return ConversionResponse(
@@ -769,14 +1002,7 @@ async def convert_csv_to_srt(
         )
         
     except Exception as e:
-        CSVConversionService.log_conversion(
-            "csv-to-srt",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

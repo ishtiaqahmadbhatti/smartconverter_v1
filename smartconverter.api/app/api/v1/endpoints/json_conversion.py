@@ -3,10 +3,14 @@ import os
 import uuid
 import logging
 from datetime import date, datetime
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Depends
 from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.services.conversion_log_service import ConversionLogService
+from app.api.v1.dependencies import get_user_id
 
 from app.models.schemas import ConversionResponse
 from app.services.json_conversion_service import JSONConversionService
@@ -110,12 +114,35 @@ def _cleanup_files(*paths: Optional[str]) -> None:
 
 @router.post("/ai/pdf-to-json", response_model=ConversionResponse)
 async def ai_convert_pdf_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI-assisted PDF to JSON conversion with structured extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ai-pdf-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="pdf",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         FileService.validate_file(file, "document")
@@ -138,12 +165,13 @@ async def ai_convert_pdf_to_json(
         result_filename = os.path.basename(result_path)
         download_url = _build_download_url(result_filename)
 
-        JSONConversionService.log_conversion(
-            "ai-pdf-to-json",
-            f"File: {file.filename}",
-            f"Output: {result_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -154,28 +182,14 @@ async def ai_convert_pdf_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "ai-pdf-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "ai-pdf-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -193,12 +207,35 @@ async def ai_convert_pdf_to_json(
 
 @router.post("/ai/png-to-json", response_model=ConversionResponse)
 async def ai_convert_png_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI-assisted image to JSON conversion with OCR text extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ai-png-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="png",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         FileService.validate_file(file, "image")
@@ -227,12 +264,13 @@ async def ai_convert_png_to_json(
         result_filename = os.path.basename(result_path)
         download_url = _build_download_url(result_filename)
 
-        JSONConversionService.log_conversion(
-            "ai-png-to-json",
-            f"File: {file.filename}",
-            f"Output: {result_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -243,28 +281,14 @@ async def ai_convert_png_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "ai-png-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "ai-png-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -284,12 +308,35 @@ async def ai_convert_png_to_json(
 
 @router.post("/ai/jpg-to-json", response_model=ConversionResponse)
 async def ai_convert_jpg_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """AI-assisted JPG to JSON conversion with OCR text extraction."""
     input_path: Optional[str] = None
     output_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="ai-jpg-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="jpg",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         FileService.validate_file(file, "image")
@@ -318,12 +365,13 @@ async def ai_convert_jpg_to_json(
         result_filename = os.path.basename(result_path)
         download_url = _build_download_url(result_filename)
 
-        JSONConversionService.log_conversion(
-            "ai-jpg-to-json",
-            f"File: {file.filename}",
-            f"Output: {result_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=result_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -334,28 +382,14 @@ async def ai_convert_jpg_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "ai-jpg-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "ai-jpg-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -373,8 +407,10 @@ async def ai_convert_jpg_to_json(
 
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Convert XML to JSON format.
@@ -383,6 +419,27 @@ async def convert_xml_to_json(
     """
     xml_data: Optional[str] = None
     input_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         FileService.validate_file(file, "xml")
@@ -409,12 +466,13 @@ async def convert_xml_to_json(
         # Create download URL
         download_url = _build_download_url(output_filename)
 
-        JSONConversionService.log_conversion(
-            "xml-to-json",
-            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
-            f"Output: {output_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -425,28 +483,14 @@ async def convert_xml_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "xml-to-json",
-            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "xml-to-json",
-            xml_data[:500] if xml_data and len(xml_data) > 500 else (xml_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -464,23 +508,53 @@ async def convert_xml_to_json(
 
 @router.post("/json-formatter", response_model=ConversionResponse)
 async def format_json(
+    request: Request,
     json_text: Optional[str] = Form(default=None),
     filename: Optional[str] = Form(default=None),
     indent: int = Form(default=2),
     file: Union[UploadFile, str, None] = File(default=None),
+    db: Session = Depends(get_db)
 ):
     """Format JSON with proper indentation. Supports both file upload and direct JSON text input."""
     input_path = None
     json_data_str = None
     
-    try:
-        # Handle file parameter (may be UploadFile, empty string, or None)
-        actual_file = None
-        if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
-            # Check if it's an UploadFile by checking for the 'filename' attribute (duck typing)
-            if hasattr(file, 'filename'):
-                actual_file = file
+    # Init inputs for logging
+    input_identifier = "json-text"
+    input_size = 0
+    if json_text:
+        input_size = len(json_text)
         
+    actual_file = None
+    if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
+        if hasattr(file, 'filename'):
+            actual_file = file
+            input_identifier = file.filename
+            # Try to get size
+            try:
+                actual_file.file.seek(0, 2)
+                input_size = actual_file.file.tell()
+                actual_file.file.seek(0)
+            except:
+                pass
+
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-formatter",
+        input_filename=input_identifier,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
+    try:
         # Check if file is actually provided (has filename and content)
         has_file = (
             actual_file is not None 
@@ -539,12 +613,13 @@ async def format_json(
             
             final_filename = os.path.basename(output_filename_path)
 
-            JSONConversionService.log_conversion(
-                "json-formatter",
-                json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
-                f"Output file: {final_filename}",
-                True,
-                user_id=None,
+            # Update log on success
+            ConversionLogService.update_log_status(
+                db=db,
+                log_id=log.id,
+                status="success",
+                output_filename=final_filename,
+                output_file_type="json"
             )
 
             return ConversionResponse(
@@ -556,12 +631,13 @@ async def format_json(
             )
         else:
             # Direct JSON text - just return formatted content
-            JSONConversionService.log_conversion(
-                "json-formatter",
-                json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
-                "Direct text formatting",
-                True,
-                user_id=None,
+            # Update log on success
+            ConversionLogService.update_log_status(
+                db=db,
+                log_id=log.id,
+                status="success",
+                output_file_size=len(formatted_json),
+                output_file_type="json"
             )
 
             return ConversionResponse(
@@ -571,28 +647,14 @@ async def format_json(
             )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-formatter",
-            json_data_str[:500] if json_data_str and len(json_data_str) > 500 else (json_data_str or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-formatter",
-            f"File: {file.filename if file else 'JSON text input'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -609,20 +671,51 @@ async def format_json(
 
 @router.post("/json-validator")
 async def validate_json(
+    request: Request,
     json_text: Optional[str] = Form(default=None),
     file: Union[UploadFile, str, None] = File(default=None),
+    db: Session = Depends(get_db)
 ):
     """Validate JSON. Supports both file upload and direct JSON text input."""
     input_path = None
     json_data_str = None
     
+    # Init inputs for logging
+    input_identifier = "json-text"
+    input_size = 0
+    if json_text:
+        input_size = len(json_text)
+        
+    actual_file = None
+    if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
+        if hasattr(file, 'filename'):
+            actual_file = file
+            input_identifier = file.filename
+            try:
+                actual_file.file.seek(0, 2)
+                input_size = actual_file.file.tell()
+                actual_file.file.seek(0)
+            except:
+                pass
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-validator",
+        input_filename=input_identifier,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Handle file parameter
-        actual_file = None
-        if file is not None and file != "" and not (isinstance(file, str) and not file.strip()):
-            if hasattr(file, 'filename'):
-                actual_file = file
-        
         # Check if file is provided
         has_file = (
             actual_file is not None 
@@ -682,41 +775,26 @@ async def validate_json(
                 "column": column_number,
             }
         
-        # Log
-        JSONConversionService.log_conversion(
-            "json-validator",
-            json_data_str[:500] if len(json_data_str) > 500 else json_data_str,
-            json.dumps(result),
-            is_valid,
-            None if is_valid else error_message,
-            None,
+        # Log update
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success" if is_valid else "failed",
+            error_message=None if is_valid else error_message,
+            output_file_type="json"
         )
         
         return result
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "json-validator",
-            json_data_str[:500] if json_data_str and len(json_data_str) > 500 else (json_data_str or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-validator",
-            f"File: {file.filename if file and hasattr(file, 'filename') else 'JSON text input'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -733,9 +811,11 @@ async def validate_json(
 
 @router.post("/json-to-xml", response_model=ConversionResponse)
 async def convert_json_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     root_name: Optional[str] = Form("root"),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Convert JSON to XML format.
@@ -745,6 +825,27 @@ async def convert_json_to_xml(
     json_data: Optional[str] = None
     input_path: Optional[str] = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         FileService.validate_file(file, "json")
         input_path = FileService.save_uploaded_file(file)
@@ -771,12 +872,13 @@ async def convert_json_to_xml(
         # Create download URL
         download_url = _build_download_url(output_filename)
 
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            f"Output: {output_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
 
         return ConversionResponse(
@@ -787,28 +889,14 @@ async def convert_json_to_xml(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-to-xml",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -825,9 +913,11 @@ async def convert_json_to_xml(
 
 @router.post("/json-to-csv", response_model=ConversionResponse)
 async def convert_json_to_csv(
+    request: Request,
     file: UploadFile = File(...),
     delimiter: Optional[str] = Form(","),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Convert JSON to CSV format.
@@ -837,6 +927,27 @@ async def convert_json_to_csv(
     json_data: Optional[str] = None
     input_path: Optional[str] = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         FileService.validate_file(file, "json")
         input_path = FileService.save_uploaded_file(file)
@@ -863,12 +974,13 @@ async def convert_json_to_csv(
         # Create download URL
         download_url = _build_download_url(output_filename)
 
-        JSONConversionService.log_conversion(
-            "json-to-csv",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            f"Output: {output_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
 
         return ConversionResponse(
@@ -879,28 +991,14 @@ async def convert_json_to_csv(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-to-csv",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-to-csv",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -917,13 +1015,36 @@ async def convert_json_to_csv(
 
 @router.post("/json-to-excel", response_model=ConversionResponse)
 async def convert_json_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON file to Excel."""
     input_path = None
     json_data = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -953,12 +1074,13 @@ async def convert_json_to_excel(
         
         final_filename = os.path.basename(output_filename_path)
 
-        JSONConversionService.log_conversion(
-            "json-to-excel",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="xlsx"
         )
 
         return ConversionResponse(
@@ -969,28 +1091,14 @@ async def convert_json_to_excel(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-to-excel",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-to-excel",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1007,11 +1115,34 @@ async def convert_json_to_excel(
 
 @router.post("/excel-to-json", response_model=ConversionResponse)
 async def convert_excel_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel file to JSON."""
     input_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx",  # Assumption: typically xlsx, though could be xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         FileService.validate_file(file)
@@ -1036,12 +1167,13 @@ async def convert_excel_to_json(
         final_filename = os.path.basename(output_path)
         download_url = _build_download_url(final_filename)
 
-        JSONConversionService.log_conversion(
-            "excel-to-json",
-            f"File: {file.filename}",
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -1052,28 +1184,14 @@ async def convert_excel_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "excel-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "excel-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1090,12 +1208,35 @@ async def convert_excel_to_json(
 
 @router.post("/csv-to-json", response_model=ConversionResponse)
 async def convert_csv_to_json(
+    request: Request,
     file: UploadFile = File(...),
     delimiter: str = Form(","),
     filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV file to JSON."""
     input_path: Optional[str] = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         FileService.validate_file(file)
@@ -1122,12 +1263,13 @@ async def convert_csv_to_json(
 
         final_filename = os.path.basename(output_filename_path)
 
-        JSONConversionService.log_conversion(
-            "csv-to-json",
-            f"File: {file.filename}",
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -1138,28 +1280,14 @@ async def convert_csv_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
-        JSONConversionService.log_conversion(
-            "csv-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "csv-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1176,13 +1304,36 @@ async def convert_csv_to_json(
 
 @router.post("/json-to-yaml", response_model=ConversionResponse)
 async def convert_json_to_yaml(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON file to YAML."""
     input_path = None
     json_data = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-yaml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -1217,12 +1368,13 @@ async def convert_json_to_yaml(
         
         final_filename = os.path.basename(output_filename_path)
 
-        JSONConversionService.log_conversion(
-            "json-to-yaml",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="yaml"
         )
 
         return ConversionResponse(
@@ -1233,41 +1385,14 @@ async def convert_json_to_yaml(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-to-yaml",
-            json_data[:500] if json_data and len(json_data) > 500 else (json_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
-        JSONConversionService.log_conversion(
-            "json-to-yaml",
-            json.dumps(request.json_data),
-            "",
-            False,
-            str(e),
-            None,
-        )
-        raise create_error_response(
-            error_type="FileProcessingError",
-            message=str(e),
-            status_code=400,
-        )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-to-yaml",
-            json.dumps(request.json_data),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1282,13 +1407,36 @@ async def convert_json_to_yaml(
 
 @router.post("/json-objects-to-csv", response_model=ConversionResponse)
 async def convert_json_objects_to_csv(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     delimiter: str = Form(","),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON file (list of objects) to CSV."""
     input_path = None
     json_data_for_log = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-objects-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Save uploaded file
@@ -1324,12 +1472,13 @@ async def convert_json_objects_to_csv(
 
         final_filename = os.path.basename(output_filename_path)
 
-        JSONConversionService.log_conversion(
-            "json-objects-to-csv",
-            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="csv"
         )
 
         return ConversionResponse(
@@ -1340,28 +1489,14 @@ async def convert_json_objects_to_csv(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-objects-to-csv",
-            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-objects-to-csv",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1378,12 +1513,35 @@ async def convert_json_objects_to_csv(
 
 @router.post("/json-objects-to-excel", response_model=ConversionResponse)
 async def convert_json_objects_to_excel(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON file (list of objects) to Excel."""
     input_path = None
     json_data_for_log = None
+
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-objects-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
 
     try:
         # Save uploaded file
@@ -1418,12 +1576,13 @@ async def convert_json_objects_to_excel(
 
         final_filename = os.path.basename(output_path)
 
-        JSONConversionService.log_conversion(
-            "json-objects-to-excel",
-            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="xlsx"
         )
 
         return ConversionResponse(
@@ -1434,28 +1593,14 @@ async def convert_json_objects_to_excel(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "json-objects-to-excel",
-            json_data_for_log[:500] if json_data_for_log and len(json_data_for_log) > 500 else (json_data_for_log or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "json-objects-to-excel",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -1472,13 +1617,36 @@ async def convert_json_objects_to_excel(
 
 @router.post("/yaml-to-json", response_model=ConversionResponse)
 async def convert_yaml_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert YAML file to JSON."""
     input_path = None
     yaml_data = None
     
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="yaml-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="yaml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Save uploaded file
         input_path = FileService.save_uploaded_file(file)
@@ -1509,12 +1677,13 @@ async def convert_yaml_to_json(
         
         final_filename = os.path.basename(output_filename_path)
 
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            yaml_data[:500] if yaml_data and len(yaml_data) > 500 else (yaml_data or ""),
-            f"Output: {final_filename}",
-            True,
-            user_id=None,
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=final_filename,
+            output_file_type="json"
         )
 
         return ConversionResponse(
@@ -1525,28 +1694,14 @@ async def convert_yaml_to_json(
         )
 
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError, ValueError) as e:
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            yaml_data[:500] if yaml_data and len(yaml_data) > 500 else (yaml_data or ""),
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400,
         )
     except Exception as e:
-        JSONConversionService.log_conversion(
-            "yaml-to-json",
-            f"File: {file.filename if file else 'unknown'}",
-            "",
-            False,
-            str(e),
-            None,
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

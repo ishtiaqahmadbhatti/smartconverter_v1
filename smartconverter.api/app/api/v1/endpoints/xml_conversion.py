@@ -10,11 +10,15 @@ import logging
 import uuid
 import shutil
 from typing import Optional, Dict, Any, List, Union, Tuple
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.services.xml_conversion_service import XMLConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.services.file_service import FileService
 from app.core.config import settings
 from app.core.exceptions import (
@@ -87,12 +91,36 @@ async def _read_file_content(file: UploadFile) -> str:
 # CSV to XML
 @router.post("/csv-to-xml", response_model=ConversionResponse)
 async def convert_csv_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     root_name: str = Form("data"),
-    record_name: str = Form("record")
+    record_name: str = Form("record"),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV to XML. Requires CSV file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -108,13 +136,13 @@ async def convert_csv_to_xml(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
 
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "csv-to-xml",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -126,14 +154,7 @@ async def convert_csv_to_xml(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "csv-to-xml",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -145,12 +166,36 @@ async def convert_csv_to_xml(
 # Excel to XML
 @router.post("/excel-to-xml", response_model=ConversionResponse)
 async def convert_excel_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
     root_name: str = Form("data"),
-    record_name: str = Form("record")
+    record_name: str = Form("record"),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel file to XML."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xlsx", # Assuming xlsx/xls
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Read file content
         file_content = await file.read()
@@ -164,13 +209,13 @@ async def convert_excel_to_xml(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
 
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "excel-to-xml",
-            f"File: {file.filename}",
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -182,14 +227,7 @@ async def convert_excel_to_xml(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "excel-to-xml",
-            f"File: {file.filename if file else 'Unknown'}",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -201,13 +239,37 @@ async def convert_excel_to_xml(
 # XML to JSON
 @router.post("/xml-to-json", response_model=ConversionResponse)
 async def convert_xml_to_json(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Convert XML to JSON.
     Requires XML file upload.
     """
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-json",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -224,13 +286,13 @@ async def convert_xml_to_json(
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(json_result)
         
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "xml-to-json",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="json"
         )
         
         return ConversionResponse(
@@ -242,14 +304,7 @@ async def convert_xml_to_json(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "xml-to-json",
-            file.filename if file else "Unknown",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -261,10 +316,34 @@ async def convert_xml_to_json(
 # XML to CSV
 @router.post("/xml-to-csv", response_model=ConversionResponse)
 async def convert_xml_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XML to CSV. Requires XML file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
 
@@ -280,13 +359,13 @@ async def convert_xml_to_csv(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
 
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "xml-to-csv",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="csv"
         )
         
         return ConversionResponse(
@@ -298,14 +377,7 @@ async def convert_xml_to_csv(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "xml-to-csv",
-            "",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -317,10 +389,34 @@ async def convert_xml_to_csv(
 # XML to Excel
 @router.post("/xml-to-excel", response_model=ConversionResponse)
 async def convert_xml_to_excel(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert XML to Excel file. Requires XML file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
 
@@ -338,13 +434,13 @@ async def convert_xml_to_excel(
         if os.path.abspath(service_output_path) != os.path.abspath(output_path):
             shutil.move(service_output_path, output_path)
         
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "xml-to-excel",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xlsx"
         )
         
         return ConversionResponse(
@@ -355,14 +451,7 @@ async def convert_xml_to_excel(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "xml-to-excel",
-            "",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -374,10 +463,34 @@ async def convert_xml_to_excel(
 # Fix XML Escaping
 @router.post("/fix-xml-escaping", response_model=ConversionResponse)
 async def fix_xml_escaping(
+    request: Request,
     file: UploadFile = File(...),
-    filename: Optional[str] = Form(None)
+    filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Fix XML escaping issues. Requires XML file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="fix-xml-escaping",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
 
@@ -393,13 +506,13 @@ async def fix_xml_escaping(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
 
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "fix-xml-escaping",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -411,14 +524,7 @@ async def fix_xml_escaping(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "fix-xml-escaping",
-            "",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -433,10 +539,34 @@ async def fix_xml_escaping(
 # XML/XSD Validator
 @router.post("/xml-xsd-validator", response_model=ConversionResponse)
 async def validate_xml_xsd(
+    request: Request,
     file_xml: UploadFile = File(...),
-    file_xsd: Union[UploadFile, str, None] = File(None)
+    file_xsd: Union[UploadFile, str, None] = File(None),
+    db: Session = Depends(get_db)
 ):
     """Validate XML against XSD schema. Requires XML file. XSD file is optional."""
+    
+    # Get file info for XML
+    file_xml.file.seek(0, 2)
+    input_size = file_xml.file.tell()
+    file_xml.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="xml-xsd-validator",
+        input_filename=file_xml.filename,
+        input_file_size=input_size,
+        input_file_type="xml",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         # Get XML Content
         xml_text = await _read_file_content(file_xml)
@@ -451,13 +581,13 @@ async def validate_xml_xsd(
         
         result = XMLConversionService.xml_xsd_validator(xml_text, xsd_text)
         
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "xml-xsd-validator",
-            xml_text[:500] if len(xml_text) > 500 else xml_text,
-            json.dumps(result),
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=None, # No output file for validation
+            output_file_type=None
         )
         
         return ConversionResponse(
@@ -467,14 +597,7 @@ async def validate_xml_xsd(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "xml-xsd-validator",
-            "",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -486,11 +609,35 @@ async def validate_xml_xsd(
 # JSON to XML
 @router.post("/json-to-xml", response_model=ConversionResponse)
 async def convert_json_to_xml(
+    request: Request,
     file: UploadFile = File(...),
     filename: Optional[str] = Form(None),
-    root_name: str = Form("root")
+    root_name: str = Form("root"),
+    db: Session = Depends(get_db)
 ):
     """Convert JSON to XML. Requires JSON file upload."""
+    
+    # Get file info
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="json-to-xml",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="json", # Assuming json
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
+
     try:
         content = await _read_file_content(file)
         
@@ -512,13 +659,13 @@ async def convert_json_to_xml(
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(result)
         
-        # Log conversion
-        XMLConversionService.log_conversion(
-            "json-to-xml",
-            content[:500] if len(content) > 500 else content,
-            f"Output: {output_filename}",
-            True,
-            user_id=None
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=output_filename,
+            output_file_type="xml"
         )
         
         return ConversionResponse(
@@ -530,14 +677,7 @@ async def convert_json_to_xml(
         )
         
     except Exception as e:
-        XMLConversionService.log_conversion(
-            "json-to-xml",
-            "",
-            "",
-            False,
-            str(e),
-            None
-        )
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",

@@ -1,9 +1,13 @@
 import os
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
 from fastapi.responses import FileResponse
 from typing import Optional
+from sqlalchemy.orm import Session
 from app.models.schemas import ConversionResponse
 from app.services.subtitle_conversion_service import SubtitleConversionService
+from app.services.conversion_log_service import ConversionLogService
+from app.core.database import get_db
+from app.api.v1.dependencies import get_user_id
 from app.core.exceptions import (
     FileProcessingError, 
     UnsupportedFileTypeError, 
@@ -17,14 +21,37 @@ router = APIRouter()
 
 @router.post("/translate-srt", response_model=ConversionResponse)
 async def translate_srt(
+    request: Request,
     file: UploadFile = File(...),
     target_language: str = Form("en"),
     source_language: str = Form("auto"),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Translate SRT subtitle file using AI translation."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="translate-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -36,6 +63,15 @@ async def translate_srt(
         # Translate SRT file
         output_path = SubtitleConversionService.translate_srt(input_path, target_language, source_language, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="srt"
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"SRT file translated to {target_language} successfully",
@@ -44,12 +80,14 @@ async def translate_srt(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -64,12 +102,35 @@ async def translate_srt(
 
 @router.post("/srt-to-csv", response_model=ConversionResponse)
 async def convert_srt_to_csv(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT subtitle file to CSV format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-csv",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -81,6 +142,15 @@ async def convert_srt_to_csv(
         # Convert SRT to CSV
         output_path = SubtitleConversionService.srt_to_csv(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="csv"
+        )
+        
         return ConversionResponse(
             success=True,
             message="SRT file converted to CSV successfully",
@@ -89,12 +159,14 @@ async def convert_srt_to_csv(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -109,13 +181,36 @@ async def convert_srt_to_csv(
 
 @router.post("/srt-to-excel", response_model=ConversionResponse)
 async def convert_srt_to_excel(
+    request: Request,
     file: UploadFile = File(...),
     format_type: str = Form("xlsx"),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT subtitle file to Excel format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-excel",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -127,6 +222,15 @@ async def convert_srt_to_excel(
         # Convert SRT to Excel
         output_path = SubtitleConversionService.srt_to_excel(input_path, format_type, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type=format_type
+        )
+        
         return ConversionResponse(
             success=True,
             message=f"SRT file converted to {format_type.upper()} successfully",
@@ -135,12 +239,14 @@ async def convert_srt_to_excel(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -155,12 +261,35 @@ async def convert_srt_to_excel(
 
 @router.post("/srt-to-text", response_model=ConversionResponse)
 async def convert_srt_to_text(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT subtitle file to plain text."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-text",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -172,6 +301,15 @@ async def convert_srt_to_text(
         # Convert SRT to text
         output_path = SubtitleConversionService.srt_to_text(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="txt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="SRT file converted to text successfully",
@@ -180,12 +318,14 @@ async def convert_srt_to_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -200,12 +340,35 @@ async def convert_srt_to_text(
 
 @router.post("/srt-to-vtt", response_model=ConversionResponse)
 async def convert_srt_to_vtt(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert SRT subtitle file to VTT format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="srt-to-vtt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="srt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -217,6 +380,15 @@ async def convert_srt_to_vtt(
         # Convert SRT to VTT
         output_path = SubtitleConversionService.srt_to_vtt(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="vtt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="SRT file converted to VTT successfully",
@@ -225,12 +397,14 @@ async def convert_srt_to_vtt(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -245,12 +419,35 @@ async def convert_srt_to_vtt(
 
 @router.post("/vtt-to-text", response_model=ConversionResponse)
 async def convert_vtt_to_text(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert VTT subtitle file to plain text."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="vtt-to-text",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="vtt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -262,6 +459,15 @@ async def convert_vtt_to_text(
         # Convert VTT to text
         output_path = SubtitleConversionService.vtt_to_text(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="txt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="VTT file converted to text successfully",
@@ -270,12 +476,14 @@ async def convert_vtt_to_text(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -290,12 +498,35 @@ async def convert_vtt_to_text(
 
 @router.post("/vtt-to-srt", response_model=ConversionResponse)
 async def convert_vtt_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert VTT subtitle file to SRT format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="vtt-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="vtt",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -307,6 +538,15 @@ async def convert_vtt_to_srt(
         # Convert VTT to SRT
         output_path = SubtitleConversionService.vtt_to_srt(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="srt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="VTT file converted to SRT successfully",
@@ -315,12 +555,14 @@ async def convert_vtt_to_srt(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -335,12 +577,35 @@ async def convert_vtt_to_srt(
 
 @router.post("/csv-to-srt", response_model=ConversionResponse)
 async def convert_csv_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert CSV subtitle file to SRT format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="csv-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="csv",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -352,6 +617,15 @@ async def convert_csv_to_srt(
         # Convert CSV to SRT
         output_path = SubtitleConversionService.csv_to_srt(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="srt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="CSV file converted to SRT successfully",
@@ -360,12 +634,14 @@ async def convert_csv_to_srt(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
@@ -380,12 +656,35 @@ async def convert_csv_to_srt(
 
 @router.post("/excel-to-srt", response_model=ConversionResponse)
 async def convert_excel_to_srt(
+    request: Request,
     file: UploadFile = File(...),
-    output_filename: Optional[str] = Form(None)
+    output_filename: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """Convert Excel subtitle file to SRT format."""
     input_path = None
     output_path = None
+    
+    # Get file size
+    file.file.seek(0, 2)
+    input_size = file.file.tell()
+    file.file.seek(0)
+    
+    # Get user_id
+    user_id = await get_user_id(request, db)
+    
+    # Initial log
+    log = ConversionLogService.log_conversion(
+        db=db,
+        user_id=user_id,
+        conversion_type="excel-to-srt",
+        input_filename=file.filename,
+        input_file_size=input_size,
+        input_file_type="excel",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+        api_endpoint=request.url.path
+    )
     
     try:
         # Validate file
@@ -397,6 +696,15 @@ async def convert_excel_to_srt(
         # Convert Excel to SRT
         output_path = SubtitleConversionService.excel_to_srt(input_path, output_filename=output_filename)
         
+        # Update log on success
+        ConversionLogService.update_log_status(
+            db=db,
+            log_id=log.id,
+            status="success",
+            output_filename=os.path.basename(output_path),
+            output_file_type="srt"
+        )
+        
         return ConversionResponse(
             success=True,
             message="Excel file converted to SRT successfully",
@@ -405,12 +713,14 @@ async def convert_excel_to_srt(
         )
         
     except (FileProcessingError, UnsupportedFileTypeError, FileSizeExceededError) as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type=type(e).__name__,
             message=str(e),
             status_code=400
         )
     except Exception as e:
+        ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response(
             error_type="InternalServerError",
             message="An unexpected error occurred",
