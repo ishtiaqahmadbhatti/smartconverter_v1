@@ -20,62 +20,20 @@
                         <span class="dropdown-icon">▼</span>
                     </a>
                     <div class="dropdown-menu" [class.show]="showDropdown">
-                        <a routerLink="/jsonconversion" class="dropdown-item">
-                            <i class="fas fa-database"></i>
-                            <span>JSON Conversion</span>
+                        @for (tool of tools; track tool.name) {
+                        @if (tool.type === 'route') {
+                        <a [routerLink]="tool.link" class="dropdown-item">
+                            <i [class]="tool.icon"></i>
+                            <span>{{ tool.name }}</span>
                         </a>
-                        <a href="#xml" class="dropdown-item">
-                            <i class="fas fa-code"></i>
-                            <span>XML Conversion</span>
+                        }
+                        @if (tool.type === 'anchor') {
+                        <a [href]="tool.link" class="dropdown-item">
+                            <i [class]="tool.icon"></i>
+                            <span>{{ tool.name }}</span>
                         </a>
-                        <a href="#csv" class="dropdown-item">
-                            <i class="fas fa-table"></i>
-                            <span>CSV Conversion</span>
-                        </a>
-                        <a href="#office" class="dropdown-item">
-                            <i class="fas fa-file-word"></i>
-                            <span>Office Documents</span>
-                        </a>
-                        <a href="#pdf" class="dropdown-item">
-                            <i class="fas fa-file-pdf"></i>
-                            <span>PDF Conversion</span>
-                        </a>
-                        <a href="#image" class="dropdown-item">
-                            <i class="fas fa-image"></i>
-                            <span>Image Conversion</span>
-                        </a>
-                        <a href="#ocr" class="dropdown-item">
-                            <i class="fas fa-file-alt"></i>
-                            <span>OCR Conversion</span>
-                        </a>
-                        <a href="#website" class="dropdown-item">
-                            <i class="fas fa-globe"></i>
-                            <span>Website Conversion</span>
-                        </a>
-                        <a href="#video" class="dropdown-item">
-                            <i class="fas fa-video"></i>
-                            <span>Video Conversion</span>
-                        </a>
-                        <a href="#audio" class="dropdown-item">
-                            <i class="fas fa-music"></i>
-                            <span>Audio Conversion</span>
-                        </a>
-                        <a href="#subtitle" class="dropdown-item">
-                            <i class="fas fa-closed-captioning"></i>
-                            <span>Subtitle Conversion</span>
-                        </a>
-                        <a href="#text" class="dropdown-item">
-                            <i class="fas fa-font"></i>
-                            <span>Text Conversion</span>
-                        </a>
-                        <a href="#ebook" class="dropdown-item">
-                            <i class="fas fa-book"></i>
-                            <span>eBook Conversion</span>
-                        </a>
-                        <a href="#formatter" class="dropdown-item">
-                            <i class="fas fa-wrench"></i>
-                            <span>File Formatter</span>
-                        </a>
+                        }
+                        }
                     </div>
                 </li>
                 <li class="nav-item">
@@ -91,46 +49,47 @@
 
             <!-- Mobile Actions (inside mobile menu) -->
             <div class="mobile-actions">
-                <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
-                    <button class="btn btn-secondary" routerLink="/authentication/signin"
-                        (click)="toggleMobileMenu()">Sign In</button>
-                    <button class="btn btn-signup" routerLink="/authentication/signup" (click)="toggleMobileMenu()">Sign
-                        Up</button>
-                </ng-container>
-                <ng-container *ngIf="authService.isLoggedIn$ | async">
-                    <div class="mobile-profile-info">
-                        <div class="profile-avatar mobile">
-                            {{ authService.getUserInitials() }}
-                        </div>
-                        <div class="mobile-user-details">
-                            <span class="user-name">{{ authService.getUserName() }}</span>
-                            <span class="user-email">{{ authService.getUserEmail() }}</span>
-                        </div>
+                @if (!(authService.isLoggedIn$ | async)) {
+                <button class="btn btn-secondary" routerLink="/authentication/signin" (click)="toggleMobileMenu()">Sign
+                    In</button>
+                <button class="btn btn-signup" routerLink="/authentication/signup" (click)="toggleMobileMenu()">Sign
+                    Up</button>
+                }
+                @if (authService.isLoggedIn$ | async) {
+                <div class="mobile-profile-info">
+                    <div class="profile-avatar mobile">
+                        {{ authService.getUserInitials() }}
                     </div>
-                    <a routerLink="/profile/personal-info" (click)="toggleMobileMenu()" class="dropdown-item">
-                        <i class="fas fa-user"></i> Personal Information
-                    </a>
-                    <a routerLink="/profile/change-password" (click)="toggleMobileMenu()" class="dropdown-item">
-                        <i class="fas fa-lock"></i> Change Password
-                    </a>
-                    <a routerLink="/profile/subscription" (click)="toggleMobileMenu()" class="dropdown-item">
-                        <i class="fas fa-crown"></i> Subscription
-                    </a>
-                    <button class="btn btn-secondary" (click)="logout()">Log Out</button>
-                </ng-container>
+                    <div class="mobile-user-details">
+                        <span class="user-name">{{ authService.getUserName() }}</span>
+                        <span class="user-email">{{ authService.getUserEmail() }}</span>
+                    </div>
+                </div>
+                <a routerLink="/profile/personal-info" (click)="toggleMobileMenu()" class="dropdown-item">
+                    <i class="fas fa-user"></i> Personal Information
+                </a>
+                <a routerLink="/profile/change-password" (click)="toggleMobileMenu()" class="dropdown-item">
+                    <i class="fas fa-lock"></i> Change Password
+                </a>
+                <a routerLink="/profile/subscription" (click)="toggleMobileMenu()" class="dropdown-item">
+                    <i class="fas fa-crown"></i> Subscription
+                </a>
+                <button class="btn btn-secondary" (click)="logout()">Log Out</button>
+                }
             </div>
         </nav>
 
         <!-- Desktop Action Buttons -->
         <div class="header-actions">
-            <ng-container *ngIf="!(authService.isLoggedIn$ | async)">
-                <button class="btn btn-secondary" routerLink="/authentication/signin">Sign In</button>
-                <button class="btn btn-signup" routerLink="/authentication/signup">Sign Up</button>
-            </ng-container>
+            @if (!(authService.isLoggedIn$ | async)) {
+            <button class="btn btn-secondary" routerLink="/authentication/signin">Sign In</button>
+            <button class="btn btn-signup" routerLink="/authentication/signup">Sign Up</button>
+            }
 
             <!-- Profile Dropdown (Logged In) -->
-            <div class="profile-dropdown-container" *ngIf="authService.isLoggedIn$ | async"
-                (mouseenter)="showProfileDropdown = true" (mouseleave)="showProfileDropdown = false">
+            @if (authService.isLoggedIn$ | async) {
+            <div class="profile-dropdown-container" (mouseenter)="showProfileDropdown = true"
+                (mouseleave)="showProfileDropdown = false">
                 <div class="profile-icon-wrapper">
                     <div class="profile-avatar">
                         {{ authService.getUserInitials() }}
@@ -158,6 +117,7 @@
                     </a>
                 </div>
             </div>
+            }
         </div>
 
         <!-- Mobile Menu Toggle -->
