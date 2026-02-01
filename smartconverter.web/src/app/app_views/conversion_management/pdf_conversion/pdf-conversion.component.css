@@ -98,25 +98,6 @@
     transform: translateY(-2px);
 }
 
-.no-results {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 4rem 1rem;
-    color: #718096;
-}
-
-.no-results i {
-    font-size: 3rem;
-    color: #cbd5e0;
-    margin-bottom: 1rem;
-}
-
-.no-results h3 {
-    font-size: 1.5rem;
-    color: #4a5568;
-    margin-bottom: 0.5rem;
-}
-
 .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -219,4 +200,23 @@
 .tool-card:hover .arrow-icon {
     color: #667eea;
     transform: translateX(5px);
+}
+
+.no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #718096;
+}
+
+.no-results i {
+    font-size: 3rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+}
+
+.no-results h3 {
+    font-size: 1.5rem;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
 }

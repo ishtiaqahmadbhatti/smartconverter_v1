@@ -23,7 +23,7 @@ export class HeaderComponent {
     { name: 'XML Conversion', icon: 'fas fa-code', link: '#xml', type: 'anchor' },
     { name: 'CSV Conversion', icon: 'fas fa-table', link: '#csv', type: 'anchor' },
     { name: 'Office Documents', icon: 'fas fa-file-word', link: '#office', type: 'anchor' },
-    { name: 'PDF Conversion', icon: 'fas fa-file-pdf', link: '#pdf', type: 'anchor' },
+    { name: 'PDF Conversion', icon: 'fas fa-file-pdf', link: '/pdfconversion', type: 'route' },
     { name: 'Image Conversion', icon: 'fas fa-image', link: '#image', type: 'anchor' },
     { name: 'OCR Conversion', icon: 'fas fa-file-alt', link: '#ocr', type: 'anchor' },
     { name: 'Website Conversion', icon: 'fas fa-globe', link: '#website', type: 'anchor' },
