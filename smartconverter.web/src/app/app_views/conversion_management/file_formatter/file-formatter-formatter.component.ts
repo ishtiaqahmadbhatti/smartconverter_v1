@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { FILEFORMATTERCONVERSIONTOOLS } from '../../../app_data/file-formatter-tools.data';
+import { FILE_FORMATTER_TOOLS } from '../../../app_data/file-formatter-tools.data';
 import { ConversionTool } from '../../../app_models/conversion-tool.model';
 import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools-ui/conversion-tools-ui.component';
 
@@ -13,5 +13,5 @@ import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools
     styleUrl: './file-formatter-formatter.component.css'
 })
 export class FileFormatterComponent {
-    tools: ConversionTool[] = FILEFORMATTERCONVERSIONTOOLS;
+    tools: ConversionTool[] = FILE_FORMATTER_TOOLS;
 }

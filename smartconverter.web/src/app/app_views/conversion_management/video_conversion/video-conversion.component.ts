@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { VIDEOCONVERSIONTOOLS } from '../../../app_data/video-conversion-tools.data';
+import { VIDEO_CONVERSION_TOOLS } from '../../../app_data/video-conversion-tools.data';
 import { ConversionTool } from '../../../app_models/conversion-tool.model';
 import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools-ui/conversion-tools-ui.component';
 
@@ -13,5 +13,5 @@ import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools
     styleUrl: './video-conversion.component.css'
 })
 export class VideoConversionComponent {
-    tools: ConversionTool[] = VIDEOCONVERSIONTOOLS;
+    tools: ConversionTool[] = VIDEO_CONVERSION_TOOLS;
 }

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { TEXTCONVERSIONTOOLS } from '../../../app_data/text-conversion-tools.data';
+import { TEXT_CONVERSION_TOOLS } from '../../../app_data/text-conversion-tools.data';
 import { ConversionTool } from '../../../app_models/conversion-tool.model';
 import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools-ui/conversion-tools-ui.component';
 
@@ -13,5 +13,5 @@ import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools
     styleUrl: './text-conversion.component.css'
 })
 export class TextConversionComponent {
-    tools: ConversionTool[] = TEXTCONVERSIONTOOLS;
+    tools: ConversionTool[] = TEXT_CONVERSION_TOOLS;
 }

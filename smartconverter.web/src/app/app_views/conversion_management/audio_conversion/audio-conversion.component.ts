@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { AUDIOCONVERSIONTOOLS } from '../../../app_data/audio-conversion-tools.data';
+import { AUDIO_CONVERSION_TOOLS } from '../../../app_data/audio-conversion-tools.data';
 import { ConversionTool } from '../../../app_models/conversion-tool.model';
 import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools-ui/conversion-tools-ui.component';
 
@@ -13,5 +13,5 @@ import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools
     styleUrl: './audio-conversion.component.css'
 })
 export class AudioConversionComponent {
-    tools: ConversionTool[] = AUDIOCONVERSIONTOOLS;
+    tools: ConversionTool[] = AUDIO_CONVERSION_TOOLS;
 }

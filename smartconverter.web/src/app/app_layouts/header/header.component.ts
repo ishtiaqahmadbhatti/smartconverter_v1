@@ -20,19 +20,19 @@ export class HeaderComponent {
 
   tools = [
     { name: 'JSON Conversion', icon: 'fas fa-database', link: '/jsonconversion', type: 'route' },
-    { name: 'XML Conversion', icon: 'fas fa-code', link: '#xml', type: 'anchor' },
-    { name: 'CSV Conversion', icon: 'fas fa-table', link: '#csv', type: 'anchor' },
-    { name: 'Office Documents', icon: 'fas fa-file-word', link: '#office', type: 'anchor' },
+    { name: 'XML Conversion', icon: 'fas fa-code', link: '/xmlconversion', type: 'route' },
+    { name: 'CSV Conversion', icon: 'fas fa-table', link: '/csvconversion', type: 'route' },
+    { name: 'Office Documents', icon: 'fas fa-file-word', link: '/officeconversion', type: 'route' },
     { name: 'PDF Conversion', icon: 'fas fa-file-pdf', link: '/pdfconversion', type: 'route' },
-    { name: 'Image Conversion', icon: 'fas fa-image', link: '#image', type: 'anchor' },
-    { name: 'OCR Conversion', icon: 'fas fa-file-alt', link: '#ocr', type: 'anchor' },
-    { name: 'Website Conversion', icon: 'fas fa-globe', link: '#website', type: 'anchor' },
-    { name: 'Video Conversion', icon: 'fas fa-video', link: '#video', type: 'anchor' },
-    { name: 'Audio Conversion', icon: 'fas fa-music', link: '#audio', type: 'anchor' },
-    { name: 'Subtitle Conversion', icon: 'fas fa-closed-captioning', link: '#subtitle', type: 'anchor' },
-    { name: 'Text Conversion', icon: 'fas fa-font', link: '#text', type: 'anchor' },
-    { name: 'eBook Conversion', icon: 'fas fa-book', link: '#ebook', type: 'anchor' },
-    { name: 'File Formatter', icon: 'fas fa-wrench', link: '#formatter', type: 'anchor' }
+    { name: 'Image Conversion', icon: 'fas fa-image', link: '/imageconversion', type: 'route' },
+    { name: 'OCR Conversion', icon: 'fas fa-file-alt', link: '/ocrconversion', type: 'route' },
+    { name: 'Website Conversion', icon: 'fas fa-globe', link: '/websiteconversion', type: 'route' },
+    { name: 'Video Conversion', icon: 'fas fa-video', link: '/videoconversion', type: 'route' },
+    { name: 'Audio Conversion', icon: 'fas fa-music', link: '/audioconversion', type: 'route' },
+    { name: 'Subtitle Conversion', icon: 'fas fa-closed-captioning', link: '/subtitleconversion', type: 'route' },
+    { name: 'Text Conversion', icon: 'fas fa-font', link: '/textconversion', type: 'route' },
+    { name: 'eBook Conversion', icon: 'fas fa-book', link: '/ebookconversion', type: 'route' },
+    { name: 'File Formatter', icon: 'fas fa-wrench', link: '/fileformatter', type: 'route' }
   ];
 
   constructor(public authService: AuthService) { }

@@ -4,297 +4,297 @@ export const PDF_CONVERSION_TOOLS: ConversionTool[] = [
     {
         id: 'pdf-to-json',
         title: 'PDF to JSON',
-        description: 'Convert PDF documents to JSON format.',
+        description: 'Convert PDF to JSON format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-code',
-        route: 'pdf-to-json'
+        route: '/pdfconversion/pdf-to-json'
     },
     {
         id: 'pdf-to-markdown',
         title: 'PDF to Markdown',
-        description: 'Convert PDF documents to Markdown format.',
+        description: 'Convert PDF to Markdown format',
         sourceIcon: 'fas fa-file-pdf',
-        targetIcon: 'fab fa-markdown',
-        route: 'pdf-to-markdown'
+        targetIcon: 'fas fa-file-alt',
+        route: '/pdfconversion/pdf-to-markdown'
     },
     {
         id: 'pdf-to-csv-ai',
-        title: 'PDF to CSV (AI)',
-        description: ' intelligently convert PDF tables to CSV using AI.',
+        title: 'AI PDF to CSV',
+        description: 'Convert PDF to CSV using AI',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-csv',
-        route: 'pdf-to-csv-ai'
+        route: '/pdfconversion/pdf-to-csv-ai'
     },
     {
         id: 'pdf-to-excel-ai',
-        title: 'PDF to Excel (AI)',
-        description: 'Intelligently convert PDF tables to Excel using AI.',
+        title: 'AI PDF to Excel',
+        description: 'Convert PDF to Excel using AI',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-excel',
-        route: 'pdf-to-excel-ai'
+        route: '/pdfconversion/pdf-to-excel-ai'
     },
     {
         id: 'html-to-pdf',
         title: 'HTML to PDF',
-        description: 'Convert HTML content to PDF format.',
-        sourceIcon: 'fas fa-code',
+        description: 'Convert HTML to PDF format',
+        sourceIcon: 'fas fa-file-code',
         targetIcon: 'fas fa-file-pdf',
-        route: 'html-to-pdf'
+        route: '/pdfconversion/html-to-pdf'
     },
     {
         id: 'word-to-pdf',
         title: 'Word to PDF',
-        description: 'Convert Word documents to PDF format.',
+        description: 'Convert Word to PDF format',
         sourceIcon: 'fas fa-file-word',
         targetIcon: 'fas fa-file-pdf',
-        route: 'word-to-pdf'
+        route: '/pdfconversion/word-to-pdf'
     },
     {
         id: 'powerpoint-to-pdf',
         title: 'PowerPoint to PDF',
-        description: 'Convert PowerPoint presentations to PDF.',
+        description: 'Convert PowerPoint to PDF format',
         sourceIcon: 'fas fa-file-powerpoint',
         targetIcon: 'fas fa-file-pdf',
-        route: 'powerpoint-to-pdf'
+        route: '/pdfconversion/powerpoint-to-pdf'
     },
     {
         id: 'oxps-to-pdf',
         title: 'OXPS to PDF',
-        description: 'Convert OXPS files to PDF format.',
-        sourceIcon: 'fas fa-file',
+        description: 'Convert OXPS to PDF format',
+        sourceIcon: 'fas fa-file-alt',
         targetIcon: 'fas fa-file-pdf',
-        route: 'oxps-to-pdf'
+        route: '/pdfconversion/oxps-to-pdf'
     },
     {
         id: 'jpg-to-pdf',
         title: 'JPG to PDF',
-        description: 'Convert JPG images to PDF documents.',
+        description: 'Convert JPG to PDF format',
         sourceIcon: 'fas fa-file-image',
         targetIcon: 'fas fa-file-pdf',
-        route: 'jpg-to-pdf'
+        route: '/pdfconversion/jpg-to-pdf'
     },
     {
         id: 'png-to-pdf',
         title: 'PNG to PDF',
-        description: 'Convert PNG images to PDF documents.',
+        description: 'Convert PNG to PDF format',
         sourceIcon: 'fas fa-file-image',
         targetIcon: 'fas fa-file-pdf',
-        route: 'png-to-pdf'
+        route: '/pdfconversion/png-to-pdf'
     },
     {
         id: 'markdown-to-pdf',
         title: 'Markdown to PDF',
-        description: 'Convert Markdown content to PDF.',
-        sourceIcon: 'fab fa-markdown',
+        description: 'Convert Markdown to PDF format',
+        sourceIcon: 'fas fa-file-alt',
         targetIcon: 'fas fa-file-pdf',
-        route: 'markdown-to-pdf'
+        route: '/pdfconversion/markdown-to-pdf'
     },
     {
         id: 'excel-to-pdf',
         title: 'Excel to PDF',
-        description: 'Convert Excel spreadsheets to PDF.',
+        description: 'Convert Excel to PDF format',
         sourceIcon: 'fas fa-file-excel',
         targetIcon: 'fas fa-file-pdf',
-        route: 'excel-to-pdf'
+        route: '/pdfconversion/excel-to-pdf'
     },
     {
         id: 'excel-to-xps',
         title: 'Excel to XPS',
-        description: 'Convert Excel spreadsheets to XPS format.',
+        description: 'Convert Excel to XPS format',
         sourceIcon: 'fas fa-file-excel',
-        targetIcon: 'fas fa-print',
-        route: 'excel-to-xps'
+        targetIcon: 'fas fa-file-alt',
+        route: '/pdfconversion/excel-to-xps'
     },
     {
         id: 'ods-to-pdf',
         title: 'ODS to PDF',
-        description: 'Convert ODS files to PDF format.',
-        sourceIcon: 'fas fa-table',
+        description: 'Convert ODS to PDF format',
+        sourceIcon: 'fas fa-file-excel',
         targetIcon: 'fas fa-file-pdf',
-        route: 'ods-to-pdf'
+        route: '/pdfconversion/ods-to-pdf'
     },
     {
         id: 'pdf-to-csv',
         title: 'PDF to CSV',
-        description: 'Extract data from PDF to CSV format.',
+        description: 'Convert PDF to CSV format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-csv',
-        route: 'pdf-to-csv'
+        route: '/pdfconversion/pdf-to-csv'
     },
     {
         id: 'pdf-to-excel',
         title: 'PDF to Excel',
-        description: 'Extract data from PDF to Excel format.',
+        description: 'Convert PDF to Excel format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-excel',
-        route: 'pdf-to-excel'
+        route: '/pdfconversion/pdf-to-excel'
     },
     {
         id: 'pdf-to-word',
         title: 'PDF to Word',
-        description: 'Convert PDF documents to editable Word files.',
+        description: 'Convert PDF to Word format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-word',
-        route: 'pdf-to-word'
+        route: '/pdfconversion/pdf-to-word'
     },
     {
         id: 'pdf-to-jpg',
         title: 'PDF to JPG',
-        description: 'Convert PDF pages to JPG images.',
+        description: 'Convert PDF to JPG format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-image',
-        route: 'pdf-to-jpg'
+        route: '/pdfconversion/pdf-to-jpg'
     },
     {
         id: 'pdf-to-png',
         title: 'PDF to PNG',
-        description: 'Convert PDF pages to PNG images.',
+        description: 'Convert PDF to PNG format',
         sourceIcon: 'fas fa-file-pdf',
         targetIcon: 'fas fa-file-image',
-        route: 'pdf-to-png'
+        route: '/pdfconversion/pdf-to-png'
     },
     {
         id: 'pdf-to-tiff',
         title: 'PDF to TIFF',
-        description: 'Convert PDF documents to TIFF format.',
+        description: 'Convert PDF to TIFF format',
         sourceIcon: 'fas fa-file-pdf',
-        targetIcon: 'fas fa-image',
-        route: 'pdf-to-tiff'
+        targetIcon: 'fas fa-file-image',
+        route: '/pdfconversion/pdf-to-tiff'
     },
     {
         id: 'pdf-to-svg',
         title: 'PDF to SVG',
-        description: 'Convert PDF pages to SVG vectors.',
+        description: 'Convert PDF to SVG format',
         sourceIcon: 'fas fa-file-pdf',
-        targetIcon: 'fas fa-bezier-curve',
-        route: 'pdf-to-svg'
+        targetIcon: 'fas fa-vector-square',
+        route: '/pdfconversion/pdf-to-svg'
     },
     {
         id: 'pdf-to-html',
         title: 'PDF to HTML',
-        description: 'Convert PDF documents to HTML pages.',
+        description: 'Convert PDF to HTML format',
         sourceIcon: 'fas fa-file-pdf',
-        targetIcon: 'fas fa-code',
-        route: 'pdf-to-html'
+        targetIcon: 'fas fa-file-code',
+        route: '/pdfconversion/pdf-to-html'
     },
     {
         id: 'pdf-to-text',
         title: 'PDF to Text',
-        description: 'Extract plain text from PDF documents.',
+        description: 'Convert PDF to Text format',
         sourceIcon: 'fas fa-file-pdf',
-        targetIcon: 'fas fa-font',
-        route: 'pdf-to-text'
+        targetIcon: 'fas fa-file-alt',
+        route: '/pdfconversion/pdf-to-text'
     },
     {
-        id: 'merge-pdf',
+        id: 'merge',
         title: 'Merge PDFs',
-        description: 'Combine multiple PDF files into one.',
+        description: 'Merge multiple PDF files',
         sourceIcon: 'fas fa-copy',
         targetIcon: 'fas fa-file-pdf',
-        route: 'merge-pdf'
+        route: '/pdfconversion/merge'
     },
     {
-        id: 'split-pdf',
+        id: 'split',
         title: 'Split PDF',
-        description: 'Split a PDF into individual pages.',
-        sourceIcon: 'fas fa-cut',
-        targetIcon: 'fas fa-file-pdf',
-        route: 'split-pdf'
+        description: 'Split PDF file into pages',
+        sourceIcon: 'fas fa-file-pdf',
+        targetIcon: 'fas fa-columns',
+        route: '/pdfconversion/split'
     },
     {
-        id: 'compress-pdf',
+        id: 'compress',
         title: 'Compress PDF',
-        description: 'Reduce the file size of your PDF documents.',
-        sourceIcon: 'fas fa-compress-arrows-alt',
-        targetIcon: 'fas fa-file-pdf',
-        route: 'compress-pdf'
+        description: 'Compress PDF file size',
+        sourceIcon: 'fas fa-file-pdf',
+        targetIcon: 'fas fa-compress',
+        route: '/pdfconversion/compress'
     },
     {
         id: 'remove-pages',
         title: 'Remove Pages',
-        description: 'Remove specific pages from a PDF file.',
-        sourceIcon: 'fas fa-trash-alt',
-        targetIcon: 'fas fa-file-pdf',
-        route: 'remove-pages'
+        description: 'Remove pages from PDF',
+        sourceIcon: 'fas fa-file-pdf',
+        targetIcon: 'fas fa-trash',
+        route: '/pdfconversion/remove-pages'
     },
     {
         id: 'extract-pages',
         title: 'Extract Pages',
-        description: 'Extract specific pages from a PDF to a new file.',
-        sourceIcon: 'fas fa-file-export',
-        targetIcon: 'fas fa-file-pdf',
-        route: 'extract-pages'
+        description: 'Extract specific pages from PDF',
+        sourceIcon: 'fas fa-file-pdf',
+        targetIcon: 'fas fa-file-export',
+        route: '/pdfconversion/extract-pages'
     },
     {
-        id: 'rotate-pdf',
+        id: 'rotate',
         title: 'Rotate PDF',
-        description: 'Rotate PDF pages permanently.',
-        sourceIcon: 'fas fa-sync-alt',
+        description: 'Rotate PDF pages',
+        sourceIcon: 'fas fa-sync',
         targetIcon: 'fas fa-file-pdf',
-        route: 'rotate-pdf'
+        route: '/pdfconversion/rotate'
     },
     {
         id: 'add-watermark',
         title: 'Add Watermark',
-        description: 'Add text or image watermarks to your PDF.',
+        description: 'Add watermark to PDF',
         sourceIcon: 'fas fa-stamp',
         targetIcon: 'fas fa-file-pdf',
-        route: 'add-watermark'
+        route: '/pdfconversion/add-watermark'
     },
     {
         id: 'add-page-numbers',
         title: 'Add Page Numbers',
-        description: 'Add page numbers to your PDF documents.',
+        description: 'Add page numbers to PDF',
         sourceIcon: 'fas fa-list-ol',
         targetIcon: 'fas fa-file-pdf',
-        route: 'add-page-numbers'
+        route: '/pdfconversion/add-page-numbers'
     },
     {
-        id: 'crop-pdf',
+        id: 'crop',
         title: 'Crop PDF',
-        description: 'Crop pages in your PDF documents.',
+        description: 'Crop PDF pages',
         sourceIcon: 'fas fa-crop',
         targetIcon: 'fas fa-file-pdf',
-        route: 'crop-pdf'
+        route: '/pdfconversion/crop'
     },
     {
-        id: 'protect-pdf',
+        id: 'protect',
         title: 'Protect PDF',
-        description: 'Encrypt your PDF with a password.',
+        description: 'Password protect PDF file',
         sourceIcon: 'fas fa-lock',
         targetIcon: 'fas fa-file-pdf',
-        route: 'protect-pdf'
+        route: '/pdfconversion/protect'
     },
     {
-        id: 'unlock-pdf',
+        id: 'unlock',
         title: 'Unlock PDF',
-        description: 'Remove password protection from PDF files.',
+        description: 'Remove password from PDF',
         sourceIcon: 'fas fa-unlock',
         targetIcon: 'fas fa-file-pdf',
-        route: 'unlock-pdf'
+        route: '/pdfconversion/unlock'
     },
     {
-        id: 'repair-pdf',
+        id: 'repair',
         title: 'Repair PDF',
-        description: 'Repair damaged or corrupted PDF files.',
+        description: 'Repair damaged PDF file',
         sourceIcon: 'fas fa-tools',
         targetIcon: 'fas fa-file-pdf',
-        route: 'repair-pdf'
+        route: '/pdfconversion/repair'
     },
     {
-        id: 'compare-pdfs',
+        id: 'compare',
         title: 'Compare PDFs',
-        description: 'Compare two PDF files for differences.',
+        description: 'Compare two PDF files',
         sourceIcon: 'fas fa-not-equal',
         targetIcon: 'fas fa-file-pdf',
-        route: 'compare-pdfs'
+        route: '/pdfconversion/compare'
     },
     {
-        id: 'pdf-metadata',
+        id: 'metadata',
         title: 'PDF Metadata',
-        description: 'View and edit PDF metadata.',
+        description: 'View and edit PDF metadata',
         sourceIcon: 'fas fa-info-circle',
         targetIcon: 'fas fa-file-pdf',
-        route: 'pdf-metadata'
+        route: '/pdfconversion/metadata'
     }
 ];

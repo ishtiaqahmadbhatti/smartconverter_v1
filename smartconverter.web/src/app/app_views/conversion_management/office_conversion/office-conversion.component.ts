@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { OFFICECONVERSIONTOOLS } from '../../../app_data/office-conversion-tools.data';
+import { OFFICE_CONVERSION_TOOLS } from '../../../app_data/office-conversion-tools.data';
 import { ConversionTool } from '../../../app_models/conversion-tool.model';
 import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools-ui/conversion-tools-ui.component';
 
@@ -13,5 +13,5 @@ import { ConversionToolsUiComponent } from '../../../app_shared/conversion-tools
     styleUrl: './office-conversion.component.css'
 })
 export class OfficeConversionComponent {
-    tools: ConversionTool[] = OFFICECONVERSIONTOOLS;
+    tools: ConversionTool[] = OFFICE_CONVERSION_TOOLS;
 }

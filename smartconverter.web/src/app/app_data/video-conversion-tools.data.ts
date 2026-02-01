@@ -1,5 +1,84 @@
 import { ConversionTool } from '../app_models/conversion-tool.model';
 
-export const VIDEOCONVERSIONTOOLS: ConversionTool[] = [
-    // Add tools here
+export const VIDEO_CONVERSION_TOOLS: ConversionTool[] = [
+    {
+        id: 'mov-to-mp4',
+        title: 'MOV to MP4',
+        description: 'Convert MOV video files to MP4 format',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-video',
+        route: '/videoconversion/mov-to-mp4'
+    },
+    {
+        id: 'mkv-to-mp4',
+        title: 'MKV to MP4',
+        description: 'Convert MKV video files to MP4 format',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-video',
+        route: '/videoconversion/mkv-to-mp4'
+    },
+    {
+        id: 'avi-to-mp4',
+        title: 'AVI to MP4',
+        description: 'Convert AVI video files to MP4 format',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-video',
+        route: '/videoconversion/avi-to-mp4'
+    },
+    {
+        id: 'mp4-to-mp3',
+        title: 'MP4 to MP3',
+        description: 'Extract audio from MP4 video to MP3',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-music',
+        route: '/videoconversion/mp4-to-mp3'
+    },
+    {
+        id: 'convert-video-format',
+        title: 'Convert Video Format',
+        description: 'Convert video files between various formats',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-sync-alt',
+        route: '/videoconversion/convert-video-format'
+    },
+    {
+        id: 'video-to-audio',
+        title: 'Video to Audio',
+        description: 'Convert video files to audio format',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-music',
+        route: '/videoconversion/video-to-audio'
+    },
+    {
+        id: 'extract-audio',
+        title: 'Extract Audio',
+        description: 'Extract audio track from video files',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-music',
+        route: '/videoconversion/extract-audio'
+    },
+    {
+        id: 'resize-video',
+        title: 'Resize Video',
+        description: 'Resize video resolution and dimensions',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-expand-arrows-alt',
+        route: '/videoconversion/resize-video'
+    },
+    {
+        id: 'compress-video',
+        title: 'Compress Video',
+        description: 'Compress video files to reduce size',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-compress-arrows-alt',
+        route: '/videoconversion/compress-video'
+    },
+    {
+        id: 'video-info',
+        title: 'Video Info',
+        description: 'Get detailed information about video files',
+        sourceIcon: 'fas fa-video',
+        targetIcon: 'fas fa-info-circle',
+        route: '/videoconversion/video-info'
+    }
 ];
