@@ -1,42 +1,4 @@
-<div class="conversion-tools-container">
-    <div class="tools-header">
-        <h1>JSON Conversion Tools</h1>
-        <p>Efficiently convert, format, and validate your JSON data with our suite of tools.</p>
-
-        <div class="header-controls">
-            <span class="tools-count">{{ jsonconversiontools.length }} Tools Available</span>
-            <div class="search-wrapper">
-                <i class="fas fa-search"></i>
-                <input type="text" [(ngModel)]="searchTerm" placeholder="Search tools (e.g. PDF, CSV)...">
-            </div>
-        </div>
-    </div>
-
-    <div class="tools-grid">
-        @for (tool of filteredTools; track tool.id) {
-        <div class="tool-card" [routerLink]="[tool.route]">
-            <div class="tool-icons-wrapper">
-                <div class="icon-box source">
-                    <i [class]="tool.sourceIcon"></i>
-                </div>
-                <div class="icon-arrow">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="icon-box target">
-                    <i [class]="tool.targetIcon"></i>
-                </div>
-            </div>
-            <h3>{{ tool.title }}</h3>
-            <p>{{ tool.description }}</p>
-        </div>
-        }
-
-        @if (filteredTools.length === 0) {
-        <div class="no-results">
-            <i class="fas fa-search"></i>
-            <h3>No tools found matching "{{ searchTerm }}"</h3>
-            <p>Try using different keywords or browse all available tools.</p>
-        </div>
-        }
-    </div>
-</div>
+<app-conversion-tools-dashboard [tools]="jsonconversiontools" title="JSON Conversion Tools"
+    description="Efficiently convert, format, and validate your JSON data with our suite of tools."
+    searchPlaceholder="Search tools (e.g. PDF, CSV)...">
+</app-conversion-tools-dashboard>
