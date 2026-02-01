@@ -173,14 +173,15 @@
 }
 
 /* Form Styles */
-.form-grid {
+/* Form Styles - Applied to projected content */
+:host ::ng-deep .form-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
-.form-group label {
+:host ::ng-deep .form-group label {
     display: block;
     font-weight: 600;
     color: #4a5568;
@@ -188,11 +189,11 @@
     font-size: 0.95rem;
 }
 
-.input-wrapper {
+:host ::ng-deep .input-wrapper {
     position: relative;
 }
 
-.input-wrapper i {
+:host ::ng-deep .input-wrapper i {
     position: absolute;
     left: 1rem;
     top: 50%;
@@ -200,7 +201,7 @@
     color: #a0aec0;
 }
 
-.input-wrapper input {
+:host ::ng-deep .input-wrapper input {
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.8rem;
     border: 1px solid #e2e8f0;
@@ -210,14 +211,14 @@
     background: #fcfcfc;
 }
 
-.input-wrapper input:focus {
+:host ::ng-deep .input-wrapper input:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     background: white;
 }
 
-.form-group small {
+:host ::ng-deep .form-group small {
     display: block;
     margin-top: 0.5rem;
     color: #718096;

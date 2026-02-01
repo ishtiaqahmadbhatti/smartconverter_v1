@@ -17,13 +17,15 @@ export class PDFConversionService {
     this.pdfToolsUrl = `${this.apiUrl}/pdfconversiontools`;
   }
 
-  ConvertPdfToWord(file: File, outputFilename?: string): Observable<HttpEvent<any>> {
+
+
+  ConvertFile(endpointSlug: string, file: File, outputFilename?: string): Observable<HttpEvent<any>> {
     const formData: FormData = new FormData();
     formData.append('file', file, file.name);
     if (outputFilename) {
       formData.append('filename', outputFilename);
     }
-    return this.http.post(`${this.pdfToolsUrl}/pdf-to-word`, formData, {
+    return this.http.post(`${this.pdfToolsUrl}/${endpointSlug}`, formData, {
       reportProgress: true,
       observe: 'events'
     });

@@ -10,14 +10,14 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps --no-optional
+# Install dependencies (including devDependencies for Angular CLI)
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
 
 # Build the application for production
-RUN npm run build
+RUN npx ng build
 
 # Stage 2: Serve the application with Nginx
 FROM nginx:alpine

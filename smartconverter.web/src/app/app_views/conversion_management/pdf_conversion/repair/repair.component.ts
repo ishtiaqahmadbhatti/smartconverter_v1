@@ -7,13 +7,13 @@ import { ToastService } from '../../../../app_services/toast';
 import { FileConversionUiComponent } from '../../../../app_shared/file-conversion-ui/file-conversion-ui.component';
 
 @Component({
-  selector: 'app-pdf-to-word',
+  selector: 'app-repair',
   imports: [CommonModule, FormsModule, FileConversionUiComponent],
-  templateUrl: './pdf-to-word.component.html',
-  styleUrl: './pdf-to-word.component.css',
+  templateUrl: './repair.component.html',
+  styleUrl: './repair.component.css',
   standalone: true
 })
-export class PdfToWordComponent {
+export class RepairComponent {
   selectedFile: File | null = null;
   outputFilename: string = '';
   isConverting: boolean = false;
@@ -29,18 +29,14 @@ export class PdfToWordComponent {
   ) { }
 
   onFileSelected(file: File): void {
-    if (file && file.type === 'application/pdf') {
+    if (file) {
       this.selectedFile = file;
-      // Auto-suggest filename without extension
       const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
       this.outputFilename = nameWithoutExt;
-      this.conversionResult = null; // Reset result on new file selection
+      this.conversionResult = null;
       this.uploadProgress = 0;
       this.conversionStatus = '';
-      this.toastService.show('PDF file selected successfully', 'success');
-    } else {
-      this.toastService.show('Please select a valid PDF file', 'error');
-      this.selectedFile = null;
+      this.toastService.show('File selected successfully', 'success');
     }
   }
 
@@ -55,7 +51,7 @@ export class PdfToWordComponent {
     this.uploadProgress = 0;
     this.conversionStatus = 'Initializing...';
 
-    this.pdfService.ConvertFile('pdf-to-word', this.selectedFile, this.outputFilename)
+    this.pdfService.ConvertFile('repair', this.selectedFile, this.outputFilename)
       .subscribe({
         next: (event: HttpEvent<any>) => {
           switch (event.type) {
@@ -70,13 +66,12 @@ export class PdfToWordComponent {
               break;
             case HttpEventType.Response:
               this.conversionStatus = 'File Converting...';
-              // Simulate a small delay for user experience
               setTimeout(() => {
                 const response = event.body;
                 if (response && response.download_url) {
                   this.conversionResult = {
                     downloadUrl: response.download_url,
-                    fileName: response.output_filename || this.outputFilename + '.docx' || 'converted.docx'
+                    fileName: response.output_filename || 'converted_result'
                   };
                   this.isConverting = false;
                   this.toastService.show('File converted successfully. Ready to save.', 'success');
@@ -97,7 +92,6 @@ export class PdfToWordComponent {
 
   saveFile(): void {
     if (!this.conversionResult) return;
-    debugger;
     this.pdfService.downloadFile(this.conversionResult.downloadUrl).subscribe({
       next: (blob) => {
         this.downloadBlob(blob, this.conversionResult!.fileName);
