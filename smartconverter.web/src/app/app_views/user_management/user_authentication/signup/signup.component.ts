@@ -87,7 +87,7 @@ export class SignupComponent {
       phone_number: formData.phone,
       gender: formData.gender,
       password: formData.password,
-      device_id: 'web-client'
+      device_id: this.authService.getDeviceId()
     };
 
     this.authService.register(apiData).subscribe({

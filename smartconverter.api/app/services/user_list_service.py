@@ -95,7 +95,7 @@ class UserListService:
                 else:
                      # Create if missing
                     new_sub = UserSubscriptionDetails(
-                        user_id=existing_guest.id,
+                        user_id=existing_user.id,
                         is_premium=user.is_premium if user.is_premium else False,
                         subscription_plan=user.subscription_plan if user.subscription_plan else 'free',
                         subscription_expiry=user.subscription_expiry

@@ -94,6 +94,85 @@ export class AuthService {
     this.router.navigate(['/']);
   }
 
+  registerGuest(): Observable<any> {
+    const deviceId = this.getDeviceId();
+    const url = `${this.apiUrl}/guest/register`;
+    return this.http.post(url, { device_id: deviceId });
+  }
+
+  getDeviceId(): string {
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      const fingerprint = this.generateDeviceFingerprint();
+      // Cache it
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('device_id', fingerprint);
+      }
+      return fingerprint;
+    }
+    return 'unknown-device';
+  }
+
+  private generateDeviceFingerprint(): string {
+    const nav = window.navigator as any;
+    const screen = window.screen;
+
+    // Device components that are generally consistent across browsers on the same device
+    const components = [
+      // nav.language, // REMOVED: User preference can vary (e.g. en-US vs en-GB)
+      screen.colorDepth,
+      screen.width + 'x' + screen.height,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      nav.hardwareConcurrency,
+      // nav.deviceMemory, // REMOVED: Not supported in all browsers
+      nav.platform,
+      nav.maxTouchPoints || 0 // Good signal for touch devices
+    ];
+
+    // Create a unique string from consistent components
+    // We treat undefined deviceMemory as a consistent 'undefined' string for non-Chromium browsers
+    // Note: This means Chrome and Firefox on the SAME machine might still differ if one has deviceMemory and other doesn't.
+    // To fix that, we can either exclude deviceMemory or just accept that cross-engine (Gecko vs Blink) might differ,
+    // but Chrome vs Edge (both Blink) will match. The user specifically mentioned Chrome vs Edge (both Blink).
+    const rawString = components.join('||');
+
+    // Log for debugging (so you can see why they differ if they still do)
+    console.log('Device Fingerprint Components:', rawString);
+
+    // Generate Hash
+    const hash = this.simpleHash(rawString);
+
+    // Determine Platform/Device Type for readability (using UA is fine here as it's just a label prefix, not the hash source)
+    let deviceType = 'Desktop';
+    const ua = nav.userAgent.toLowerCase();
+    if (/mobile|android|iphone|ipad|ipod|windows phone/i.test(ua)) {
+      deviceType = 'Mobile';
+    } else if (/tablet|ipad/i.test(ua)) {
+      deviceType = 'Tablet';
+    }
+
+    let os = 'UnknownOS';
+    if (ua.indexOf('win') !== -1) os = 'Windows';
+    else if (ua.indexOf('mac') !== -1) os = 'MacOS';
+    else if (ua.indexOf('linux') !== -1) os = 'Linux';
+    else if (ua.indexOf('android') !== -1) os = 'Android';
+    else if (ua.indexOf('ios') !== -1) os = 'iOS';
+
+    // Format: Platform-OS-Hash (e.g., Mobile-Android-a1b2c3d4)
+    return `${deviceType}-${os}-${hash}`;
+  }
+
+  private simpleHash(str: string): string {
+    let hash = 0;
+    if (str.length === 0) return hash.toString();
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    // Return positive hex string
+    return Math.abs(hash).toString(16);
+  }
+
   isLoggedIn(): boolean {
     return this.isLoggedInSubject.value; // Use the subject's current value for synchronous check
   }
