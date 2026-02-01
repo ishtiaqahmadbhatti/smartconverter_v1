@@ -4,10 +4,11 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { JSONConversionService } from '../../../../app_services/json_conversion.service';
 import { ToastService } from '../../../../app_services/toast';
+import { FileConversionUiComponent } from '../../../../app_shared/file-conversion-ui/file-conversion-ui.component';
 
 @Component({
   selector: 'app-json-to-csv',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FileConversionUiComponent],
   templateUrl: './json-to-csv.component.html',
   styleUrl: './json-to-csv.component.css',
 })
@@ -27,8 +28,7 @@ export class JsonToCsvComponent {
     private toastService: ToastService
   ) { }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
+  onFileSelected(file: File): void {
     if (file && file.type === 'application/json') {
       this.selectedFile = file;
       // Auto-suggest filename without extension

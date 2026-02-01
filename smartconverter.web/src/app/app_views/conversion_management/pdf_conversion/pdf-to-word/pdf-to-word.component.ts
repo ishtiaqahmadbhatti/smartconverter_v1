@@ -4,10 +4,11 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PDFConversionService } from '../../../../app_services/pdf_conversion.service';
 import { ToastService } from '../../../../app_services/toast';
+import { FileConversionUiComponent } from '../../../../app_shared/file-conversion-ui/file-conversion-ui.component';
 
 @Component({
   selector: 'app-pdf-to-word',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FileConversionUiComponent],
   templateUrl: './pdf-to-word.component.html',
   styleUrl: './pdf-to-word.component.css',
   standalone: true
@@ -27,8 +28,7 @@ export class PdfToWordComponent {
     private toastService: ToastService
   ) { }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
+  onFileSelected(file: File): void {
     if (file && file.type === 'application/pdf') {
       this.selectedFile = file;
       // Auto-suggest filename without extension

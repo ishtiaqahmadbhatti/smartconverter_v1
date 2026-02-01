@@ -5,13 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { ConversionTool } from '../../app_models/conversion-tool.model';
 
 @Component({
-    selector: 'app-conversion-tools-dashboard',
+    selector: 'app-conversion-tools-ui',
     standalone: true,
     imports: [CommonModule, RouterLink, FormsModule],
-    templateUrl: './conversion-tools-dashboard.component.html',
-    styleUrl: './conversion-tools-dashboard.component.css'
+    templateUrl: './conversion-tools-ui.component.html',
+    styleUrl: './conversion-tools-ui.component.css'
 })
-export class ConversionToolsDashboardComponent {
+export class ConversionToolsUiComponent {
     @Input() tools: ConversionTool[] = [];
     @Input() title: string = '';
     @Input() description: string = '';
