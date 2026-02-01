@@ -32,6 +32,18 @@ export class JSONConversionService {
     });
   }
 
+  ConvertFile(endpointSlug: string, file: File, outputFilename?: string): Observable<HttpEvent<any>> {
+    const formData: FormData = new FormData();
+    formData.append('file', file, file.name);
+    if (outputFilename) {
+      formData.append('filename', outputFilename);
+    }
+    return this.http.post(`${this.jsonToolsUrl}/${endpointSlug}`, formData, {
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
   downloadFile(url: string): Observable<Blob> {
     // Construct full URL if it's a relative path
     let fullUrl = url;
