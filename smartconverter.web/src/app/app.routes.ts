@@ -29,5 +29,53 @@ export const AppRoutes: Routes = [
   {
     path: 'jsonconversion',
     loadChildren: () => import('./app_views/conversion_management/json_conversion/json_conversion.routes').then(r => r.JSONConversionRoutes),
+  },
+  {
+    path: 'audioconversion',
+    loadChildren: () => import('./app_views/conversion_management/audio_conversion/audio_conversion.routes').then(r => r.AudioConversionRoutes),
+  },
+  {
+    path: 'csvconversion',
+    loadChildren: () => import('./app_views/conversion_management/csv_conversion/csv_conversion.routes').then(r => r.CsvConversionRoutes),
+  },
+  {
+    path: 'ebookconversion',
+    loadChildren: () => import('./app_views/conversion_management/ebook_conversion/ebook_conversion.routes').then(r => r.EbookConversionRoutes),
+  },
+  {
+    path: 'fileformatter',
+    loadChildren: () => import('./app_views/conversion_management/file_formatter/file_formatter.routes').then(r => r.FileFormatterRoutes),
+  },
+  {
+    path: 'imageconversion',
+    loadChildren: () => import('./app_views/conversion_management/image_conversion/image_conversion.routes').then(r => r.ImageConversionRoutes),
+  },
+  {
+    path: 'ocrconversion',
+    loadChildren: () => import('./app_views/conversion_management/ocr_conversion/ocr_conversion.routes').then(r => r.OcrConversionRoutes),
+  },
+  {
+    path: 'officeconversion',
+    loadChildren: () => import('./app_views/conversion_management/office_conversion/office_conversion.routes').then(r => r.OfficeConversionRoutes),
+  },
+  {
+    path: 'subtitleconversion',
+    loadChildren: () => import('./app_views/conversion_management/subtitle_conversion/subtitle_conversion.routes').then(r => r.SubtitleConversionRoutes),
+  },
+  {
+    path: 'textconversion',
+    loadChildren: () => import('./app_views/conversion_management/text_conversion/text_conversion.routes').then(r => r.TextConversionRoutes),
+  },
+  {
+    path: 'videoconversion',
+    loadChildren: () => import('./app_views/conversion_management/video_conversion/video_conversion.routes').then(r => r.VideoConversionRoutes),
+  },
+  {
+    path: 'websiteconversion',
+    loadChildren: () => import('./app_views/conversion_management/website_conversion/website_conversion.routes').then(r => r.WebsiteConversionRoutes),
+  },
+  {
+    path: 'xmlconversion',
+    loadChildren: () => import('./app_views/conversion_management/xml_conversion/xml_conversion.routes').then(r => r.XmlConversionRoutes),
   }
 ];
