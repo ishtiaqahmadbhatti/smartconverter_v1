@@ -1,0 +1,17 @@
+services:
+  smartconverter-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartconverter-web
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - smartconverter-network
+
+networks:
+  smartconverter-network:
+    driver: bridge
