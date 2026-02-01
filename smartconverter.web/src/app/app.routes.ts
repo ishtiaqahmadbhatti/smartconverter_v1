@@ -52,7 +52,7 @@ export const AppRoutes: Routes = [
   },
   {
     path: 'ocrconversion',
-    loadChildren: () => import('./app_views/conversion_management/ocr_conversion/ocr_conversion.routes').then(r => r.OcrConversionRoutes),
+    loadChildren: () => import('./app_views/conversion_management/ocr_conversion/ocr_conversion.routes').then(r => r.OCRConversionRoutes),
   },
   {
     path: 'officeconversion',
