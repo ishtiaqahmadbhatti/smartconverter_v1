@@ -1,0 +1,80 @@
+<div class="contact-page">
+    <!-- Page Header -->
+    <header class="page-header">
+        <div class="container">
+            <h1 class="page-title">Help & Support</h1>
+        </div>
+    </header>
+
+    <main class="content-wrapper">
+
+        <!-- Contact Section -->
+        <section class="section-group">
+            <div class="section-header">
+                <i class="fa-solid fa-headset section-icon" style="color: #448aff;"></i>
+                <h2 class="section-title">Contact Us</h2>
+            </div>
+
+            <div class="cards-grid">
+                <a *ngFor="let card of data.contactCards" [href]="card.link" target="_blank" class="contact-card"
+                    [style.border-color]="card.color + '33'"> <!-- 20% opacity border -->
+
+                    <div class="card-icon-box" [style.background-color]="card.color + '1A'"> <!-- 10% opacity bg -->
+                        <i [class]="card.icon" [style.color]="card.color"></i>
+                    </div>
+
+                    <div class="card-content">
+                        <h3 class="card-title">{{card.title}}</h3>
+                        <div class="card-value" [style.color]="card.color">{{card.value}}</div>
+                        <p class="card-subtitle">{{card.subtitle}}</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="section-group">
+            <div class="section-header">
+                <i class="fa-regular fa-circle-question section-icon" style="color: #00c853;"></i>
+                <h2 class="section-title">Help Center</h2>
+            </div>
+
+            <div class="faq-list">
+                <div class="faq-item" *ngFor="let faq of data.faqs; let i = index">
+                    <div class="faq-question" (click)="toggleFaq(i)" [class.active]="openFaqIndex === i">
+                        <span>{{faq.question}}</span>
+                        <i class="fa-solid fa-chevron-down arrow-icon" [class.rotated]="openFaqIndex === i"></i>
+                    </div>
+                    <div class="faq-answer" [class.open]="openFaqIndex === i">
+                        <p>{{faq.answer}}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feedback Section -->
+        <section class="section-group">
+            <div class="section-header">
+                <i class="fa-regular fa-pen-to-square section-icon" style="color: #7c4dff;"></i>
+                <h2 class="section-title">Share Feedback</h2>
+            </div>
+
+            <div class="feedback-card">
+                <i class="fa-regular fa-thumbs-up feedback-icon"></i>
+                <h3 class="feedback-title">{{data.feedback.title}}</h3>
+                <p class="feedback-subtitle">{{data.feedback.subtitle}}</p>
+                <button class="feedback-btn" (click)="sendFeedback()">
+                    {{data.feedback.buttonText}}
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer Note -->
+        <div class="footer-note">
+            V 1.0.0 • TechMindsForge Support
+        </div>
+
+    </main>
+</div>

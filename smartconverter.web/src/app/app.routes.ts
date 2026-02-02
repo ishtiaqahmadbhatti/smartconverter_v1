@@ -85,5 +85,13 @@ export const AppRoutes: Routes = [
   {
     path: 'terms-of-service',
     loadComponent: () => import('./app_views/terms_of_service/terms_of_service.component').then(c => c.TermsOfServiceComponent)
+  },
+  {
+    path: 'about-us',
+    loadComponent: () => import('./app_views/about_us/about_us.component').then(c => c.AboutUsComponent)
+  },
+  {
+    path: 'contact-us',
+    loadComponent: () => import('./app_views/contact_us/contact_us.component').then(c => c.ContactUsComponent)
   }
 ];
