@@ -44,23 +44,66 @@
 }
 
 .footer-logo .logo-text {
-    font-size: 1.5rem;
+    font-size: 1.95rem;
+    /* Matched to Header */
     font-weight: 700;
     color: white;
     letter-spacing: -0.5px;
 }
 
 .footer-logo .logo-highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
+    font-weight: 800;
+    opacity: 0.95;
 }
 
 .footer-description {
     color: #a0aec0;
     line-height: 1.7;
     margin-bottom: 1.5rem;
+}
+
+/* Constructed Footer Logo - Matching Header */
+.footer-logo-container {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    border: 4px solid white;
+    overflow: hidden;
+    margin-right: 0.75rem;
+    /* Gap replacement for flex gap in parent/previous setup */
+}
+
+.footer-logo-circle {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 5px;
+}
+
+.footer-logo-main {
+    font-size: 2.5rem;
+    color: white;
+}
+
+.footer-logo-sync {
+    position: absolute;
+    font-size: 1.0rem;
+    color: #667eea;
+    border-radius: 50%;
+    padding: 1px;
+    top: 63%;
+    left: 53%;
+    transform: translate(-50%, -50%);
 }
 
 /* Developer Info Section */
