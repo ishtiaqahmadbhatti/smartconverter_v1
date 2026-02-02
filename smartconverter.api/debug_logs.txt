@@ -156,3 +156,47 @@ Found user by device_id: 19
 Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '164820', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoxOCwicm9sZSI6InVzZXIiLCJleHAiOjE3Njk5NzgzODYsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njk5NzY1ODZ9.6nOnYqZwudbOIqtdkd-h3XrG6GtAcfWAreFJTDf9J70', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryjIv4ZWRdPOBg80sm', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
 Extracted device_id: Desktop-Windows-2b767854
 Found user by device_id: 19
+
+--- Request at /api/v1/videoconversiontools/mp4-to-mp3 ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '6414157', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoxOCwicm9sZSI6InVzZXIiLCJleHAiOjE3Njk5NzgzODYsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Njk5NzY1ODZ9.6nOnYqZwudbOIqtdkd-h3XrG6GtAcfWAreFJTDf9J70', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryPeFwYW3XbsyghRm5', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 19
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+Extracted device_id: BE2A.250530.026.D1
+Found user by device_id: 21
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+Extracted device_id: BE2A.250530.026.D1
+Found user by device_id: 21
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'host': '10.0.2.2:8000'}
+
+--- Request at /api/v1/subtitlesconversiontools/srt-to-csv ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '1668', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2970883122'}
+
+--- Request at /api/v1/textconversiontools/srt-to-text ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '1668', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1556518623'}
+
+--- Request at /api/v1/videoconversiontools/mp4-to-mp3 ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '17521238', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'content-type': 'multipart/form-data; boundary=--dio-boundary-1575881387'}
+
+--- Request at /api/v1/videoconversiontools/mp4-to-mp3 ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'content-length': '6414118', 'host': '10.0.2.2:8000', 'x-device-id': 'BE2A.250530.026.D1', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzcwMTIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzUyMTJ9.ZTAyNojWv7JAcXmnGhNthWcYgU_JGnHxWOVdcYYpops', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2657301000'}
+
+--- Request at /api/v1/videoconversiontools/mp4-to-mp3 ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '6414157', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAwMzc0OTUsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAwMzU2OTV9.XN_V7zPW8s5v2uDn4RSecN1Dht1ZSovvn1UuP-L4_JA', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary34O9r1G46TyqDG06', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/fileformattertools/validate-json ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'content-type': 'multipart/form-data; boundary=--dio-boundary-2820063717', 'accept-encoding': 'gzip', 'content-length': '430', 'host': '10.0.2.2:8000'}
+Extracted device_id: None
+
+--- Request at /api/v1/fileformattertools/format-json ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3996816518', 'accept-encoding': 'gzip', 'content-length': '697', 'host': '10.0.2.2:8000'}
+Extracted device_id: None
