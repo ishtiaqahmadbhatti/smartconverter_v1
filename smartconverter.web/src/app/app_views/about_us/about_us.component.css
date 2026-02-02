@@ -75,14 +75,12 @@
     font-size: 2rem;
     color: #667eea;
     /* Primary branding color */
-    background: white;
     border-radius: 50%;
     padding: 0.25rem;
     /* Create a cutout effect look by positioning */
-    top: 55%;
+    top: 60%;
     left: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .app-name {

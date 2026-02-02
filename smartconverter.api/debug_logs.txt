@@ -200,3 +200,13 @@ Extracted device_id: None
 --- Request at /api/v1/fileformattertools/format-json ---
 Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'content-type': 'multipart/form-data; boundary=--dio-boundary-3996816518', 'accept-encoding': 'gzip', 'content-length': '697', 'host': '10.0.2.2:8000'}
 Extracted device_id: None
+
+--- Request at /api/v1/history/stats ---
+Headers: {'user-agent': 'SmartConverter-Mobile-Dio', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+Extracted device_id: BE2A.250530.026.D1
+Found user by device_id: 21
+
+--- Request at /api/v1/history/ ---
+Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
+Extracted device_id: BE2A.250530.026.D1
+Found user by device_id: 21
