@@ -126,7 +126,7 @@ export const ABOUT_US_DATA = {
             label: 'Website',
             url: 'https://www.techmindsforge.com',
             icon: 'fa-solid fa-globe',
-            color: '#00e5ff' // Cyan
+            color: '#00C853' // Greenish
         },
         {
             label: 'Facebook',
@@ -135,14 +135,14 @@ export const ABOUT_US_DATA = {
             color: '#1877F2'
         },
         {
-            label: 'Instagram',
-            url: '#', // No URL in mobile code
-            icon: 'fa-brands fa-instagram',
-            color: '#E1306C'
+            label: 'LinkedIn',
+            url: 'https://www.linkedin.com/in/techmindsforge/',
+            icon: 'fa-brands fa-linkedin-in',
+            color: '#0A66C2'
         },
         {
             label: 'YouTube',
-            url: 'https://youtube.com/@techmindsforge?si=oDmsdTVyOR6Qlsdu',
+            url: 'https://youtube.com/@techmindsforge',
             icon: 'fa-brands fa-youtube',
             color: '#FF0000'
         }

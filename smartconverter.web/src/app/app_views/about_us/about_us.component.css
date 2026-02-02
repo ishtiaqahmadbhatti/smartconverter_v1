@@ -343,11 +343,11 @@
 
 /* Updating social icons to match mobile 'gradient bg' style better */
 .social-links a:nth-child(1) .social-icon-wrapper {
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.05));
+    background: linear-gradient(135deg, rgba(0, 200, 83, 0.2), rgba(0, 200, 83, 0.05));
 }
 
 .social-links a:nth-child(1) i {
-    color: #00e5ff;
+    color: #00C853
 }
 
 .social-links a:nth-child(2) .social-icon-wrapper {
@@ -359,11 +359,11 @@
 }
 
 .social-links a:nth-child(3) .social-icon-wrapper {
-    background: linear-gradient(135deg, rgba(225, 48, 108, 0.2), rgba(225, 48, 108, 0.05));
+    background: linear-gradient(135deg, rgba(10, 102, 194, 0.2), rgba(10, 102, 194, 0.05));
 }
 
 .social-links a:nth-child(3) i {
-    color: #E1306C;
+    color: #0A66C2;
 }
 
 .social-links a:nth-child(4) .social-icon-wrapper {

@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { PRIVACY_POLICY_DATA } from '../../app_data/privacy-policy.data';
 
 @Component({
     selector: 'app-privacy-policy',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule],
     templateUrl: './privacy_policy.component.html',
     styleUrls: ['./privacy_policy.component.css']
 })

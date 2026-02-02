@@ -524,12 +524,17 @@ class _AboutPageState extends State<AboutPage> {
           glowColor: const Color(0xFF1877F2)
         ),
         const SizedBox(width: 20),
-        _buildSocialIcon(FontAwesomeIcons.instagram, 'Instagram', () {}, glowColor: const Color(0xFFE1306C)),
+        _buildSocialIcon(
+          FontAwesomeIcons.linkedinIn,
+          'LinkedIn',
+          () => _launchUrl('https://www.linkedin.com/in/techmindsforge/'),
+          glowColor: const Color(0xFF0077B5),
+        ),
         const SizedBox(width: 20),
         _buildSocialIcon(
           FontAwesomeIcons.youtube, 
           'YouTube', 
-          () => _launchUrl('https://youtube.com/@techmindsforge?si=oDmsdTVyOR6Qlsdu'), 
+          () => _launchUrl('https://youtube.com/@techmindsforge'), 
           glowColor: const Color(0xFFFF0000),
         ),
       ],

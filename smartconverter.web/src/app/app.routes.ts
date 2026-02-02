@@ -93,5 +93,9 @@ export const AppRoutes: Routes = [
   {
     path: 'contact-us',
     loadComponent: () => import('./app_views/contact_us/contact_us.component').then(c => c.ContactUsComponent)
+  },
+  {
+    path: 'pricing',
+    loadComponent: () => import('./app_views/pricing/pricing.component').then(c => c.PricingComponent)
   }
 ];
