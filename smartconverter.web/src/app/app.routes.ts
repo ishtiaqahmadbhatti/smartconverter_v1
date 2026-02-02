@@ -77,5 +77,9 @@ export const AppRoutes: Routes = [
   {
     path: 'xmlconversion',
     loadChildren: () => import('./app_views/conversion_management/xml_conversion/xml_conversion.routes').then(r => r.XMLConversionRoutes),
+  },
+  {
+    path: 'privacy-policy',
+    loadComponent: () => import('./app_views/privacy_policy/privacy_policy.component').then(c => c.PrivacyPolicyComponent)
   }
 ];
