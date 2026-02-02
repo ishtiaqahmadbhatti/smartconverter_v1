@@ -368,9 +368,28 @@
 
     .nav-link {
         width: 100%;
-        justify-content: space-between;
+        justify-content: flex-start;
+        /* Align icon and text to the left */
         padding: 1rem;
         color: white;
+        font-size: 1.1rem;
+        /* Increase text size for mobile */
+        font-weight: 500;
+    }
+
+    /* Ensure dropdown arrow goes to the far right */
+    .dropdown-icon {
+        margin-left: auto;
+    }
+
+    /* Target icons inside nav-link specifically for mobile if needed for size/color adjustments */
+    .nav-link i {
+        width: 25px;
+        /* Fixed width for better alignment */
+        text-align: center;
+        margin-right: 0.5rem;
+        /* Gap between icon and text */
+        font-size: 1.2rem;
     }
 
     .dropdown-menu {
