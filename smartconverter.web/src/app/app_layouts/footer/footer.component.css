@@ -6,7 +6,7 @@
 }
 
 .footer-content {
-    padding: 4rem 0 0;
+    padding: 2rem 0 0;
 }
 
 .container {
@@ -17,12 +17,27 @@
 
 /* Footer Main Section */
 .footer-main {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     gap: 3rem;
     padding-bottom: 3rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 3px solid;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, #667eea 30%, #764ba2 70%, rgba(255, 255, 255, 0) 100%);
 }
+
+.footer-nav-wrapper {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    /* Reduced to fit 5 cols */
+    gap: 2rem;
+}
+
+/* ... existing styles ... */
+
+
 
 /* Brand Column */
 .footer-brand {
@@ -58,9 +73,13 @@
 }
 
 .footer-description {
-    color: #a0aec0;
+    color: #e2e8f0;
+    /* Brighter color */
     line-height: 1.7;
     margin-bottom: 1.5rem;
+    font-size: 1.05rem;
+    font-weight: 500;
+    text-align: justify;
 }
 
 /* Constructed Footer Logo - Matching Header */
@@ -224,6 +243,126 @@
     transform: translateY(-3px) scale(1.05);
 }
 
+/* Mobile App Section */
+.app-download {
+    margin-top: 2rem;
+}
+
+.app-download-label {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Optimized Badge Layout for fitting in small cols */
+.store-badge {
+    padding: 0.5rem 0.6rem;
+    /* Reduced horizontal padding */
+    gap: 0.5rem;
+    /* Reduced gap */
+    /* ... keep other props ... */
+    display: inline-flex;
+    align-items: center;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    text-decoration: none;
+    color: white;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 240px;
+    /* Allow growth if space exists */
+    margin-bottom: 0.75rem;
+}
+
+/* ... hover ... */
+.store-badge:hover {
+    background: #1a1a1a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.store-icon i {
+    font-size: 1.5rem;
+    /* Reduced from 1.75rem */
+    background: linear-gradient(135deg, #4285F4 0%, #34A853 25%, #FBBC05 50%, #EA4335 75%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.apple .store-icon i {
+    background: linear-gradient(135deg, #e0e0e0 0%, #a0a0a0 100%);
+    /* Silver Gradient */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.samsung .store-icon i {
+    background: linear-gradient(135deg, #ec008c 0%, #fc6767 100%);
+    /* Pink/Reddish Galaxy Theme */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.huawei .store-icon i {
+    background: linear-gradient(135deg, #C7000B 0%, #FF4E50 100%);
+    /* Red Huawei Theme */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.amazon .store-icon i {
+    background: linear-gradient(135deg, #FF9900 0%, #FFCC00 100%);
+    /* Amazon Orange/Yellow */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.windows .store-icon i {
+    background: linear-gradient(135deg, #0078D7 0%, #00bcf2 100%);
+    /* Windows Blue */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-badge.linux .store-icon i {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+    /* Linux White/Silver for Contrast */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.store-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+}
+
+.get-it-on {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.store-name {
+    font-size: 0.95rem;
+    /* Reduced from 1.1rem */
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
 /* Footer Columns */
 .footer-column {
     display: flex;
@@ -235,6 +374,29 @@
     font-weight: 700;
     color: white;
     margin-bottom: 1.5rem;
+    position: relative;
+    padding-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.footer-title i {
+    color: #667eea;
+    /* Brand Color */
+    font-size: 1rem;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* Full width */
+    height: 3px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
 }
 
 .footer-links {
@@ -247,10 +409,14 @@
 }
 
 .footer-links a {
-    color: #a0aec0;
+    color: #e2e8f0;
+    /* Brighter */
     text-decoration: none;
     transition: all 0.3s ease;
     display: inline-block;
+    font-size: 1.1rem;
+    /* Increased from default */
+    font-weight: 500;
 }
 
 .footer-links a:hover {
@@ -269,8 +435,11 @@
 }
 
 .copyright {
-    color: #718096;
+    color: #e2e8f0;
+    /* Brighter */
     margin: 0;
+    font-size: 1.05rem;
+    font-weight: 500;
 }
 
 .footer-bottom-links {
@@ -279,9 +448,12 @@
 }
 
 .footer-bottom-links a {
-    color: #718096;
+    color: #e2e8f0;
+    /* Brighter */
     text-decoration: none;
     transition: color 0.3s ease;
+    font-size: 1.05rem;
+    font-weight: 500;
 }
 
 .footer-bottom-links a:hover {
