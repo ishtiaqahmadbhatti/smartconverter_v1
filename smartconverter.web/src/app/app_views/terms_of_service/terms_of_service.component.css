@@ -1,3 +1,9 @@
+:host {
+    display: block;
+    min-height: 100vh;
+    background-color: #f7fafc;
+}
+
 /* Page Header / Hero Section */
 .page-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -42,7 +48,6 @@
     z-index: 10;
 }
 
-/* Section Cards */
 /* Section Cards */
 .section-card {
     background: white;

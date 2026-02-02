@@ -81,5 +81,9 @@ export const AppRoutes: Routes = [
   {
     path: 'privacy-policy',
     loadComponent: () => import('./app_views/privacy_policy/privacy_policy.component').then(c => c.PrivacyPolicyComponent)
+  },
+  {
+    path: 'terms-of-service',
+    loadComponent: () => import('./app_views/terms_of_service/terms_of_service.component').then(c => c.TermsOfServiceComponent)
   }
 ];
