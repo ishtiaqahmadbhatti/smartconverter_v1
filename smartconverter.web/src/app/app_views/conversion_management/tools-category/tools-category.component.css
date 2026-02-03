@@ -282,21 +282,21 @@
 }
 
 .arrow-icon {
-    font-size: 0.9rem;
-    color: #718096;
-    transition: transform 0.2s;
+    font-size: 1.8rem;
+    color: #a0aec0;
+    transition: transform 0.2s, color 0.2s;
     flex-shrink: 0;
 }
 
 .category-card:hover .arrow-icon {
-    transform: translateX(3px);
-    color: #4a5568;
+    transform: translateX(5px);
 }
 
 .category-card:hover .tool-badge {
     background: #e2e8f0;
     border-color: #cbd5e0;
 }
+
 */
 
 /* Category Hover Shadows */
@@ -368,6 +368,105 @@
 .category-card.formatter:hover {
     box-shadow: 0 15px 30px rgba(0, 200, 83, 0.2);
     border-color: rgba(0, 200, 83, 0.2);
+}
+
+/* Category Arrow Colors (Gradient Text) */
+.arrow-icon.pdf {
+    background: linear-gradient(135deg, #FF5252 0%, #D50000 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.image {
+    background: linear-gradient(135deg, #E040FB 0%, #AA00FF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.audio {
+    background: linear-gradient(135deg, #FF4081 0%, #C51162 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.video {
+    background: linear-gradient(135deg, #448AFF 0%, #2962FF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.office {
+    background: linear-gradient(135deg, #FF6E40 0%, #FF3D00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.ebook {
+    background: linear-gradient(135deg, #69F0AE 0%, #00C853 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.json {
+    background: linear-gradient(135deg, #FFD740 0%, #FFAB00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.xml {
+    background: linear-gradient(135deg, #536DFE 0%, #304FFE 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.csv {
+    background: linear-gradient(135deg, #64FFDA 0%, #1DE9B6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.text {
+    background: linear-gradient(135deg, #B0BEC5 0%, #78909C 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.ocr {
+    background: linear-gradient(135deg, #18FFFF 0%, #00B8D4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.website {
+    background: linear-gradient(135deg, #40C4FF 0%, #0091EA 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.subtitle {
+    background: linear-gradient(135deg, #FFAB40 0%, #FF6D00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.arrow-icon.formatter {
+    background: linear-gradient(135deg, #00E676 0%, #00C853 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 @media (max-width: 768px) {
