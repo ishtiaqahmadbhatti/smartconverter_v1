@@ -97,5 +97,9 @@ export const AppRoutes: Routes = [
   {
     path: 'pricing',
     loadComponent: () => import('./app_views/pricing/pricing.component').then(c => c.PricingComponent)
+  },
+  {
+    path: 'tools',
+    loadComponent: () => import('./app_views/conversion_management/tools-category/tools-category.component').then(c => c.ToolsCategoryComponent)
   }
 ];
