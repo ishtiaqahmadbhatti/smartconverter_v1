@@ -2,11 +2,11 @@ export const CONTACT_US_DATA = {
     contactCards: [
         {
             title: 'Email Support',
-            value: 'support@techmindsforge.com',
+            value: 'techmindsforge@gmail.com',
             subtitle: 'We usually respond within 24 hours',
             icon: 'fa-regular fa-envelope',
             color: '#448aff', // Primary Blue
-            link: 'mailto:support@techmindsforge.com'
+            link: 'mailto:techmindsforge@gmail.com'
         },
         {
             title: 'Official Website',
@@ -36,13 +36,13 @@ export const CONTACT_US_DATA = {
         },
         {
             question: 'How do I report a bug?',
-            answer: 'You can use the "Send Feedback" button below or email us directly at support@techmindsforge.com with details about the issue.'
+            answer: 'You can use the "Send Feedback" button below or email us directly at techmindsforge@gmail.com with details about the issue.'
         }
     ],
     feedback: {
         title: 'Enjoying Smart Converter?',
         subtitle: 'Your feedback helps us grow. Send us your suggestions or rate us on the Store!',
         buttonText: 'Send Feedback',
-        email: 'support@techmindsforge.com'
+        email: ' techmindsforge@gmail.com'
     }
 };

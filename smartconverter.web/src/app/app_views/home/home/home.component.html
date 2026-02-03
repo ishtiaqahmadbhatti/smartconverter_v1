@@ -15,7 +15,7 @@
                     delivering the formats you need, when you need them.
                 </p>
                 <div class="hero-buttons">
-                    <button class="btn btn-primary btn-lg">Start Converting</button>
+                    <a routerLink="/tools" class="btn btn-primary btn-lg">Start Converting</a>
                     <a routerLink="/tools" class="btn btn-secondary btn-lg">View All Tools</a>
                 </div>
 
@@ -143,7 +143,7 @@
 </section>
 
 <!-- Features Section -->
-<section class="features">
+<section class="features" id="features">
     <div class="container">
         <h2 class="section-title">Why Choose SmartConverter?</h2>
         <p class="section-description">Powerful features that make file conversion simple and efficient</p>
@@ -176,8 +176,8 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon">💎</div>
-                <h3 class="feature-title">Always Free</h3>
-                <p class="feature-description">All features available for free. No hidden costs or subscriptions</p>
+                <h3 class="feature-title">Flexible Pricing</h3>
+                <p class="feature-description">Choose a plan that fits your needs. Affordable options for everyone</p>
             </div>
         </div>
     </div>
@@ -190,52 +190,60 @@
         <p class="section-description">Choose from our wide range of file conversion tools</p>
 
         <div class="tools-grid">
-            <div class="tool-card">
-                <div class="tool-icon">📄</div>
-                <h3 class="tool-title">PDF Converter</h3>
-                <p class="tool-description">Convert to and from PDF format</p>
+            <!-- PDF Tools -->
+            <div class="tool-card" routerLink="/pdfconversion">
+                <div class="tool-icon"><i class="fas fa-file-pdf" style="color: #FF5252;"></i></div>
+                <h3 class="tool-title">PDF Tools</h3>
+                <p class="tool-description">Merge, Split, Compress PDF</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">🖼️</div>
-                <h3 class="tool-title">Image Converter</h3>
-                <p class="tool-description">Convert between image formats</p>
+            <!-- Office Tools -->
+            <div class="tool-card" routerLink="/officeconversion">
+                <div class="tool-icon"><i class="fas fa-file-word" style="color: #FF6E40;"></i></div>
+                <h3 class="tool-title">Office Tools</h3>
+                <p class="tool-description">Word, Excel, PowerPoint</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">📝</div>
-                <h3 class="tool-title">Document Converter</h3>
-                <p class="tool-description">Convert Word, Excel, PowerPoint</p>
+            <!-- Audio Tools -->
+            <div class="tool-card" routerLink="/audioconversion">
+                <div class="tool-icon"><i class="fas fa-music" style="color: #FF4081;"></i></div>
+                <h3 class="tool-title">Audio Tools</h3>
+                <p class="tool-description">MP3, WAV, AAC Converter</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">🎵</div>
-                <h3 class="tool-title">Audio Converter</h3>
-                <p class="tool-description">Convert audio files to any format</p>
+            <!-- Video Tools -->
+            <div class="tool-card" routerLink="/videoconversion">
+                <div class="tool-icon"><i class="fas fa-video" style="color: #448AFF;"></i></div>
+                <h3 class="tool-title">Video Tools</h3>
+                <p class="tool-description">MP4, AVI, MOV Converter</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">🎬</div>
-                <h3 class="tool-title">Video Converter</h3>
-                <p class="tool-description">Convert video files easily</p>
+            <!-- Image Tools -->
+            <div class="tool-card" routerLink="/imageconversion">
+                <div class="tool-icon"><i class="fas fa-image" style="color: #E040FB;"></i></div>
+                <h3 class="tool-title">Image Tools</h3>
+                <p class="tool-description">Convert JPG, PNG, WEBP</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">📋</div>
-                <h3 class="tool-title">Text Converter</h3>
-                <p class="tool-description">Convert text and data files</p>
+            <!-- Text Tools -->
+            <div class="tool-card" routerLink="/textconversion">
+                <div class="tool-icon"><i class="fas fa-font" style="color: #B0BEC5;"></i></div>
+                <h3 class="tool-title">Text Tools</h3>
+                <p class="tool-description">TXT Conversion Utilities</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">🗜️</div>
-                <h3 class="tool-title">Compression Tools</h3>
-                <p class="tool-description">Compress and optimize files</p>
+            <!-- E-Book Tools -->
+            <div class="tool-card" routerLink="/ebookconversion">
+                <div class="tool-icon"><i class="fas fa-book" style="color: #69F0AE;"></i></div>
+                <h3 class="tool-title">E-Book Tools</h3>
+                <p class="tool-description">EPUB, MOBI, AZW3</p>
                 <button class="btn btn-outline">Convert Now</button>
             </div>
-            <div class="tool-card">
-                <div class="tool-icon">🔧</div>
-                <h3 class="tool-title">More Tools</h3>
-                <p class="tool-description">Explore all conversion tools</p>
+            <!-- View All -->
+            <div class="tool-card" routerLink="/tools">
+                <div class="tool-icon"><i class="fas fa-th-large" style="color: #667eea;"></i></div>
+                <h3 class="tool-title">View All Tools</h3>
+                <p class="tool-description">Explore all 14+ categories</p>
                 <button class="btn btn-outline">View All</button>
             </div>
         </div>
@@ -277,7 +285,7 @@
             <h2 class="cta-title">Ready to Convert Your Files?</h2>
             <p>Join millions of users who trust SmartConverter for their file conversion needs</p>
             <div class="cta-buttons">
-                <button class="btn btn-primary btn-lg">Get Started Free</button>
+                <a routerLink="/authentication/signup" class="btn btn-primary btn-lg">Get Started Free</a>
                 <a routerLink="/pricing" class="btn btn-secondary btn-lg">View Pricing</a>
             </div>
         </div>

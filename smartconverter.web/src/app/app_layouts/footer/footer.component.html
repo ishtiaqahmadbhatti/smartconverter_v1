@@ -59,8 +59,8 @@
                     <div class="footer-column">
                         <h3 class="footer-title"><i class="fas fa-bolt"></i> Quick Links</h3>
                         <ul class="footer-links">
-                            <li><a routerLink="/" fragment="home">Home</a></li>
-                            <li><a routerLink="/" fragment="tools">All Tools</a></li>
+                            <li><a routerLink="/">Home</a></li>
+                            <li><a routerLink="/tools">All Tools</a></li>
                             <li><a routerLink="/" fragment="features">Features</a></li>
                             <li><a routerLink="/pricing">Pricing</a></li>
                             <li><a routerLink="/about-us">About Us</a></li>
@@ -71,11 +71,11 @@
                     <div class="footer-column">
                         <h3 class="footer-title"><i class="fas fa-wrench"></i> Popular Tools</h3>
                         <ul class="footer-links">
-                            <li><a href="#pdf-to-word">PDF to Word</a></li>
-                            <li><a href="#word-to-pdf">Word to PDF</a></li>
-                            <li><a href="#image-converter">Image Converter</a></li>
-                            <li><a href="#compress-pdf">Compress PDF</a></li>
-                            <li><a href="#merge-pdf">Merge PDF</a></li>
+                            <li><a routerLink="/pdfconversion">PDF Conversion</a></li>
+                            <li><a routerLink="/officeconversion">Office Conversion</a></li>
+                            <li><a routerLink="/imageconversion">Image Conversion</a></li>
+                            <li><a routerLink="/videoconversion">Video Conversion</a></li>
+                            <li><a routerLink="/audioconversion">Audio Conversion</a></li>
                         </ul>
                     </div>
 
@@ -83,8 +83,8 @@
                     <div class="footer-column">
                         <h3 class="footer-title"><i class="fas fa-headset"></i>User Supports</h3>
                         <ul class="footer-links">
-                            <li><a href="#help">Help Center</a></li>
-                            <li><a href="#faq">FAQ</a></li>
+                            <li><a routerLink="/contact-us">Help Center</a></li>
+                            <li><a routerLink="/contact-us">FAQ</a></li>
                             <li><a routerLink="/contact-us">Contact Us</a></li>
                             <li><a routerLink="/privacy-policy">Privacy Policy</a></li>
                             <li><a routerLink="/terms-of-service">Terms of Service</a></li>
@@ -179,7 +179,7 @@
 
             <!-- Footer Bottom -->
             <div class="footer-bottom">
-                <p class="copyright">&copy; 2024 SmartConverter. All rights reserved.</p>
+                <p class="copyright">&copy; {{ currentYear }} SmartConverter. All rights reserved.</p>
                 <div class="footer-bottom-links">
                     <a routerLink="/privacy-policy">Privacy</a>
                     <a routerLink="/terms-of-service">Terms</a>

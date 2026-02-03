@@ -19,16 +19,16 @@ export class HeaderComponent {
   showProfileDropdown = false;
 
   tools = [
+    { name: 'PDF Conversion Tools', icon: 'fas fa-file-pdf', link: '/pdfconversion', type: 'route' },
+    { name: 'Office Conversion Tools', icon: 'fas fa-file-word', link: '/officeconversion', type: 'route' },
+    { name: 'Image Conversion Tools', icon: 'fas fa-image', link: '/imageconversion', type: 'route' },
+    { name: 'Video Conversion Tools', icon: 'fas fa-video', link: '/videoconversion', type: 'route' },
+    { name: 'Audio Conversion Tools', icon: 'fas fa-music', link: '/audioconversion', type: 'route' },
     { name: 'JSON Conversion Tools', icon: 'fas fa-database', link: '/jsonconversion', type: 'route' },
     { name: 'XML Conversion Tools', icon: 'fas fa-code', link: '/xmlconversion', type: 'route' },
     { name: 'CSV Conversion Tools', icon: 'fas fa-table', link: '/csvconversion', type: 'route' },
-    { name: 'Office Conversion Tools', icon: 'fas fa-file-word', link: '/officeconversion', type: 'route' },
-    { name: 'PDF Conversion Tools', icon: 'fas fa-file-pdf', link: '/pdfconversion', type: 'route' },
-    { name: 'Image Conversion Tools', icon: 'fas fa-image', link: '/imageconversion', type: 'route' },
     { name: 'OCR Conversion Tools', icon: 'fas fa-file-alt', link: '/ocrconversion', type: 'route' },
     { name: 'Website Conversion Tools', icon: 'fas fa-globe', link: '/websiteconversion', type: 'route' },
-    { name: 'Video Conversion Tools', icon: 'fas fa-video', link: '/videoconversion', type: 'route' },
-    { name: 'Audio Conversion Tools', icon: 'fas fa-music', link: '/audioconversion', type: 'route' },
     { name: 'Subtitle Conversion Tools', icon: 'fas fa-closed-captioning', link: '/subtitleconversion', type: 'route' },
     { name: 'Text Conversion Tools', icon: 'fas fa-font', link: '/textconversion', type: 'route' },
     { name: 'E-Book Conversion Tools', icon: 'fas fa-book', link: '/ebookconversion', type: 'route' },

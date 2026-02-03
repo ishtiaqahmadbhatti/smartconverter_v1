@@ -7,6 +7,11 @@ export const AppRoutes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'home',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
+  {
     path: '',
     loadComponent: () => import('./app_views/home/home/home.component').then(c => c.HomeComponent)
   },
@@ -101,5 +106,9 @@ export const AppRoutes: Routes = [
   {
     path: 'tools',
     loadComponent: () => import('./app_views/conversion_management/tools-category/tools-category.component').then(c => c.ToolsCategoryComponent)
+  },
+  {
+    path: '**',
+    loadComponent: () => import('./app_views/not_found/not_found.component').then(c => c.NotFoundComponent)
   }
 ];
