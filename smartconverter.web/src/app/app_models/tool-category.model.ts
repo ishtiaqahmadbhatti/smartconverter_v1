@@ -4,6 +4,6 @@ export interface ToolCategory {
     description: string;
     icon: string;
     route: string;
-    count: string;
+    count: number;
     colorClass: string;
 }

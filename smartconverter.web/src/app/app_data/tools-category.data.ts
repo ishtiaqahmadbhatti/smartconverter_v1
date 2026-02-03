@@ -21,7 +21,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert, merge, split, compress, and edit PDF files effortlessly.',
         icon: 'fas fa-file-pdf',
         route: '/pdfconversion',
-        count: `${PDF_CONVERSION_TOOLS.length} Tools`,
+        count: PDF_CONVERSION_TOOLS.length,
         colorClass: 'text-red-500'
     },
     {
@@ -30,7 +30,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert between JPG, PNG, WEBP, SVG, and other image formats.',
         icon: 'fas fa-image',
         route: '/imageconversion',
-        count: `${IMAGE_CONVERSION_TOOLS.length} Tools`,
+        count: IMAGE_CONVERSION_TOOLS.length,
         colorClass: 'text-purple-500'
     },
     {
@@ -39,7 +39,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert audio files to MP3, WAV, AAC, and more.',
         icon: 'fas fa-music',
         route: '/audioconversion',
-        count: `${AUDIO_CONVERSION_TOOLS.length} Tools`,
+        count: AUDIO_CONVERSION_TOOLS.length,
         colorClass: 'text-pink-500'
     },
     {
@@ -48,7 +48,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert video files to MP4, AVI, MOV, and optimize for web.',
         icon: 'fas fa-video',
         route: '/videoconversion',
-        count: `${VIDEO_CONVERSION_TOOLS.length} Tools`,
+        count: VIDEO_CONVERSION_TOOLS.length,
         colorClass: 'text-blue-500'
     },
     {
@@ -57,7 +57,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert Word, Excel, and PowerPoint documents.',
         icon: 'fas fa-briefcase',
         route: '/officeconversion',
-        count: `${OFFICE_CONVERSION_TOOLS.length} Tools`,
+        count: OFFICE_CONVERSION_TOOLS.length,
         colorClass: 'text-orange-500'
     },
     {
@@ -66,7 +66,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert EPUB, MOBI, AZW3 for your favorite e-reader.',
         icon: 'fas fa-book-reader',
         route: '/ebookconversion',
-        count: `${EBOOK_CONVERSION_TOOLS.length} Tools`,
+        count: EBOOK_CONVERSION_TOOLS.length,
         colorClass: 'text-green-500'
     },
     {
@@ -75,7 +75,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Format, validate, and convert JSON data.',
         icon: 'fas fa-code',
         route: '/jsonconversion',
-        count: `${JSON_CONVERSION_TOOLS.length} Tools`,
+        count: JSON_CONVERSION_TOOLS.length,
         colorClass: 'text-yellow-500'
     },
     {
@@ -84,7 +84,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Parse, format, and convert XML files.',
         icon: 'fas fa-file-code',
         route: '/xmlconversion',
-        count: `${XML_CONVERSION_TOOLS.length} Tools`,
+        count: XML_CONVERSION_TOOLS.length,
         colorClass: 'text-indigo-500'
     },
     {
@@ -93,7 +93,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert CSV to Excel, JSON, and other formats.',
         icon: 'fas fa-table',
         route: '/csvconversion',
-        count: `${CSV_CONVERSION_TOOLS.length} Tools`,
+        count: CSV_CONVERSION_TOOLS.length,
         colorClass: 'text-teal-500'
     },
     {
@@ -102,7 +102,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Manipulate and convert plain text files.',
         icon: 'fas fa-font',
         route: '/textconversion',
-        count: `${TEXT_CONVERSION_TOOLS.length} Tools`,
+        count: TEXT_CONVERSION_TOOLS.length,
         colorClass: 'text-gray-500'
     },
     {
@@ -111,7 +111,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Extract text from images and scanned documents.',
         icon: 'fas fa-eye',
         route: '/ocrconversion',
-        count: `${OCR_CONVERSION_TOOLS.length} Tools`,
+        count: OCR_CONVERSION_TOOLS.length,
         colorClass: 'text-cyan-500'
     },
     {
@@ -120,7 +120,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert HTML and web pages to PDF or images.',
         icon: 'fas fa-globe',
         route: '/websiteconversion',
-        count: `${WEBSITE_CONVERSION_TOOLS.length} Tools`,
+        count: WEBSITE_CONVERSION_TOOLS.length,
         colorClass: 'text-blue-400'
     },
     {
@@ -129,7 +129,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Convert between SRT, VTT, and other subtitle formats.',
         icon: 'fas fa-closed-captioning',
         route: '/subtitleconversion',
-        count: `${SUBTITLE_CONVERSION_TOOLS.length} Tools`,
+        count: SUBTITLE_CONVERSION_TOOLS.length,
         colorClass: 'text-yellow-600'
     },
     {
@@ -138,7 +138,7 @@ export const TOOLS_CATEGORIES: ToolCategory[] = [
         description: 'Beautify and minify code and data files.',
         icon: 'fas fa-indent',
         route: '/fileformatter',
-        count: `${FILE_FORMATTER_TOOLS.length} Tools`,
+        count: FILE_FORMATTER_TOOLS.length,
         colorClass: 'text-emerald-500'
     }
 ];

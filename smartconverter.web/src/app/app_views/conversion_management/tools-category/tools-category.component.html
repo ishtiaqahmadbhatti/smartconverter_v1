@@ -11,7 +11,8 @@
 
         <!-- Categories Grid -->
         <div class="categories-grid">
-            <div *ngFor="let category of categories" class="category-card" [routerLink]="category.route">
+            <div *ngFor="let category of categories" class="category-card" [ngClass]="category.id"
+                [routerLink]="category.route">
                 <div class="card-header">
                     <div class="icon-wrapper" [ngClass]="category.id">
                         <i [class]="category.icon"></i>
@@ -24,7 +25,10 @@
                 </div>
 
                 <div class="card-footer">
-                    <span class="tool-count">{{ category.count }} Available</span>
+                    <div class="count-info">
+                        <span class="count-bubble" [ngClass]="category.id">{{ category.count }}</span>
+                        <span class="count-label">Tools Available</span>
+                    </div>
                     <i class="fas fa-arrow-right arrow-icon"></i>
                 </div>
             </div>
