@@ -1,27 +1,42 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CONTACT_US_DATA } from '../../app_data/contact-us.data';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-contact-us',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, ReactiveFormsModule],
     templateUrl: './contact_us.component.html',
-    styleUrls: ['./contact_us.component.css']
+    styleUrl: './contact_us.component.css'
 })
 export class ContactUsComponent {
-    data = CONTACT_US_DATA;
-    openFaqIndex: number | null = null;
+    contactForm: FormGroup;
+    submitted = false;
 
-    toggleFaq(index: number) {
-        if (this.openFaqIndex === index) {
-            this.openFaqIndex = null;
-        } else {
-            this.openFaqIndex = index;
-        }
+    constructor(private fb: FormBuilder) {
+        this.contactForm = this.fb.group({
+            name: ['', Validators.required],
+            email: ['', [Validators.required, Validators.email]],
+            subject: ['', Validators.required],
+            message: ['', Validators.required]
+        });
     }
 
-    sendFeedback() {
-        window.location.href = `mailto:${this.data.feedback.email}?subject=Smart Converter Feedback`;
+    onSubmit() {
+        this.submitted = true;
+        if (this.contactForm.valid) {
+            console.log('Message sent:', this.contactForm.value);
+
+            Swal.fire({
+                title: 'Message Sent!',
+                text: 'Thank you! Your message has been sent.',
+                icon: 'success',
+                confirmButtonColor: '#667eea'
+            });
+
+            this.contactForm.reset();
+            this.submitted = false;
+        }
     }
 }

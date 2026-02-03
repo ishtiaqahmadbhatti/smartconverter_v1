@@ -1,80 +1,103 @@
 <div class="contact-page">
-    <!-- Page Header -->
+    <!-- Hero Section -->
     <header class="page-header">
         <div class="container">
-            <h1 class="page-title">Help & Support</h1>
+            <h1 class="page-title">Contact Us</h1>
+            <p class="page-subtitle">We'd love to hear from you. Here's how you can reach us.</p>
         </div>
     </header>
 
     <main class="content-wrapper">
+        <div class="contact-container">
+            <!-- Contact Info Panel -->
+            <div class="contact-info-panel">
+                <div class="info-content">
+                    <h2>Get in Touch</h2>
+                    <p class="info-desc">Have specific inquiries? Feel free to contact us via email or phone.</p>
 
-        <!-- Contact Section -->
-        <section class="section-group">
-            <div class="section-header">
-                <i class="fa-solid fa-headset section-icon" style="color: #448aff;"></i>
-                <h2 class="section-title">Contact Us</h2>
-            </div>
 
-            <div class="cards-grid">
-                <a *ngFor="let card of data.contactCards" [href]="card.link" target="_blank" class="contact-card"
-                    [style.border-color]="card.color + '33'"> <!-- 20% opacity border -->
 
-                    <div class="card-icon-box" [style.background-color]="card.color + '1A'"> <!-- 10% opacity bg -->
-                        <i [class]="card.icon" [style.color]="card.color"></i>
+                    <div class="info-item">
+                        <div class="icon-box">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="details">
+                            <h3>Email Us</h3>
+                            <p>techmindsforge@gmail.com</p>
+                            <p class="sub-text">We'll respond within 24 hours</p>
+                        </div>
                     </div>
 
-                    <div class="card-content">
-                        <h3 class="card-title">{{card.title}}</h3>
-                        <div class="card-value" [style.color]="card.color">{{card.value}}</div>
-                        <p class="card-subtitle">{{card.subtitle}}</p>
+                    <div class="info-item">
+                        <div class="icon-box">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
+                        <div class="details">
+                            <h3>Call Us</h3>
+                            <p>+92 (315) 672-1703</p>
+                            <p class="sub-text">Mon-Fri from 2pm to 10pm</p>
+                        </div>
                     </div>
 
-                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
-                </a>
-            </div>
-        </section>
-
-        <!-- FAQ Section -->
-        <section class="section-group">
-            <div class="section-header">
-                <i class="fa-regular fa-circle-question section-icon" style="color: #00c853;"></i>
-                <h2 class="section-title">Help Center</h2>
-            </div>
-
-            <div class="faq-list">
-                <div class="faq-item" *ngFor="let faq of data.faqs; let i = index">
-                    <div class="faq-question" (click)="toggleFaq(i)" [class.active]="openFaqIndex === i">
-                        <span>{{faq.question}}</span>
-                        <i class="fa-solid fa-chevron-down arrow-icon" [class.rotated]="openFaqIndex === i"></i>
-                    </div>
-                    <div class="faq-answer" [class.open]="openFaqIndex === i">
-                        <p>{{faq.answer}}</p>
+                    <!-- Social Links -->
+                    <div class="social-links">
+                        <a href="https://www.techmindsforge.com" target="_blank" class="social-btn website"><i
+                                class="fas fa-globe"></i></a>
+                        <a href="https://www.facebook.com/techmindsforge" target="_blank" class="social-btn facebook"><i
+                                class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.linkedin.com/in/techmindsforge/" target="_blank"
+                            class="social-btn linkedin"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="https://youtube.com/@techmindsforge?si=oDmsdTVyOR6Qlsdu" target="_blank"
+                            class="social-btn youtube"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Feedback Section -->
-        <section class="section-group">
-            <div class="section-header">
-                <i class="fa-regular fa-pen-to-square section-icon" style="color: #7c4dff;"></i>
-                <h2 class="section-title">Share Feedback</h2>
+            <!-- Contact Form Panel -->
+            <div class="contact-form-panel">
+                <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+                    <h2>Send us a Message</h2>
+
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input type="text" formControlName="name" class="form-control" placeholder="John Doe">
+                        <div *ngIf="submitted && contactForm.get('name')?.errors" class="error-msg">
+                            Name is required
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" formControlName="email" class="form-control" placeholder="john@example.com">
+                        <div *ngIf="submitted && contactForm.get('email')?.errors" class="error-msg">
+                            Valid email is required
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" formControlName="subject" class="form-control"
+                            placeholder="How can we help?">
+                        <div *ngIf="submitted && contactForm.get('subject')?.errors" class="error-msg">
+                            Subject is required
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea formControlName="message" class="form-control" rows="5"
+                            placeholder="Write your message here..."></textarea>
+                        <div *ngIf="submitted && contactForm.get('message')?.errors" class="error-msg">
+                            Message is required
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Send Message</button>
+                </form>
             </div>
-
-            <div class="feedback-card">
-                <i class="fa-regular fa-thumbs-up feedback-icon"></i>
-                <h3 class="feedback-title">{{data.feedback.title}}</h3>
-                <p class="feedback-subtitle">{{data.feedback.subtitle}}</p>
-                <button class="feedback-btn" (click)="sendFeedback()">
-                    {{data.feedback.buttonText}}
-                </button>
-            </div>
-        </section>
-
-        <!-- Footer Note -->
-        <div class="footer-note">
-            V 1.0.0 • TechMindsForge Support
         </div>
-
     </main>
+
+    <!-- Map Section -->
+
 </div>

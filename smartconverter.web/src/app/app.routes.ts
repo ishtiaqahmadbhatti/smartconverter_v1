@@ -108,6 +108,10 @@ export const AppRoutes: Routes = [
     loadComponent: () => import('./app_views/conversion_management/tools-category/tools-category.component').then(c => c.ToolsCategoryComponent)
   },
   {
+    path: 'helpdesk',
+    loadChildren: () => import('./app_views/helpdesk_management/helpdesk_management.routes').then(r => r.HelpdeskManagementRoutes)
+  },
+  {
     path: '**',
     loadComponent: () => import('./app_views/not_found/not_found.component').then(c => c.NotFoundComponent)
   }

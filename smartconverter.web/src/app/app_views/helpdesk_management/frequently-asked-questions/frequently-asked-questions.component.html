@@ -1,0 +1,46 @@
+<div class="faq-page">
+    <header class="page-header">
+        <div class="container">
+            <h1 class="page-title">Frequently Asked Questions</h1>
+            <p class="page-subtitle">Find answers to common questions about SmartConverter.</p>
+        </div>
+    </header>
+
+    <main class="content-wrapper">
+        <div class="faq-container">
+            <!-- Sidebar Categories -->
+            <div class="faq-sidebar">
+                <button *ngFor="let category of faqData; let i = index" class="category-btn"
+                    [class.active]="openCategoryIndex === i" (click)="toggleCategory(i)">
+                    {{category.category}}
+                </button>
+            </div>
+
+            <!-- Questions Area -->
+            <div class="faq-content">
+                <h2 class="category-title">{{faqData[openCategoryIndex].category}}</h2>
+
+                <div class="faq-list">
+                    <div class="faq-item" *ngFor="let q of faqData[openCategoryIndex].questions; let i = index">
+                        <div class="faq-question" (click)="toggleQuestion(i)" [class.active]="openQuestionIndex === i">
+                            <span>{{q.question}}</span>
+                            <i class="fas fa-chevron-down arrow-icon" [class.rotated]="openQuestionIndex === i"></i>
+                        </div>
+                        <div class="faq-answer" [class.open]="openQuestionIndex === i">
+                            <p>{{q.answer}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="faq-cta">
+            <h3>Still have questions?</h3>
+            <p>If you couldn't find the answer you were looking for, feel free to contact us.</p>
+            <a routerLink="/helpdesk/customer-queries" class="btn-contact">
+                <i class="fas fa-envelope"></i> Submit a Query
+            </a>
+        </div>
+    </main>
+</div>
