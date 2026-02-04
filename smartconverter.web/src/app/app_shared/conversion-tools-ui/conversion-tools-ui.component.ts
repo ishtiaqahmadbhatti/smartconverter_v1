@@ -27,4 +27,23 @@ export class ConversionToolsUiComponent {
             tool.title.toLowerCase().includes(term)
         );
     });
+
+    expandedTools = signal(new Set<string>());
+
+    toggleDescription(event: Event, toolId: string) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const currentSet = new Set(this.expandedTools());
+        if (currentSet.has(toolId)) {
+            currentSet.delete(toolId);
+        } else {
+            currentSet.add(toolId);
+        }
+        this.expandedTools.set(currentSet);
+    }
+
+    isExpanded(toolId: string): boolean {
+        return this.expandedTools().has(toolId);
+    }
 }

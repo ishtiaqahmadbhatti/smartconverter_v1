@@ -38,6 +38,13 @@ export class HelpdeskDashboardComponent {
             icon: 'fas fa-comment-dots',
             link: '/helpdesk/customer-feedback',
             color: '#9f7aea' // Purple
+        },
+        {
+            title: 'Specific Tool Feedback',
+            description: 'Rate specific tools like PDF, Image, or Text converters and tell us what you think.',
+            icon: 'fas fa-thumbs-up',
+            link: '/helpdesk/tool-feedback',
+            color: '#f56565' // Red
         }
     ];
 }

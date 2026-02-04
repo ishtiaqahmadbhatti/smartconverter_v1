@@ -387,8 +387,32 @@
 }
 
 .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     border-radius: 5px;
     transition: width 0.3s ease;
+}
+
+/* Feedback Footer */
+.card-footer {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #edf2f7;
+}
+
+.card-footer p {
+    color: #718096;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.card-footer a {
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.card-footer a:hover {
+    color: #764ba2;
+    text-decoration: underline;
 }

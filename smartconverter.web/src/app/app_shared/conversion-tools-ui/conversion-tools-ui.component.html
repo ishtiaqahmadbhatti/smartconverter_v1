@@ -28,7 +28,17 @@
                 </div>
             </div>
             <h3>{{ tool.title }}</h3>
-            <p>{{ tool.description }}</p>
+            <p class="description-text" [class.expanded]="isExpanded(tool.id)">
+                @if (!isExpanded(tool.id) && tool.description.length > 60) {
+                {{ tool.description.substring(0, 60) }}...
+                <span class="read-more" (click)="toggleDescription($event, tool.id)">Show More</span>
+                } @else {
+                {{ tool.description }}
+                @if (tool.description.length > 60) {
+                <span class="read-more" (click)="toggleDescription($event, tool.id)">Show Less</span>
+                }
+                }
+            </p>
         </div>
         }
 

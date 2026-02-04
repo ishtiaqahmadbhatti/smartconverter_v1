@@ -12,7 +12,7 @@
                 <!-- Rating -->
                 <div class="form-group rating-group">
                     <label class="form-label">How was your experience?</label>
-                    <div class="star-rating">
+                    <div class="star-rating" [ngClass]="'stars-' + (feedbackForm.get('rating')?.value || 0)">
                         <i *ngFor="let r of ratings" class="fas fa-star"
                             [class.active]="feedbackForm.get('rating')?.value >= r" (click)="setRating(r)"></i>
                     </div>

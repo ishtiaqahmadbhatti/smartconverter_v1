@@ -209,4 +209,59 @@
     font-size: 0.95rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
+    min-height: 3.2em;
+    /* Ensure uniform height for ~2 lines of text */
+}
+
+@media (max-width: 768px) {
+    .tools-header {
+        padding: 3rem 1.5rem;
+    }
+
+    .tools-header h1 {
+        font-size: 2.5rem;
+    }
+
+    .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-wrapper {
+        min-width: 100%;
+    }
+}
+
+.read-more {
+    color: #667eea;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.read-more:hover {
+    text-decoration: underline;
+    color: #5a67d8;
+}
+
+.description-text {
+    transition: all 0.3s ease;
+}
+
+.description-text.expanded {
+    animation: fadeInText 0.4s ease-out;
+}
+
+@keyframes fadeInText {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

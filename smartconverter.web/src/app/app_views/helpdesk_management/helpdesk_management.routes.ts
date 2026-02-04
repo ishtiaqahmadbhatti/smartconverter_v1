@@ -20,5 +20,9 @@ export const HelpdeskManagementRoutes: Routes = [
     {
         path: 'frequent-questions',
         loadComponent: () => import('./frequently-asked-questions/frequently-asked-questions.component').then(c => c.FrequentlyAskedQuestionsComponent)
+    },
+    {
+        path: 'tool-feedback',
+        loadComponent: () => import('./tool-feedback/tool-feedback.component').then(c => c.ToolFeedbackComponent)
     }
 ];

@@ -87,15 +87,43 @@
 
 .star-rating i {
     transition: color 0.2s, transform 0.2s;
+    color: #cbd5e0;
+    /* Default empty state */
 }
 
-.star-rating i:hover,
-.star-rating i.active {
-    color: #ecc94b;
-    /* Gold */
+/* Dynamic Rating Colors */
+.star-rating.stars-1 i.active {
+    color: #fc8181;
+    text-shadow: 0 0 5px rgba(252, 129, 129, 0.4);
 }
 
-.star-rating i:hover {
+.star-rating.stars-2 i.active {
+    color: #f6ad55;
+    text-shadow: 0 0 8px rgba(246, 173, 85, 0.5);
+}
+
+.star-rating.stars-3 i.active {
+    color: #f6e05e;
+    text-shadow: 0 0 10px rgba(246, 224, 94, 0.6);
+}
+
+.star-rating.stars-4 i.active {
+    color: #68d391;
+    text-shadow: 0 0 12px rgba(104, 211, 145, 0.7);
+}
+
+.star-rating.stars-5 i.active {
+    color: #48bb78;
+    text-shadow: 0 0 15px rgba(72, 187, 120, 0.8);
+}
+
+.star-rating:hover i {
+    color: #cbd5e0;
+}
+
+.star-rating:hover i:hover,
+.star-rating:hover i:hover~i {
+    color: inherit;
     transform: scale(1.2);
 }
 
