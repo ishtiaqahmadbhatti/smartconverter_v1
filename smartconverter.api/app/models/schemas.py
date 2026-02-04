@@ -224,3 +224,43 @@ class UserStatsResponse(BaseModel):
     files_converted: int
     data_processed_bytes: int
     days_active: int
+
+# Helpdesk Schemas
+# Helpdesk Schemas
+class HelpdeskContactUsCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    subject: str
+    message: str
+
+class HelpdeskGeneralInquiryCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    subject: str
+    query: str
+
+class HelpdeskFAQCreate(BaseModel):
+    question: str
+    category: Optional[str] = None
+    user_email: Optional[EmailStr] = None
+
+class HelpdeskFeedbackCreate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    feedback: str
+    rating: Optional[int] = None
+
+class HelpdeskTechnicalSupportCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    issue_type: str
+    description: str
+    os_info: Optional[str] = None
+    browser_info: Optional[str] = None
+
+class HelpdeskToolFeedbackCreate(BaseModel):
+    tool_name: str
+    category: Optional[str] = None
+    rating: int
+    feedback: Optional[str] = None
+    user_email: Optional[EmailStr] = None

@@ -57,3 +57,25 @@ class EmailService:
         except Exception as e:
             print(f"Error sending email: {e}")
             return False
+
+    @staticmethod
+    async def send_helpdesk_email(subject: str, html_content: str):
+        """
+        Send a helpdesk notification email to admin.
+        """
+        target_email = "techmindsforge@gmail.com"
+        
+        message = MessageSchema(
+            subject=subject,
+            recipients=[target_email],
+            body=html_content,
+            subtype=MessageType.html
+        )
+
+        try:
+            fm = FastMail(EmailService.conf)
+            await fm.send_message(message)
+            return True
+        except Exception as e:
+            print(f"Error sending helpdesk email: {e}")
+            return False

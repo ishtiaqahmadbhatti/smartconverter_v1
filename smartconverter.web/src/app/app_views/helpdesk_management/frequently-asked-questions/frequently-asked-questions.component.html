@@ -37,10 +37,55 @@
         <!-- Call to Action -->
         <div class="faq-cta">
             <h3>Still have questions?</h3>
-            <p>If you couldn't find the answer you were looking for, feel free to contact us.</p>
-            <a routerLink="/helpdesk/customer-queries" class="btn-contact">
-                <i class="fas fa-envelope"></i> Submit a Query
-            </a>
+            <p>If you couldn't find the answer you were looking for, ask us directly.</p>
+
+            <form [formGroup]="faqForm" (ngSubmit)="onSubmit()" class="faq-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="text" formControlName="name" class="form-control" placeholder="Your Name">
+                        <div *ngIf="submitted && faqForm.get('name')?.errors" class="error-msg">
+                            Name is required
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" formControlName="email" class="form-control" placeholder="Your Email">
+                        <div *ngIf="submitted && faqForm.get('email')?.errors" class="error-msg">
+                            Email is required
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="dropdown-container">
+                        <div class="custom-select-trigger form-control" (click)="toggleCategoryDropdown()"
+                            [class.invalid]="submitted && faqForm.get('category')?.errors">
+                            <span>{{ getSelectedCategoryLabel() }}</span>
+                            <i class="fas fa-chevron-down arrow"></i>
+                        </div>
+
+                        <div class="custom-dropdown-options" *ngIf="isCategoryDropdownOpen">
+                            <div class="dropdown-item" *ngFor="let cat of faqData"
+                                (click)="selectCategoryDropdown(cat.category)">
+                                {{ cat.category }}
+                            </div>
+                            <div class="dropdown-item" (click)="selectCategoryDropdown('General')">Other</div>
+                        </div>
+                    </div>
+                    <div *ngIf="submitted && faqForm.get('category')?.errors" class="error-msg">
+                        Category is required
+                    </div>
+                </div>
+                <div class="form-group">
+                    <textarea formControlName="question" class="form-control" rows="3"
+                        placeholder="Type your question here..."></textarea>
+                    <div *ngIf="submitted && faqForm.get('question')?.errors" class="error-msg">
+                        Question must be at least 10 characters
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" [disabled]="isProcessing">
+                    {{ isProcessing ? 'Submitting...' : 'Ask Question' }}
+                </button>
+            </form>
         </div>
     </main>
 </div>

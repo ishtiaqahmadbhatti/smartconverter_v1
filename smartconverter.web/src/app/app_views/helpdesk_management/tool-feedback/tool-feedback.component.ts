@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
+import { HelpdeskService } from '../../../app_services/helpdesk.service';
 
 // Import all tool data
 import { PDF_CONVERSION_TOOLS } from '../../../app_data/pdf-conversion-tools.data';
@@ -30,6 +31,7 @@ import { FILE_FORMATTER_TOOLS } from '../../../app_data/file-formatter-tools.dat
 export class ToolFeedbackComponent implements OnInit {
     feedbackForm: FormGroup;
     submitted = false;
+    isProcessing = false;
     ratings = [1, 2, 3, 4, 5];
     isLocked = false;
 
@@ -58,7 +60,8 @@ export class ToolFeedbackComponent implements OnInit {
     constructor(
         private fb: FormBuilder,
         private eRef: ElementRef,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private helpdeskService: HelpdeskService
     ) {
         this.feedbackForm = this.fb.group({
             name: ['', Validators.required],
@@ -102,9 +105,6 @@ export class ToolFeedbackComponent implements OnInit {
         this.isCategoryDropdownOpen = false;
         this.isToolDropdownOpen = false;
 
-        // Only reset category and tool if form was touched or populated
-        // This prevents blowing away user input if they just navigated around? 
-        // Actually, matching user expectation: if they click "Tool Feedback" footer, they expect a fresh form.
         this.feedbackForm.patchValue({
             category: '',
             tool: ''
@@ -155,18 +155,32 @@ export class ToolFeedbackComponent implements OnInit {
     onSubmit() {
         this.submitted = true;
         if (this.feedbackForm.valid) {
-            console.log('Tool Feedback Submitted:', this.feedbackForm.value);
+            this.isProcessing = true;
+            this.helpdeskService.submitToolFeedback(this.feedbackForm.value).subscribe({
+                next: (res) => {
+                    this.isProcessing = false;
+                    Swal.fire({
+                        title: 'Feedback Received!',
+                        text: 'Thank you for helping us improve our tools!',
+                        icon: 'success',
+                        confirmButtonColor: '#667eea'
+                    });
 
-            Swal.fire({
-                title: 'Feedback Received!',
-                text: 'Thank you for helping us improve our tools!',
-                icon: 'success',
-                confirmButtonColor: '#667eea'
+                    this.feedbackForm.reset();
+                    this.selectedTools = [];
+                    this.submitted = false;
+                },
+                error: (err) => {
+                    this.isProcessing = false;
+                    console.error('Error submitting feedback:', err);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to submit feedback. Please try again later.',
+                        icon: 'error',
+                        confirmButtonColor: '#e53e3e'
+                    });
+                }
             });
-
-            this.feedbackForm.reset();
-            this.selectedTools = [];
-            this.submitted = false;
         }
     }
 }

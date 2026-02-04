@@ -33,16 +33,23 @@
                 </div>
 
                 <!-- Issue Type -->
+                <!-- Issue Type -->
                 <div class="form-group">
                     <label for="issueType" class="form-label">Issue Type</label>
-                    <select id="issueType" formControlName="issueType" class="form-control">
-                        <option value="" disabled selected>Select an issue...</option>
-                        <option value="bug">Report a Bug</option>
-                        <option value="conversion">Conversion Failure</option>
-                        <option value="account">Account Access</option>
-                        <option value="billing">Billing Issue</option>
-                        <option value="other">Other</option>
-                    </select>
+                    <div class="dropdown-container">
+                        <div class="custom-select-trigger form-control" (click)="toggleIssueTypeDropdown()"
+                            [class.invalid]="submitted && supportForm.get('issueType')?.errors">
+                            <span>{{ getSelectedIssueLabel() }}</span>
+                            <i class="fas fa-chevron-down arrow"></i>
+                        </div>
+
+                        <div class="custom-dropdown-options" *ngIf="isIssueTypeDropdownOpen">
+                            <div class="dropdown-item" *ngFor="let type of issueTypes"
+                                (click)="selectIssueType(type.value)">
+                                {{ type.label }}
+                            </div>
+                        </div>
+                    </div>
                     <div *ngIf="submitted && supportForm.get('issueType')?.errors" class="error-msg">
                         Please select an issue type
                     </div>
@@ -70,7 +77,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Submit Ticket</button>
+                <button type="submit" class="btn-submit" [disabled]="isProcessing">
+                    {{ isProcessing ? 'Submitting...' : 'Submit Ticket' }}
+                </button>
             </form>
         </div>
     </main>

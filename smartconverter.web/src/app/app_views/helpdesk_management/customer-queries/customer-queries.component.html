@@ -64,7 +64,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Submit Query</button>
+                <button type="submit" class="btn-submit" [disabled]="isProcessing">
+                    {{ isProcessing ? 'Submitting...' : 'Submit Query' }}
+                </button>
             </form>
         </div>
     </main>

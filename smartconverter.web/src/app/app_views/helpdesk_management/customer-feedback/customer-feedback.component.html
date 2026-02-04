@@ -54,18 +54,9 @@
                 </div>
 
                 <!-- Attachment -->
-                <div class="form-group">
-                    <label class="form-label">Attachment (Optional)</label>
-                    <div class="file-upload-wrapper">
-                        <input type="file" (change)="onFileChange($event)" class="file-input" id="attachment">
-                        <label for="attachment" class="file-upload-label">
-                            <i class="fas fa-paperclip"></i>
-                            <span>{{ selectedFileName || 'Attach a screenshot or file...' }}</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-submit">Submit Feedback</button>
+                <button type="submit" class="btn-submit" [disabled]="isProcessing">
+                    {{ isProcessing ? 'Submitting...' : 'Submit Feedback' }}
+                </button>
             </form>
         </div>
     </main>

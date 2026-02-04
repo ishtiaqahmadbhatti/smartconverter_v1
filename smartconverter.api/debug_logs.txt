@@ -210,3 +210,53 @@ Found user by device_id: 21
 Headers: {'user-agent': 'Dart/3.8 (dart:io)', 'accept-encoding': 'gzip', 'x-device-id': 'BE2A.250530.026.D1', 'host': '10.0.2.2:8000'}
 Extracted device_id: BE2A.250530.026.D1
 Found user by device_id: 21
+
+--- Request at /api/v1/helpdesk/contact-us ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '118', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/technical-support ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '9917', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary0sNi2hitELxWUaNQ', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/helpdesk/technical-support ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '9917', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryUyP81cK0ITDpziX2', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/helpdesk/technical-support ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '9917', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary9AIGT899nbpfjuai', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/helpdesk/technical-support ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '6414801', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryjAl3kBUGquyZu9BR', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/helpdesk/technical-support ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '203753', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundary8y69bfhBjQxSAIOa', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+
+--- Request at /api/v1/helpdesk/submit-query ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '171888', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'multipart/form-data; boundary=----WebKitFormBoundaryh1Mp9kH7nPXr2rNl', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/share-feedback ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '110', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/tool-feedback ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '140', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/faq ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '100', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/faq ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '119', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20
+
+--- Request at /api/v1/helpdesk/contact-us ---
+Headers: {'host': '192.168.8.100:8000', 'connection': 'keep-alive', 'content-length': '118', 'authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2h0aWFxLnVhYXI1NUBnbWFpbC5jb20iLCJ1c2VyX2lkIjoyMSwicm9sZSI6InVzZXIiLCJleHAiOjE3NzAyMTIzOTgsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzAyMTA1OTh9.I4PTgNBk6p8EzjF0-hK1zYzMpMR4ZXxdgl8BqiTTfgM', 'x-device-id': 'Desktop-Windows-2b767854', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'http://localhost:4200', 'referer': 'http://localhost:4200/', 'accept-encoding': 'gzip, deflate', 'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8'}
+Extracted device_id: Desktop-Windows-2b767854
+Found user by device_id: 20

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, json_conversion, website_conversion, csv_conversion, xml_conversion, office_documents_conversion, image_conversion, ocr_conversion, subtitle_conversion, text_conversion, file_formatter, ebook_conversion, video_conversion, audio_conversion, pdf_conversion, user_list, auth, guest, subscription, history
+from app.api.v1.endpoints import health, json_conversion, website_conversion, csv_conversion, xml_conversion, office_documents_conversion, image_conversion, ocr_conversion, subtitle_conversion, text_conversion, file_formatter, ebook_conversion, video_conversion, audio_conversion, pdf_conversion, user_list, auth, guest, subscription, history, helpdesk
 
 api_router = APIRouter()
 
@@ -24,6 +24,7 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 api_router.include_router(guest.router, prefix="/guest", tags=["Guest"])
 api_router.include_router(subscription.router, prefix="/subscription", tags=["Subscription"])
 api_router.include_router(history.router, prefix="/history", tags=["History"])
+api_router.include_router(helpdesk.router, prefix="/helpdesk", tags=["Helpdesk"])
 
 
 

@@ -97,7 +97,9 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Submit Feedback</button>
+                <button type="submit" class="btn-submit" [disabled]="isProcessing">
+                    {{ isProcessing ? 'Submitting...' : 'Submit Feedback' }}
+                </button>
             </form>
         </div>
     </main>
