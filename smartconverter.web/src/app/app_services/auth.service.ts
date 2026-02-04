@@ -41,6 +41,26 @@ export class AuthService {
     return this.http.post(url, credentials);
   }
 
+  changePassword(passwords: { old_password: string, new_password: string }): Observable<any> {
+    const url = `${this.authUrl}/change-password`;
+    return this.http.post(url, passwords);
+  }
+
+  sendOtp(email: string, deviceId: string): Observable<any> {
+    const url = `${this.authUrl}/forgot-password`;
+    return this.http.post(url, { email, device_id: deviceId });
+  }
+
+  verifyOtp(email: string, otp: string): Observable<any> {
+    const url = `${this.authUrl}/verify-otp`;
+    return this.http.post(url, { email, otp_code: otp });
+  }
+
+  resetPassword(data: { reset_token: string, new_password: string }): Observable<any> {
+    const url = `${this.authUrl}/reset-password-confirm`;
+    return this.http.post(url, data);
+  }
+
   saveTokens(access: string, refresh: string, name?: string, email?: string): void {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(this.TOKEN_KEY, access);

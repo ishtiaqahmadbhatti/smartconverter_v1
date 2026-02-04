@@ -9,4 +9,8 @@ export const VerificationRoutes: Routes = [
     path: 'verifymobilenumber',
     loadComponent: () => import('./verifymobilenumber/verifymobilenumber.component').then(c => c.VerifymobilenumberComponent)
   },
+  {
+    path: 'verify-otp',
+    loadComponent: () => import('./verifyotp/verify-otp.component').then(c => c.VerifyOtpComponent)
+  }
 ];

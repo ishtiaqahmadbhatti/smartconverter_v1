@@ -22,6 +22,7 @@
     border-radius: 20px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: slideUp 0.5s ease;
 }
 
 .auth-card:hover {
@@ -29,7 +30,7 @@
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
 }
 
-.auth-header {
+.header-container {
     text-align: center;
     margin-bottom: 2rem;
 }
@@ -48,14 +49,14 @@
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
-.auth-header h2 {
+h2 {
     color: #2d3748;
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
     font-weight: 700;
 }
 
-.auth-header p {
+p {
     color: #718096;
     font-size: 0.95rem;
     line-height: 1.5;
@@ -65,43 +66,9 @@
     margin-bottom: 1.5rem;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-icon {
-    position: absolute;
-    left: 1rem;
-    color: #a0aec0;
-}
-
-.input-wrapper .fa-eye,
-.input-wrapper .fa-eye-slash {
-    position: absolute;
-    right: 1rem;
-    cursor: pointer;
-    color: #a0aec0;
-    transition: color 0.2s;
-}
-
-.input-wrapper .fa-eye:hover,
-.input-wrapper .fa-eye-slash:hover {
-    color: #667eea;
-}
-
 .form-control {
     width: 100%;
-    padding: 0.8rem 1rem 0.8rem 2.5rem;
+    padding: 0.8rem 1rem;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 1rem;
@@ -116,14 +83,11 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* OTP Specific */
 .otp-input {
     text-align: center;
     font-size: 1.5rem;
     letter-spacing: 0.5rem;
     font-weight: 700;
-    padding-left: 1rem;
-    /* Reset padding for centered text */
 }
 
 .timer-section {
@@ -150,11 +114,7 @@
     cursor: not-allowed;
 }
 
-.resend-btn:hover:not(:disabled) {
-    text-decoration: underline;
-}
-
-/* Buttons */
+/* Button & Links */
 .btn-submit {
     width: 100%;
     padding: 1rem;
@@ -200,7 +160,6 @@
     transition: all 0.2s ease;
     cursor: pointer;
     width: 100%;
-    /* Optional: make it full width if desired, or auto */
     margin-top: 0.5rem;
 }
 
@@ -227,15 +186,10 @@
     text-align: center;
 }
 
-/* Animations */
-.fade-in {
-    animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
+@keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(20px);
     }
 
     to {
