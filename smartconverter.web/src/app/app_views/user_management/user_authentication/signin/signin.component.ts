@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../app_services/auth.service';
 import { ToastService } from '../../../../app_services/toast';
+import { ApplicationConfiguration } from '../../../../app.config';
 
 @Component({
   selector: 'app-signin',
@@ -12,7 +13,7 @@ import { ToastService } from '../../../../app_services/toast';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule]
 })
-export class SigninComponent {
+export class SigninComponent implements OnInit {
   signinForm: FormGroup;
   showPassword = false;
   isSubmitting = false;
@@ -25,13 +26,26 @@ export class SigninComponent {
   ) {
     this.signinForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      rememberMe: [false]
     });
+  }
+
+  ngOnInit() {
+    // Check for saved email in localStorage
+    const savedEmail = localStorage.getItem('remember_me_email');
+    if (savedEmail) {
+      this.signinForm.patchValue({
+        email: savedEmail,
+        rememberMe: true
+      });
+    }
   }
 
   // Getters for form controls
   get email() { return this.signinForm.get('email'); }
   get password() { return this.signinForm.get('password'); }
+  get rememberMe() { return this.signinForm.get('rememberMe'); }
 
   onSubmit() {
     if (this.signinForm.invalid) {
@@ -43,18 +57,26 @@ export class SigninComponent {
     }
 
     this.isSubmitting = true;
-    const credentials = this.signinForm.value;
+    const { email, password, rememberMe } = this.signinForm.value;
+    const credentials = { email, password };
 
     this.authService.login(credentials).subscribe({
       next: (response) => {
         this.isSubmitting = false;
+
+        // Handle Remember Me logic
+        if (rememberMe) {
+          localStorage.setItem('remember_me_email', email);
+        } else {
+          localStorage.removeItem('remember_me_email');
+        }
         // Adjust based on actual API response structure. 
         // Mobile implies response has access_token and refresh_token directly.
         if (response && response.access_token) {
           // Construct full profile image URL if available
           let profileImageUrl = undefined;
           if (response.profile_image_url) {
-            const baseUrl = 'http://192.168.8.100:8000'; // From ApplicationConfiguration
+            const baseUrl = ApplicationConfiguration.Get().ServerBaseUrl;
             const relativePath = response.profile_image_url.startsWith('/')
               ? response.profile_image_url.substring(1)
               : response.profile_image_url;
@@ -73,7 +95,7 @@ export class SigninComponent {
           this.authService.getUserProfile().subscribe({
             next: (user) => {
               if (user.profile_image_url) {
-                const baseUrl = 'http://192.168.8.100:8000';
+                const baseUrl = ApplicationConfiguration.Get().ServerBaseUrl;
                 const relativePath = user.profile_image_url.startsWith('/')
                   ? user.profile_image_url.substring(1)
                   : user.profile_image_url;

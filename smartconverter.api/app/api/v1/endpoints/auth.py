@@ -285,21 +285,42 @@ async def upload_profile_image(
     current_user: UserList = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Upload profile image and update user record."""
-    UPLOAD_DIR = "uploads/profile_images"
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    """Upload profile image and update user record with specific path and naming convention."""
     
-    # Generate unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    filename = f"{current_user.id}_{uuid.uuid4().hex}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    # Validation: Ensure only image files are uploaded
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid file type. Only images (JPG, PNG, GIF, etc.) are allowed."
+        )
+
+    # Normalize names for path safety
+    first = (current_user.first_name or "user").strip().lower().replace(" ", "_")
+    last = (current_user.last_name or "").strip().lower().replace(" ", "_")
+    name_slug = f"{first}_{last}" if last else first
+    
+    # Define Directory and Filename
+    BASE_UPLOAD_DIR = "assets/uploads/user_profile_images"
+    USER_DIR = os.path.join(BASE_UPLOAD_DIR, f"user_{name_slug}")
+    os.makedirs(USER_DIR, exist_ok=True)
+    
+    file_extension = os.path.splitext(file.filename)[1].lower()
+    filename = f"{name_slug}{file_extension}"
+    file_path = os.path.join(USER_DIR, filename)
     
     # Save file
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not save file: {str(e)}"
+        )
         
     # Store relative path (client will prepend base URL)
-    relative_path = f"uploads/profile_images/{filename}"
+    # Using forward slashes for the database entry consistent with URL standards
+    relative_path = f"assets/uploads/user_profile_images/user_{name_slug}/{filename}"
     
     current_user.profile_image_url = relative_path
     db.add(current_user)
