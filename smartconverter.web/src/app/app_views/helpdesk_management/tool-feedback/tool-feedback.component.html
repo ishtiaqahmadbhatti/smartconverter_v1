@@ -32,7 +32,7 @@
 
                 <div class="form-row">
                     <!-- Category Selection -->
-                    <div class="form-group dropdown-container">
+                    <div class="form-group dropdown-container" #categoryContainer>
                         <label>Conversion Category</label>
                         <div class="custom-select-trigger form-control" (click)="toggleCategoryDropdown()"
                             [class.disabled]="isLocked"
@@ -54,7 +54,7 @@
                     </div>
 
                     <!-- Tool Selection (Dependent Dropdown) -->
-                    <div class="form-group dropdown-container">
+                    <div class="form-group dropdown-container" #toolContainer>
                         <label>Specific Tool</label>
                         <div class="custom-select-trigger form-control" (click)="toggleToolDropdown()"
                             [class.disabled]="selectedTools.length === 0 || isLocked"

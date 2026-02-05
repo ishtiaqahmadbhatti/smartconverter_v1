@@ -109,7 +109,8 @@ def create_token_pair(user: Any) -> Dict[str, Any]:
         "refresh_token": refresh_token,
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "full_name": full_name
+        "full_name": full_name,
+        "profile_image_url": user.profile_image_url if hasattr(user, 'profile_image_url') else None
     }
 
 

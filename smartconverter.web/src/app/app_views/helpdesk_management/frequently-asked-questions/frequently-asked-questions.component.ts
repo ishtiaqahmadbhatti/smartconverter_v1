@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FAQ_DATA } from '../../../app_data/frequently-asked-questions.data';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
     styleUrl: './frequently-asked-questions.component.css'
 })
 export class FrequentlyAskedQuestionsComponent {
+    @ViewChild('categoryDropdownContainer') categoryDropdownContainer!: ElementRef;
     faqData = FAQ_DATA;
     openCategoryIndex: number = 0;
     openQuestionIndex: number | null = null;
@@ -68,7 +69,7 @@ export class FrequentlyAskedQuestionsComponent {
 
     @HostListener('document:click', ['$event'])
     clickout(event: any) {
-        if (!this.eRef.nativeElement.contains(event.target)) {
+        if (this.categoryDropdownContainer && !this.categoryDropdownContainer.nativeElement.contains(event.target)) {
             this.isCategoryDropdownOpen = false;
         }
     }

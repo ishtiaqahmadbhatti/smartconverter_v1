@@ -1,0 +1,68 @@
+<div class="profile-page">
+    <div class="profile-card">
+        <div class="header-section">
+            <div class="icon-circle">
+                <i class="fas fa-crown"></i>
+            </div>
+            <h2>Subscription Plans</h2>
+            <p>Choose the plan that fits your needs.</p>
+        </div>
+
+        <div class="current-plan-banner" *ngIf="currentPlan">
+            <span>Current Plan: <strong>{{ currentPlan.toUpperCase() }}</strong></span>
+        </div>
+
+        <div class="plans-container">
+            @for (plan of plans; track plan.planId) {
+            <div class="plan-card" [class.popular]="plan.isPopular" [class.active]="currentPlan === plan.planId"
+                [style.border-color]="plan.isPopular ? plan.color : ''">
+
+                <!-- Popular Badge -->
+                @if (plan.isPopular) {
+                <div class="popular-badge" [style.background-color]="plan.color">
+                    POPULAR
+                </div>
+                }
+
+                <div class="card-body">
+                    <div class="plan-header">
+                        <div class="icon-box" [style.color]="plan.color" [style.background-color]="plan.color + '1A'">
+                            <i [class]="plan.icon"></i>
+                        </div>
+                        <div class="title-price-group">
+                            <h3 class="plan-title" [style.color]="plan.color">{{ plan.title }}</h3>
+                            <div class="price-container">
+                                <span class="price-amount">{{ plan.price }}</span>
+                                @if (plan.period) {
+                                <span class="price-period">{{ plan.period }}</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="plan-subtitle">{{ plan.subtitle }}</p>
+
+                    <div class="divider"></div>
+
+                    <ul class="features-list">
+                        @for (feature of plan.features; track feature) {
+                        <li>
+                            <i class="fa-solid fa-circle-check feature-icon" [style.color]="plan.color"></i>
+                            <span>{{ feature }}</span>
+                        </li>
+                        }
+                    </ul>
+
+                    <button class="select-btn" (click)="upgrade(plan.planId)"
+                        [style.background-color]="plan.isPopular ? plan.color : 'transparent'"
+                        [style.color]="plan.isPopular ? '#fff' : '#1a202c'"
+                        [style.border-color]="plan.isPopular ? plan.color : plan.color"
+                        [class.current]="currentPlan === plan.planId" [disabled]="currentPlan === plan.planId">
+                        {{ currentPlan === plan.planId ? 'CURRENT PLAN' : plan.buttonText }}
+                    </button>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>

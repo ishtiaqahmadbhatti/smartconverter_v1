@@ -17,7 +17,7 @@
         <nav class="nav-menu" [class.mobile-open]="isMobileMenuOpen">
             <ul class="nav-list">
                 <li class="nav-item">
-                    <a routerLink="/" class="nav-link">
+                    <a routerLink="/" class="nav-link" (click)="toggleMobileMenu()">
                         <i class="fas fa-home"></i> Home
                     </a>
                 </li>
@@ -29,13 +29,13 @@
                     <div class="dropdown-menu" [class.show]="showDropdown">
                         @for (tool of tools; track tool.name) {
                         @if (tool.type === 'route') {
-                        <a [routerLink]="tool.link" class="dropdown-item">
+                        <a [routerLink]="tool.link" class="dropdown-item" (click)="toggleMobileMenu()">
                             <i [class]="tool.icon"></i>
                             <span>{{ tool.name }}</span>
                         </a>
                         }
                         @if (tool.type === 'anchor') {
-                        <a [href]="tool.link" class="dropdown-item">
+                        <a [href]="tool.link" class="dropdown-item" (click)="toggleMobileMenu()">
                             <i [class]="tool.icon"></i>
                             <span>{{ tool.name }}</span>
                         </a>
@@ -44,22 +44,22 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a routerLink="/" fragment="features" class="nav-link">
+                    <a routerLink="/" fragment="features" class="nav-link" (click)="toggleMobileMenu()">
                         <i class="fas fa-star"></i> Features
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a routerLink="/pricing" class="nav-link">
+                    <a routerLink="/pricing" class="nav-link" (click)="toggleMobileMenu()">
                         <i class="fas fa-tags"></i> Pricing
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a routerLink="/about-us" class="nav-link">
+                    <a routerLink="/about-us" class="nav-link" (click)="toggleMobileMenu()">
                         <i class="fas fa-info-circle"></i> About
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a routerLink="/contact-us" class="nav-link">
+                    <a routerLink="/contact-us" class="nav-link" (click)="toggleMobileMenu()">
                         <i class="fas fa-envelope"></i> Contact
                     </a>
                 </li>
@@ -75,9 +75,13 @@
                 }
                 @if (authService.isLoggedIn$ | async) {
                 <div class="mobile-profile-info">
+                    @if (authService.profileImage$ | async; as profileImage) {
+                    <img [src]="profileImage" alt="Profile" class="mobile-profile-img">
+                    } @else {
                     <div class="profile-avatar mobile">
                         {{ authService.getUserInitials() }}
                     </div>
+                    }
                     <div class="mobile-user-details">
                         <span class="user-name">{{ authService.getUserName() }}</span>
                         <span class="user-email">{{ authService.getUserEmail() }}</span>
@@ -109,15 +113,28 @@
             <div class="profile-dropdown-container" (mouseenter)="showProfileDropdown = true"
                 (mouseleave)="showProfileDropdown = false">
                 <div class="profile-icon-wrapper">
+                    @if (authService.profileImage$ | async; as profileImage) {
+                    <img [src]="profileImage" alt="Profile" class="header-profile-img">
+                    } @else {
                     <div class="profile-avatar">
                         {{ authService.getUserInitials() }}
                     </div>
+                    }
                 </div>
 
                 <div class="dropdown-menu profile-menu" [class.show]="showProfileDropdown">
                     <div class="user-info-header">
-                        <div class="user-name">{{ authService.getUserName() }}</div>
-                        <div class="user-email">{{ authService.getUserEmail() }}</div>
+                        @if (authService.profileImage$ | async; as profileImage) {
+                        <img [src]="profileImage" alt="Profile" class="dropdown-profile-img">
+                        } @else {
+                        <div class="profile-avatar dropdown-avatar">
+                            {{ authService.getUserInitials() }}
+                        </div>
+                        }
+                        <div class="user-details-text">
+                            <div class="user-name">{{ authService.getUserName() }}</div>
+                            <div class="user-email">{{ authService.getUserEmail() }}</div>
+                        </div>
                     </div>
                     <div class="dropdown-divider"></div>
                     <a routerLink="/profile/personal-info" class="dropdown-item">

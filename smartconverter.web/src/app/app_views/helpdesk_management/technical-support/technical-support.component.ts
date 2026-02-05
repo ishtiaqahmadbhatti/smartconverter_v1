@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
@@ -57,9 +57,11 @@ export class TechnicalSupportComponent {
         return type ? type.label : 'Select an issue...';
     }
 
+    @ViewChild('issueTypeContainer') issueTypeContainer!: ElementRef;
+
     @HostListener('document:click', ['$event'])
     clickout(event: any) {
-        if (!this.eRef.nativeElement.contains(event.target)) {
+        if (this.issueTypeContainer && !this.issueTypeContainer.nativeElement.contains(event.target)) {
             this.isIssueTypeDropdownOpen = false;
         }
     }

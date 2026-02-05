@@ -38,19 +38,21 @@
             </div>
 
             <!-- Gender -->
-            <div class="form-group">
+            <div class="form-group dropdown-container" #genderContainer>
                 <label for="gender" class="form-label">Gender</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-venus-mars input-icon"></i>
-                    <select id="gender" formControlName="gender" class="form-input form-select"
-                        [class.error]="gender?.invalid && gender?.touched">
-                        <option value="" disabled selected>Select your gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
+                <div class="custom-select-trigger form-input" (click)="toggleGenderDropdown()"
+                    [class.error]="gender?.invalid && gender?.touched">
+                    <span>{{ signupForm.get('gender')?.value || 'Select your gender' }}</span>
+                    <i class="fas fa-chevron-down arrow"></i>
                 </div>
+
+                <div class="custom-dropdown-options" *ngIf="isGenderDropdownOpen">
+                    <div class="dropdown-item" (click)="selectGender('Male')">Male</div>
+                    <div class="dropdown-item" (click)="selectGender('Female')">Female</div>
+                    <div class="dropdown-item" (click)="selectGender('Other')">Other</div>
+                    <div class="dropdown-item" (click)="selectGender('Prefer not to say')">Prefer not to say</div>
+                </div>
+
                 <div class="error-message" *ngIf="gender?.invalid && gender?.touched">
                     <span *ngIf="gender?.errors?.['required']">Gender is required</span>
                 </div>
@@ -59,14 +61,12 @@
             <!-- Phone Number -->
             <div class="form-group">
                 <label for="phone" class="form-label">Phone Number</label>
-                <div class="input-wrapper">
-                    <i class="fas fa-phone input-icon"></i>
-                    <input type="tel" id="phone" formControlName="phone" class="form-input"
+                <div class="input-wrapper phone-input-wrapper">
+                    <input #phoneInput type="tel" id="phone" formControlName="phone" class="form-input phone-input"
                         placeholder="Enter your phone number" [class.error]="phone?.invalid && phone?.touched" />
                 </div>
                 <div class="error-message" *ngIf="phone?.invalid && phone?.touched">
                     <span *ngIf="phone?.errors?.['required']">Phone number is required</span>
-                    <span *ngIf="phone?.errors?.['pattern']">Please enter a valid phone number</span>
                 </div>
             </div>
 

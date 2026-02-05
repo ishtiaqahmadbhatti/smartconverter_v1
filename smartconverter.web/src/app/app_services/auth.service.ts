@@ -13,15 +13,25 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_NAME_KEY = 'user_name';
   private readonly USER_EMAIL_KEY = 'user_email';
+  private readonly USER_IMAGE_KEY = 'user_image';
 
   private authUrl: string;
 
   private isLoggedInSubject = new BehaviorSubject<boolean>(this.hasToken());
   public isLoggedIn$ = this.isLoggedInSubject.asObservable();
 
+  private profileImageSubject = new BehaviorSubject<string | null>(null);
+  public profileImage$ = this.profileImageSubject.asObservable();
+
   constructor(private http: HttpClient, private router: Router) {
     this.apiUrl = ApplicationConfiguration.Get().ApiServiceLink;
     this.authUrl = `${this.apiUrl}/auth`;
+
+    // Load profile image from localStorage if available
+    const savedImage = this.getUserProfileImage();
+    if (savedImage) {
+      this.profileImageSubject.next(savedImage);
+    }
   }
 
   private hasToken(): boolean {
@@ -61,12 +71,43 @@ export class AuthService {
     return this.http.post(url, data);
   }
 
-  saveTokens(access: string, refresh: string, name?: string, email?: string): void {
+  updateProfile(data: any): Observable<any> {
+    const url = `${this.authUrl}/update-profile`;
+    return this.http.put(url, data);
+  }
+
+  uploadProfileImage(file: File): Observable<any> {
+    const url = `${this.authUrl}/upload-profile-image`;
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(url, formData);
+  }
+
+  getSubscriptionStatus(): Observable<any> {
+    const url = `${this.apiUrl}/subscription/status`;
+    return this.http.get(url);
+  }
+
+  upgradeSubscription(planId: string, paymentMethodId?: string): Observable<any> {
+    const url = `${this.apiUrl}/subscription/upgrade`;
+    return this.http.post(url, { plan_id: planId, payment_method_id: paymentMethodId });
+  }
+
+  getUserProfile(): Observable<any> {
+    const url = `${this.authUrl}/me`;
+    return this.http.get(url);
+  }
+
+  saveTokens(access: string, refresh: string, name?: string, email?: string, image?: string): void {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(this.TOKEN_KEY, access);
       localStorage.setItem(this.REFRESH_TOKEN_KEY, refresh);
       if (name) localStorage.setItem(this.USER_NAME_KEY, name);
       if (email) localStorage.setItem(this.USER_EMAIL_KEY, email);
+      if (image) {
+        localStorage.setItem(this.USER_IMAGE_KEY, image);
+        this.profileImageSubject.next(image);
+      }
       this.isLoggedInSubject.next(true);
     }
   }
@@ -92,6 +133,20 @@ export class AuthService {
     return null;
   }
 
+  getUserProfileImage(): string | null {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(this.USER_IMAGE_KEY);
+    }
+    return null;
+  }
+
+  updateProfileImage(url: string): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(this.USER_IMAGE_KEY, url);
+      this.profileImageSubject.next(url);
+    }
+  }
+
   getUserInitials(): string {
     const name = this.getUserName();
     if (!name) return 'U';
@@ -109,7 +164,9 @@ export class AuthService {
       localStorage.removeItem(this.REFRESH_TOKEN_KEY);
       localStorage.removeItem(this.USER_NAME_KEY);
       localStorage.removeItem(this.USER_EMAIL_KEY);
+      localStorage.removeItem(this.USER_IMAGE_KEY);
       this.isLoggedInSubject.next(false);
+      this.profileImageSubject.next(null);
     }
     this.router.navigate(['/']);
   }

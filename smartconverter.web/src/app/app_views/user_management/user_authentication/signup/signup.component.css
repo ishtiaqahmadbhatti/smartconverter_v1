@@ -178,6 +178,123 @@
 }
 
 /* ============================================
+   PHONE INPUT STYLING
+   ============================================ */
+
+.phone-input-wrapper {
+  display: block;
+  position: relative;
+}
+
+/* Override intl-tel-input default styles */
+::ng-deep .iti {
+  width: 100%;
+  display: block;
+}
+
+::ng-deep .iti__flag-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+::ng-deep .iti__selected-flag {
+  padding: 0 0 0 1rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+::ng-deep .iti__selected-flag:hover,
+::ng-deep .iti__selected-flag:focus {
+  background: transparent;
+}
+
+::ng-deep .iti__arrow {
+  margin-left: 0.5rem;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #a0aec0;
+}
+
+::ng-deep .phone-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 5.5rem !important;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #2d3748;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+::ng-deep .phone-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+::ng-deep .phone-input.error,
+::ng-deep .phone-input.ng-invalid.ng-touched {
+  border-color: #f56565;
+}
+
+::ng-deep .iti__country-list {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  z-index: 1000;
+}
+
+::ng-deep .iti__country {
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+::ng-deep .iti__country:hover,
+::ng-deep .iti__country.iti__highlight {
+  background-color: rgba(102, 126, 234, 0.1);
+}
+
+::ng-deep .iti__country-name {
+  color: #2d3748;
+  margin-left: 0.5rem;
+}
+
+::ng-deep .iti__dial-code {
+  color: #718096;
+}
+
+::ng-deep .iti__divider {
+  border-bottom: 1px solid #e2e8f0;
+  margin: 0.25rem 0;
+}
+
+::ng-deep .iti__search-input {
+  width: calc(100% - 2rem);
+  margin: 0.5rem 1rem;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+
+::ng-deep .iti__search-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* ============================================
    SUBMIT BUTTON
    ============================================ */
 
@@ -322,6 +439,88 @@
     font-size: 2rem;
   }
 }
+
+/* ============================================
+   CUSTOM DROPDOWN STYLES
+   ============================================ */
+
+.dropdown-container {
+  position: relative;
+  user-select: none;
+}
+
+.custom-select-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background-color: white;
+}
+
+.custom-select-trigger .arrow {
+  margin-left: 10px;
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+  color: #4a5568;
+}
+
+.custom-dropdown-options {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: fadeInDropdown 0.2s ease-out;
+}
+
+.dropdown-item {
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #2d3748;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar Styling for Dropdown */
+.custom-dropdown-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.custom-dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
 
 @media (max-width: 480px) {
   .signup-card {

@@ -57,6 +57,21 @@ export class ToolFeedbackComponent implements OnInit {
     isCategoryDropdownOpen = false;
     isToolDropdownOpen = false;
 
+    @ViewChild('categoryContainer') categoryContainer!: ElementRef;
+    @ViewChild('toolContainer') toolContainer!: ElementRef;
+
+    @HostListener('document:click', ['$event'])
+    clickout(event: any) {
+        // If clicking outside category dropdown, close it
+        if (this.categoryContainer && !this.categoryContainer.nativeElement.contains(event.target)) {
+            this.isCategoryDropdownOpen = false;
+        }
+        // If clicking outside tool dropdown, close it
+        if (this.toolContainer && !this.toolContainer.nativeElement.contains(event.target)) {
+            this.isToolDropdownOpen = false;
+        }
+    }
+
     constructor(
         private fb: FormBuilder,
         private eRef: ElementRef,
@@ -138,14 +153,6 @@ export class ToolFeedbackComponent implements OnInit {
         if (this.isLocked) return;
         this.feedbackForm.patchValue({ tool: toolName });
         this.isToolDropdownOpen = false;
-    }
-
-    @HostListener('document:click', ['$event'])
-    clickout(event: any) {
-        if (!this.eRef.nativeElement.contains(event.target)) {
-            this.isCategoryDropdownOpen = false;
-            this.isToolDropdownOpen = false;
-        }
     }
 
     setRating(rating: number) {

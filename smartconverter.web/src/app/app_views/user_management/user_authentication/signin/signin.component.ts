@@ -51,12 +51,39 @@ export class SigninComponent {
         // Adjust based on actual API response structure. 
         // Mobile implies response has access_token and refresh_token directly.
         if (response && response.access_token) {
+          // Construct full profile image URL if available
+          let profileImageUrl = undefined;
+          if (response.profile_image_url) {
+            const baseUrl = 'http://192.168.8.100:8000'; // From ApplicationConfiguration
+            const relativePath = response.profile_image_url.startsWith('/')
+              ? response.profile_image_url.substring(1)
+              : response.profile_image_url;
+            profileImageUrl = `${baseUrl}/${relativePath}`;
+          }
+
           this.authService.saveTokens(
             response.access_token,
             response.refresh_token,
             response.full_name || 'User',
-            credentials.email
+            credentials.email,
+            profileImageUrl
           );
+
+          // Immediately fetch user profile to load image in header
+          this.authService.getUserProfile().subscribe({
+            next: (user) => {
+              if (user.profile_image_url) {
+                const baseUrl = 'http://192.168.8.100:8000';
+                const relativePath = user.profile_image_url.startsWith('/')
+                  ? user.profile_image_url.substring(1)
+                  : user.profile_image_url;
+                const fullUrl = `${baseUrl}/${relativePath}`;
+                this.authService.updateProfileImage(fullUrl);
+              }
+            },
+            error: (err) => console.error('Failed to load profile after login', err)
+          });
+
           this.toastService.show('Sign in successful!', 'success');
           this.router.navigate(['/']);
         } else {

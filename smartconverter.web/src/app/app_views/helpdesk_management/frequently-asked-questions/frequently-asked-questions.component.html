@@ -55,7 +55,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" #categoryDropdownContainer>
                     <div class="dropdown-container">
                         <div class="custom-select-trigger form-control" (click)="toggleCategoryDropdown()"
                             [class.invalid]="submitted && faqForm.get('category')?.errors">

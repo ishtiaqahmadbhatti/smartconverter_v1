@@ -1,8 +1,9 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../app_services/auth.service';
+import { ApplicationConfiguration } from '../../app.config';
 
 @Component({
   selector: 'app-header',
@@ -12,7 +13,7 @@ import { AuthService } from '../../app_services/auth.service';
   imports: [CommonModule, RouterModule]
 })
 
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   isScrolled = false;
   isMobileMenuOpen = false;
   showDropdown = false;
@@ -35,7 +36,37 @@ export class HeaderComponent {
     { name: 'File Formatter Tools', icon: 'fas fa-wrench', link: '/fileformatter', type: 'route' }
   ];
 
-  constructor(public authService: AuthService) { }
+  constructor(public authService: AuthService, private eRef: ElementRef) { }
+
+  @HostListener('document:click', ['$event'])
+  clickout(event: any) {
+    if (!this.eRef.nativeElement.contains(event.target)) {
+      this.isMobileMenuOpen = false;
+      this.showDropdown = false;
+      this.showProfileDropdown = false;
+    }
+  }
+
+  ngOnInit() {
+    // Load user profile image from database if logged in
+    if (this.authService.isLoggedIn()) {
+      this.authService.getUserProfile().subscribe({
+        next: (user) => {
+          if (user.profile_image_url) {
+            const baseUrl = ApplicationConfiguration.Get().ServerBaseUrl;
+            const relativePath = user.profile_image_url.startsWith('/')
+              ? user.profile_image_url.substring(1)
+              : user.profile_image_url;
+            const fullUrl = `${baseUrl}/${relativePath}`;
+            this.authService.updateProfileImage(fullUrl);
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load user profile in header', err);
+        }
+      });
+    }
+  }
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
