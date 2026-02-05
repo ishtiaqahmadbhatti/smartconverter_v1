@@ -35,16 +35,20 @@ class HelpdeskService:
 
     @staticmethod
     async def create_contact_us(db: Session, data: HelpdeskContactUsCreate, user_id: Optional[int] = None):
-        db_obj = CustomerContactUsSupport(
-            full_name=data.full_name,
-            email=data.email,
-            subject=data.subject,
-            message=data.message,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        from app.core.config import settings
+        db_obj = None
+        
+        if settings.database_active and db:
+            db_obj = CustomerContactUsSupport(
+                full_name=data.full_name,
+                email=data.email,
+                subject=data.subject,
+                message=data.message,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""
@@ -62,18 +66,21 @@ class HelpdeskService:
     @staticmethod
     async def create_general_inquiry(db: Session, data: HelpdeskGeneralInquiryCreate, file: Optional[UploadFile] = None, user_id: Optional[int] = None):
         attachment_path = await HelpdeskService._save_attachment(file, "general_inquiries")
+        from app.core.config import settings
+        db_obj = None
         
-        db_obj = CustomerGeneralInquiry(
-            full_name=data.full_name,
-            email=data.email,
-            subject=data.subject,
-            query=data.query,
-            attachment_path=attachment_path,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        if settings.database_active and db:
+            db_obj = CustomerGeneralInquiry(
+                full_name=data.full_name,
+                email=data.email,
+                subject=data.subject,
+                query=data.query,
+                attachment_path=attachment_path,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""
@@ -86,20 +93,25 @@ class HelpdeskService:
         <p>{data.query}</p>
         <p><strong>Attachment:</strong> {'Yes' if attachment_path else 'No'}</p>
         """
-        await EmailService.send_helpdesk_email(subject=f"Query: {data.subject}", html_content=html)
+        attachments = [attachment_path] if attachment_path else None
+        await EmailService.send_helpdesk_email(subject=f"Query: {data.subject}", html_content=html, attachments=attachments)
         return db_obj
 
     @staticmethod
     async def create_faq(db: Session, data: HelpdeskFAQCreate, user_id: Optional[int] = None):
-        db_obj = CustomerFAQ(
-            question=data.question,
-            category=data.category,
-            user_email=data.user_email,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        from app.core.config import settings
+        db_obj = None
+        
+        if settings.database_active and db:
+            db_obj = CustomerFAQ(
+                question=data.question,
+                category=data.category,
+                user_email=data.user_email,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""
@@ -114,16 +126,20 @@ class HelpdeskService:
 
     @staticmethod
     async def create_feedback(db: Session, data: HelpdeskFeedbackCreate, user_id: Optional[int] = None):
-        db_obj = CustomerFeedback(
-            full_name=data.full_name,
-            email=data.email,
-            feedback=data.feedback,
-            rating=data.rating,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        from app.core.config import settings
+        db_obj = None
+        
+        if settings.database_active and db:
+            db_obj = CustomerFeedback(
+                full_name=data.full_name,
+                email=data.email,
+                feedback=data.feedback,
+                rating=data.rating,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""
@@ -141,20 +157,23 @@ class HelpdeskService:
     @staticmethod
     async def create_technical_support(db: Session, data: HelpdeskTechnicalSupportCreate, file: Optional[UploadFile] = None, user_id: Optional[int] = None):
         attachment_path = await HelpdeskService._save_attachment(file, "technical_support")
+        from app.core.config import settings
+        db_obj = None
         
-        db_obj = CustomerTechnicalSupport(
-            full_name=data.full_name,
-            email=data.email,
-            issue_type=data.issue_type,
-            description=data.description,
-            os_info=data.os_info,
-            browser_info=data.browser_info,
-            attachment_path=attachment_path,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        if settings.database_active and db:
+            db_obj = CustomerTechnicalSupport(
+                full_name=data.full_name,
+                email=data.email,
+                issue_type=data.issue_type,
+                description=data.description,
+                os_info=data.os_info,
+                browser_info=data.browser_info,
+                attachment_path=attachment_path,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""
@@ -169,22 +188,27 @@ class HelpdeskService:
         <p>{data.description}</p>
         <p><strong>Attachment:</strong> {'Yes' if attachment_path else 'No'}</p>
         """
-        await EmailService.send_helpdesk_email(subject=f"Tech Support: {data.issue_type}", html_content=html)
+        attachments = [attachment_path] if attachment_path else None
+        await EmailService.send_helpdesk_email(subject=f"Tech Support: {data.issue_type}", html_content=html, attachments=attachments)
         return db_obj
 
     @staticmethod
     async def create_tool_feedback(db: Session, data: HelpdeskToolFeedbackCreate, user_id: Optional[int] = None):
-        db_obj = CustomerToolFeedback(
-            tool_name=data.tool_name,
-            category=data.category,
-            rating=data.rating,
-            feedback=data.feedback,
-            user_email=data.user_email,
-            user_id=user_id
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        from app.core.config import settings
+        db_obj = None
+        
+        if settings.database_active and db:
+            db_obj = CustomerToolFeedback(
+                tool_name=data.tool_name,
+                category=data.category,
+                rating=data.rating,
+                feedback=data.feedback,
+                user_email=data.user_email,
+                user_id=user_id
+            )
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
         
         # Send Email
         html = f"""

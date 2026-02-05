@@ -22,10 +22,15 @@ class ConversionLogService:
         user_agent: Optional[str] = None,
         method: str = "POST",
         api_endpoint: Optional[str] = None
-    ) -> UserConversionDetails:
+    ) -> Any:
         """
         Record a conversion event in the database.
+        Returns a dummy object if database is inactive to prevent errors in caller.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            from types import SimpleNamespace
+            return SimpleNamespace(id=None)
         db_log = UserConversionDetails(
             user_id=user_id,
             conversion_type=conversion_type,
@@ -61,6 +66,8 @@ class ConversionLogService:
         Update an existing log entry with final status and results.
         """
         from app.core.config import settings
+        if not settings.database_active or not log_id:
+            return None
         db_log = db.query(UserConversionDetails).filter(UserConversionDetails.id == log_id).first()
         if not db_log:
             return None
@@ -108,6 +115,10 @@ class ConversionLogService:
         Get conversion history for a specific user ID or guest (device user).
         Optional filtering by date range.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            return []
+            
         query = db.query(UserConversionDetails).filter(
             UserConversionDetails.user_id == user_id
         )
@@ -129,6 +140,10 @@ class ConversionLogService:
         """
         Get the total count of conversion history records for a user.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            return 0
+            
         query = db.query(UserConversionDetails).filter(
             UserConversionDetails.user_id == user_id
         )
@@ -145,6 +160,10 @@ class ConversionLogService:
         """
         Delete a specific log entry if it belongs to the user.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            return False
+            
         db_log = db.query(UserConversionDetails).filter(
             UserConversionDetails.id == log_id,
             UserConversionDetails.user_id == user_id
@@ -162,6 +181,10 @@ class ConversionLogService:
         """
         Clear all conversion history for a user.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            return 0
+            
         count = db.query(UserConversionDetails).filter(
             UserConversionDetails.user_id == user_id
         ).delete()
@@ -173,6 +196,14 @@ class ConversionLogService:
         """
         Calculate usage statistics for a user.
         """
+        from app.core.config import settings
+        if not settings.database_active:
+            return {
+                "files_converted": 0,
+                "data_processed_bytes": 0,
+                "days_active": 0
+            }
+            
         from sqlalchemy import func, cast, Date
         
         # Count successful conversions

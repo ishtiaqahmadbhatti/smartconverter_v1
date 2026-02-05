@@ -27,6 +27,11 @@ metadata = MetaData()
 
 def get_db() -> Session:
     """Dependency to get database session."""
+    from app.core.config import settings
+    if not settings.database_active:
+        yield None
+        return
+        
     db = SessionLocal()
     try:
         yield db

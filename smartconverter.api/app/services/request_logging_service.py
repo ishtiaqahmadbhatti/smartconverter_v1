@@ -82,6 +82,10 @@ class RequestLoggingService:
         user_agent: Optional[str] = None
     ) -> None:
         """Log a request to the database."""
+        from app.core.config import settings
+        if not settings.database_active:
+            return
+            
         try:
             db = next(get_db())
             
@@ -119,6 +123,10 @@ class RequestLoggingService:
         processing_time: Optional[float] = None
     ) -> None:
         """Log a conversion request specifically."""
+        from app.core.config import settings
+        if not settings.database_active:
+            return
+            
         try:
             db = next(get_db())
             

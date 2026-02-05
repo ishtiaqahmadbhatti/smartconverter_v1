@@ -128,7 +128,11 @@ Built with **FastAPI**, **Python 3.9+**, and modern web technologies for maximum
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on application startup."""
+    """Initialize database on application startup if active."""
+    if not settings.database_active:
+        logger.warning("DATABASE IS INACTIVE: Skipping database initialization")
+        return
+
     try:
         # Test database connection
         if test_connection():
@@ -158,6 +162,30 @@ app.add_middleware(SessionMiddleware, secret_key="CHANGE_ME_SUPER_SECRET")
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
 
+
+# Custom middleware to handle cases where database is disabled
+@app.middleware("http")
+async def database_active_middleware(request: Request, call_next):
+    # Check if the path needs database and if database is disabled
+    # Most auth, user-profile and user-management routes need DB
+    db_dependent_paths = ["/api/v1/auth", "/api/v1/userlist", "/api/v1/user-list", "/api/v1/history", "/api/v1/subscription", "/api/v1/guest", "/me", "/update-profile"]
+    
+    if not settings.database_active:
+        is_db_path = any(request.url.path.startswith(path) for path in db_dependent_paths)
+        if is_db_path:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error_type": "DatabaseInactive",
+                    "message": "Database related services are currently disabled for maintenance. Please try again later.",
+                    "details": {}
+                }
+            )
+            
+    response = await call_next(request)
+    return response
+
+
 # Request logging and timing middleware
 @app.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
@@ -175,6 +203,13 @@ async def request_logging_middleware(request: Request, call_next):
         response = await call_next(request)
     finally:
         duration_ms = int((time.time() - start) * 1000)
+
+        # Skip DB logging if database is inactive
+        if not settings.database_active:
+            # We still set headers but skip the DB write
+            response.headers["X-Process-Time"] = str(duration_ms / 1000.0)
+            response.headers["X-Request-Id"] = request_id
+            return response
 
         ip, xff = extract_ip(request)
         ua = request.headers.get("user-agent")

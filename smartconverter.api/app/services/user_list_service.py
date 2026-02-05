@@ -9,8 +9,8 @@ class UserListService:
     @staticmethod
     def _attach_subscription_info(db: Session, user: UserList) -> UserList:
         """Helper to attach subscription info to user object dynamically."""
-        if not user:
-            return None
+        if not user or not db:
+            return user
         
         from app.models.user_subscription import UserSubscriptionDetails
         sub = db.query(UserSubscriptionDetails).filter(UserSubscriptionDetails.user_id == user.id).first()
@@ -29,16 +29,22 @@ class UserListService:
 
     @staticmethod
     def get_user(db: Session, user_id: int) -> Optional[UserList]:
+        if not db:
+            return None
         user = db.query(UserList).filter(UserList.id == user_id).first()
         return UserListService._attach_subscription_info(db, user)
 
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Optional[UserList]:
+        if not db:
+            return None
         user = db.query(UserList).filter(UserList.email == email).first()
         return UserListService._attach_subscription_info(db, user)
 
     @staticmethod
     def authenticate(db: Session, email: str, password: str) -> Optional[UserList]:
+        if not db:
+            return None
         # Don't use get_user_by_email to avoid extra query if password verify fails, 
         # but acceptable for simplicity to reuse logic
         user = db.query(UserList).filter(UserList.email == email).first()
@@ -53,11 +59,15 @@ class UserListService:
 
     @staticmethod
     def get_user_by_device_id(db: Session, device_id: str) -> Optional[UserList]:
+        if not db:
+            return None
         user = db.query(UserList).filter(UserList.device_id == device_id).first()
         return UserListService._attach_subscription_info(db, user)
 
     @staticmethod
     def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[UserList]:
+        if not db:
+            return []
         users = db.query(UserList).offset(skip).limit(limit).all()
         for user in users:
             UserListService._attach_subscription_info(db, user)
@@ -65,6 +75,9 @@ class UserListService:
 
     @staticmethod
     def create_user(db: Session, user: UserListCreate) -> UserList:
+        if not db:
+            return None
+            
         from app.models.user_subscription import UserSubscriptionDetails
         
         # Debug logging
@@ -135,6 +148,9 @@ class UserListService:
 
     @staticmethod
     def create_guest_user(db: Session, device_id: str) -> UserList:
+        if not db:
+            return None
+            
         from app.models.user_subscription import UserSubscriptionDetails
 
         db_user = UserList(
@@ -156,6 +172,9 @@ class UserListService:
 
     @staticmethod
     def upgrade_subscription(db: Session, user_id: int, plan_id: str) -> Optional[UserList]:
+        if not db:
+            return None
+            
         from datetime import datetime, timedelta
         from app.models.user_subscription import UserSubscriptionDetails
         
@@ -186,6 +205,8 @@ class UserListService:
 
     @staticmethod
     def update_user(db: Session, user_id: int, user_update: UserListUpdate) -> Optional[UserList]:
+        if not db:
+            return None
         db_user = db.query(UserList).filter(UserList.id == user_id).first()
         if not db_user:
             return None
@@ -201,6 +222,9 @@ class UserListService:
 
     @staticmethod
     def delete_user(db: Session, user_id: int) -> bool:
+        if not db:
+            return False
+            
         from app.models.user_subscription import UserSubscriptionDetails
         
         db_user = db.query(UserList).filter(UserList.id == user_id).first()

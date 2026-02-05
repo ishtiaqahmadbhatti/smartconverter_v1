@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "SmartConverter FastAPI"
     app_version: str = "1.0.0"
     debug: bool = False
+    database_active: bool = False
     
     # Server
     host: str = "0.0.0.0"

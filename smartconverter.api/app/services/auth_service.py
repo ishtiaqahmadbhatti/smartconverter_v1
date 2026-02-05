@@ -175,6 +175,9 @@ def refresh_access_token(refresh_token: str, db: Session) -> Optional[Dict[str, 
         if REDIS_AVAILABLE and is_token_blacklisted(refresh_token):
             return None
             
+        if not db:
+            return None
+            
         # Get user
         user = get_user_by_email(db, email)
         if not user:
@@ -206,8 +209,10 @@ def get_user_by_username(db: Session, username: str) -> Optional[UserList]:
     return get_user_by_email(db, username)
 
 
-def create_user(db: Session, user_data: dict) -> UserList:
+def create_user(db: Session, user_data: dict) -> Optional[UserList]:
     """Create a new user."""
+    if not db:
+        return None
     hashed_password = get_password_hash(user_data["password"])
     db_user = UserList(
         email=user_data["email"],
@@ -225,6 +230,8 @@ def create_user(db: Session, user_data: dict) -> UserList:
 
 def update_user_role(db: Session, user_id: int, new_role: Any) -> Optional[UserList]:
     """Update user role (admin only)."""
+    if not db:
+        return None
     # UserList has no role, pass
     return db.query(UserList).filter(UserList.id == user_id).first()
 
@@ -237,6 +244,8 @@ def get_users_by_role(db: Session, role: Any) -> list[UserList]:
 
 def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[UserList]:
     """Get all users with pagination."""
+    if not db:
+        return []
     return db.query(UserList).offset(skip).limit(limit).all()
 
 

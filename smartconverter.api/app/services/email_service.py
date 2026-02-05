@@ -1,7 +1,7 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from app.core.config import settings
 from pydantic import EmailStr
-from typing import List
+from typing import List, Optional
 
 class EmailService:
     # Configure connection
@@ -59,18 +59,27 @@ class EmailService:
             return False
 
     @staticmethod
-    async def send_helpdesk_email(subject: str, html_content: str):
+    async def send_helpdesk_email(subject: str, html_content: str, attachments: Optional[List[str]] = None):
         """
-        Send a helpdesk notification email to admin.
+        Send a helpdesk notification email to admin with optional attachments.
         """
         target_email = "techmindsforge@gmail.com"
         
-        message = MessageSchema(
-            subject=subject,
-            recipients=[target_email],
-            body=html_content,
-            subtype=MessageType.html
-        )
+        message_data = {
+            "subject": subject,
+            "recipients": [target_email],
+            "body": html_content,
+            "subtype": MessageType.html
+        }
+        
+        # Add attachments if provided and exist
+        import os
+        if attachments:
+            valid_attachments = [path for path in attachments if os.path.exists(path)]
+            if valid_attachments:
+                message_data["attachments"] = valid_attachments
+
+        message = MessageSchema(**message_data)
 
         try:
             fm = FastMail(EmailService.conf)
