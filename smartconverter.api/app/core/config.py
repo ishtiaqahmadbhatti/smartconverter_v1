@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     max_file_size: int = 0  # 0 means unlimited
     
     # Retention period for files (in minutes) - files older than this will be deleted
-    file_retention_minutes: int = 60  # Default 1 hour
+    # file_retention_minutes: int = 60  # Default 1 hour
+    file_retention_minutes: int = 1  # Reduced to 1 minute for testing
     
     # OCR Settings
     tesseract_path: Optional[str] = None

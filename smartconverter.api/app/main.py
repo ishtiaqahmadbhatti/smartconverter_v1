@@ -160,9 +160,10 @@ async def start_cleanup_task():
                 FileService.cleanup_old_files()
             except Exception as e:
                 logger.error(f"Error in scheduled cleanup: {e}")
-            
             # Run cleanup every 30 minutes
-            time.sleep(30 * 60)
+            # time.sleep(30 * 60)
+            # Run cleanup every 1 minute during testing
+            time.sleep(1 * 60)
             
     cleanup_thread = threading.Thread(target=run_cleanup, daemon=True)
     cleanup_thread.start()
