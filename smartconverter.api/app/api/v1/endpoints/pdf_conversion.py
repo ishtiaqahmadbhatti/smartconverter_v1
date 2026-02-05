@@ -1,7 +1,7 @@
 import os
 import re
 from typing import List, Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -70,7 +70,7 @@ async def convert_pdf_to_json(
         api_endpoint=request.url.path
     )
 
-    
+    success = False
     try:
         # Validate file - only PDF files allowed
         FileService.validate_file(file, "pdf")
@@ -98,7 +98,7 @@ async def convert_pdf_to_json(
             output_file_type="json"
         )
 
-        
+        success = True
         return PDFConversionResponse(
             success=True,
             message="PDF converted to JSON successfully",
@@ -122,9 +122,8 @@ async def convert_pdf_to_json(
             status_code=500
         )
     finally:
-        # Cleanup temporary files
-        if input_path:
-            PDFConversionService.cleanup_temp_files(input_path)
+        # Cleanup temporary files: always clean input, clean output ONLY on failure
+        FileService.cleanup_files(input_path, None if success else (output_path if 'output_path' in locals() else None))
 
 
 # AI: Convert PDF to Markdown
@@ -3486,17 +3485,7 @@ async def get_pdf_metadata(
 
 # Download converted file
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download a converted file."""
-    try:
-        file_path = os.path.join("outputs", filename)
-        if os.path.exists(file_path):
-            return FileResponse(
-                path=file_path,
-                filename=filename,
-                media_type='application/octet-stream'
-            )
-        else:
-            raise HTTPException(status_code=404, detail="File not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download a converted file and clean up."""
+    file_path = os.path.join(settings.output_dir, filename)
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

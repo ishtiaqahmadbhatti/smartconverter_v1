@@ -146,6 +146,29 @@ async def startup_event():
         logger.error(f"Database initialization error: {e}")
 
 
+# Start background cleanup task
+@app.on_event("startup")
+async def start_cleanup_task():
+    """Start the background cleanup task on application startup."""
+    import threading
+    from app.services.file_service import FileService
+    
+    def run_cleanup():
+        while True:
+            try:
+                logger.info("Running scheduled file cleanup...")
+                FileService.cleanup_old_files()
+            except Exception as e:
+                logger.error(f"Error in scheduled cleanup: {e}")
+            
+            # Run cleanup every 30 minutes
+            time.sleep(30 * 60)
+            
+    cleanup_thread = threading.Thread(target=run_cleanup, daemon=True)
+    cleanup_thread.start()
+    logger.info("Background cleanup task started")
+
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -268,7 +291,8 @@ async def request_logging_middleware(request: Request, call_next):
     return response
 
 # Mount static files for downloads
-app.mount("/download", StaticFiles(directory=settings.output_dir), name="downloads")
+# Removed static mount for downloads to use custom endpoint with cleanup
+# app.mount("/download", StaticFiles(directory=settings.output_dir), name="downloads")
 # Mount uploads directory for profile images
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Mount assets directory for the new user profile image structure
@@ -277,20 +301,15 @@ app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
+from fastapi import BackgroundTasks
+
 # Download endpoint for processed files
 @app.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download processed files."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download processed files and clean up."""
+    from app.services.file_service import FileService
     file_path = os.path.join(settings.output_dir, filename)
-    
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        file_path,
-        filename=filename,
-        media_type="application/pdf"
-    )
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)
 
 # Root endpoint
 @app.get("/")

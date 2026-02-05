@@ -1,6 +1,6 @@
 import os
 import shutil
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request, BackgroundTasks
 from fastapi.responses import FileResponse
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -1399,14 +1399,7 @@ async def get_supported_formats():
 
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted eBook file."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted eBook file and clean up."""
     file_path = os.path.join(settings.output_dir, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        file_path,
-        filename=filename,
-        media_type='application/octet-stream'
-    )
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

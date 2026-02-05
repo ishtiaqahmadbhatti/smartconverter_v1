@@ -127,12 +127,27 @@ class FileService:
     
     @staticmethod
     def cleanup_file(file_path: str) -> None:
-        """Remove temporary file."""
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception:
-            pass  # Ignore cleanup errors
+        """Remove temporary file with retries for Windows locking."""
+        import time
+        if not file_path:
+            return
+            
+        for _ in range(3):
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                return
+            except (PermissionError, OSError):
+                time.sleep(0.2)
+            except Exception:
+                break
+
+    @staticmethod
+    def cleanup_files(*file_paths: Optional[str]) -> None:
+        """Remove multiple temporary files."""
+        for path in file_paths:
+            if path:
+                FileService.cleanup_file(path)
 
     @staticmethod
     def generate_output_path_with_filename(
@@ -170,3 +185,49 @@ class FileService:
 
         output_path = os.path.join(output_dir, candidate)
         return output_path, candidate
+    @staticmethod
+    def create_cleanup_response(file_path: str, filename: str, background_tasks: any) -> any:
+        """Create a FileResponse that deletes the file after serving."""
+        from fastapi.responses import FileResponse
+        import os
+        
+        if not os.path.exists(file_path):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Add background task to delete the file using our robust cleanup method
+        background_tasks.add_task(FileService.cleanup_file, file_path)
+        
+        return FileResponse(
+            path=file_path,
+            filename=filename,
+            media_type='application/octet-stream'
+        )
+
+    @staticmethod
+    def cleanup_old_files() -> None:
+        """Remove files from upload and output directories older than the retention period."""
+        import time
+        from app.core.config import settings
+        
+        current_time = time.time()
+        retention_seconds = settings.file_retention_minutes * 60
+        
+        directories = [settings.upload_dir, settings.output_dir]
+        
+        for directory in directories:
+            if not os.path.exists(directory):
+                continue
+                
+            for filename in os.listdir(directory):
+                # Skip placeholder files if any (e.g. .gitkeep)
+                if filename.startswith('.'):
+                    continue
+                    
+                file_path = os.path.join(directory, filename)
+                try:
+                    file_modified_time = os.path.getmtime(file_path)
+                    if (current_time - file_modified_time) > retention_seconds:
+                        FileService.cleanup_file(file_path)
+                except Exception:
+                    continue

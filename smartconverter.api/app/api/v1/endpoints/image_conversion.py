@@ -8,7 +8,7 @@ import os
 import shutil
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.models.schemas import ConversionResponse
@@ -98,6 +98,7 @@ async def _handle_image_conversion(
         api_endpoint=request.url.path
     )
 
+    success = False
     try:
         # Validate file
         FileService.validate_file(file, "image")
@@ -129,6 +130,7 @@ async def _handle_image_conversion(
             output_file_type=output_format.lower()
         )
         
+        success = True
         return ConversionResponse(
             success=True,
             message=f"Image converted to {output_format.upper()} successfully",
@@ -145,8 +147,8 @@ async def _handle_image_conversion(
             status_code=500
         )
     finally:
-        if input_path:
-            ImageConversionService.cleanup_temp_files(input_path)
+        # Cleanup temporary files: always clean input, clean output ONLY on failure
+        FileService.cleanup_files(input_path, None if success else (output_path if 'output_path' in locals() else None))
 
 
 async def _handle_json_conversion(
@@ -181,6 +183,7 @@ async def _handle_json_conversion(
         api_endpoint=request.url.path
     )
     
+    success = False
     try:
         FileService.validate_file(file, "image")
         input_path = FileService.save_uploaded_file(file)
@@ -202,6 +205,7 @@ async def _handle_json_conversion(
             output_file_type="json"
         )
         
+        success = True
         return ConversionResponse(
             success=True,
             message="Image converted to JSON successfully",
@@ -212,8 +216,7 @@ async def _handle_json_conversion(
         ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("InternalServerError", str(e), status_code=500)
     finally:
-        if input_path:
-            ImageConversionService.cleanup_temp_files(input_path)
+        FileService.cleanup_files(input_path, None if success else (output_path if 'output_path' in locals() else None))
 
 
 async def _handle_image_to_pdf(
@@ -248,6 +251,7 @@ async def _handle_image_to_pdf(
         api_endpoint=request.url.path
     )
     
+    success = False
     try:
         FileService.validate_file(file, "image")
         input_path = FileService.save_uploaded_file(file)
@@ -269,6 +273,7 @@ async def _handle_image_to_pdf(
             output_file_type="pdf"
         )
         
+        success = True
         return ConversionResponse(
             success=True,
             message="Image converted to PDF successfully",
@@ -279,8 +284,7 @@ async def _handle_image_to_pdf(
         ConversionLogService.update_log_status(db=db, log_id=log.id, status="failed", error_message=str(e))
         raise create_error_response("InternalServerError", str(e), status_code=500)
     finally:
-        if input_path:
-            ImageConversionService.cleanup_temp_files(input_path)
+        FileService.cleanup_files(input_path, None if success else (output_path if 'output_path' in locals() else None))
 
 
 async def _handle_website_conversion(
@@ -560,12 +564,10 @@ async def get_supported_formats():
     }
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted file."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted file and clean up."""
     file_path = os.path.join(settings.output_dir, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)
 
 # ---------------------------------------------------------------------------
 # Specific Format endpoints

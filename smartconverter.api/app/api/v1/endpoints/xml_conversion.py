@@ -10,7 +10,7 @@ import logging
 import uuid
 import shutil
 from typing import Optional, Dict, Any, List, Union, Tuple
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -688,20 +688,7 @@ async def convert_json_to_xml(
 
 # Download endpoint for generated files
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download a generated file."""
-    try:
-        file_path = os.path.join(settings.output_dir, filename)
-        
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        return FileResponse(
-            path=file_path,
-            filename=filename,
-            media_type='application/octet-stream'
-        )
-        
-    except Exception as e:
-        logger.error(f"Error downloading file {filename}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error downloading file: {str(e)}")
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download a generated file and clean up."""
+    file_path = os.path.join(settings.output_dir, filename)
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

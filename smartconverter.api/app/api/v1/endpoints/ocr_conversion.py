@@ -3,7 +3,7 @@ import os
 import shutil
 import logging
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Form, Query, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.models.schemas import ConversionResponse
@@ -532,15 +532,7 @@ async def get_supported_ocr_engines():
 
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted file."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted file and clean up."""
     file_path = os.path.join(settings.output_dir, filename)
-    
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type='application/octet-stream'
-    )
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

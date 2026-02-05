@@ -3,7 +3,7 @@ import os
 import uuid
 import logging
 from datetime import date, datetime
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Depends, BackgroundTasks
 from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel
@@ -144,6 +144,7 @@ async def ai_convert_pdf_to_json(
         api_endpoint=request.url.path
     )
 
+    success = False
     try:
         FileService.validate_file(file, "document")
         input_path = FileService.save_uploaded_file(file)
@@ -174,6 +175,7 @@ async def ai_convert_pdf_to_json(
             output_file_type="json"
         )
 
+        success = True
         return ConversionResponse(
             success=True,
             message="AI: PDF converted to JSON successfully",
@@ -197,7 +199,7 @@ async def ai_convert_pdf_to_json(
             status_code=500,
         )
     finally:
-        _cleanup_files(input_path)
+        _cleanup_files(input_path, None if success else output_path)
 
 
 
@@ -1717,15 +1719,7 @@ async def convert_yaml_to_json(
 # ---------------------------------------------------------------------------
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted file."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted file and clean up."""
     file_path = os.path.join(settings.output_dir, filename)
-
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type="application/octet-stream",
-    )
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

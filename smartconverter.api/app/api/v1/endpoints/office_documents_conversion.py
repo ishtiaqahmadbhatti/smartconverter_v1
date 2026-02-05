@@ -7,7 +7,7 @@ This module provides API endpoints for various office document conversion operat
 import json
 import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body, Request, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body, Request, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 import shutil
@@ -2006,20 +2006,7 @@ async def convert_xls_to_srt(
         return create_error_response("Failed to convert XLS to SRT", str(e))
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted file."""
-    try:
-        file_path = os.path.join(settings.output_dir, filename)
-        
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="File not found")
-        
-        return FileResponse(
-            path=file_path,
-            filename=filename,
-            media_type='application/octet-stream'
-        )
-        
-    except Exception as e:
-        logger.error(f"Error downloading file: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to download file")
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted file and clean up."""
+    file_path = os.path.join(settings.output_dir, filename)
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)

@@ -1,7 +1,7 @@
 import os
 import shutil
 from typing import Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Depends, Request, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -74,7 +74,7 @@ async def convert_mp4_to_mp3(
         user_agent=request.headers.get("user-agent"),
         api_endpoint=request.url.path
     )
-    
+    success = False
     try:
         # MP4 is video, but we allow it here for audio extraction
         FileService.validate_file(file, "video")
@@ -94,11 +94,14 @@ async def convert_mp4_to_mp3(
         
         # Move/Rename to final filename in output directory
         final_output_path = os.path.join(settings.output_dir, output_filename)
+        output_path = final_output_path
+        
         if os.path.abspath(temp_output_path) != os.path.abspath(final_output_path):
              if os.path.exists(final_output_path):
                  os.remove(final_output_path)
              shutil.move(temp_output_path, final_output_path)
 
+        success = True
         return ConversionResponse(
             success=True,
             message="MP4 file converted to MP3 successfully",
@@ -120,8 +123,8 @@ async def convert_mp4_to_mp3(
             status_code=500
         )
     finally:
-        if input_path:
-            AudioConversionService.cleanup_temp_files(input_path)
+        # Cleanup temporary files: always clean input, clean output (final or temp) ONLY on failure
+        AudioConversionService.cleanup_temp_files(input_path, None if success else (output_path if 'output_path' in locals() and output_path else (temp_output_path if 'temp_output_path' in locals() else None)))
 
 
 @router.post("/wav-to-mp3", response_model=ConversionResponse)
@@ -724,15 +727,7 @@ async def get_supported_formats():
 
 
 @router.get("/download/{filename}")
-async def download_file(filename: str):
-    """Download converted file."""
+async def download_file(filename: str, background_tasks: BackgroundTasks):
+    """Download converted file and clean up."""
     file_path = os.path.join(settings.output_dir, filename)
-    
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type='application/octet-stream'
-    )
+    return FileService.create_cleanup_response(file_path, filename, background_tasks)
